@@ -1008,12 +1008,6 @@ func (m model) View() string {
 	return s.String()
 }
 
-func openBrowser(url string) {
-	if err := utils.OpenBrowser(url); err != nil {
-		fmt.Printf("Error opening browser: %v\n", err)
-	}
-}
-
 // detectLanguage attempts to infer language from filename
 func detectLanguage(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
