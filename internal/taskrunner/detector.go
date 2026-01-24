@@ -1,4 +1,4 @@
-﻿package taskrunner
+package taskrunner
 
 import (
 	"bufio"
@@ -71,6 +71,11 @@ func DetectTasks(projectPath string) []Task {
 		hasFilesWithExtension(projectPath, ".cpp") ||
 		hasFilesWithExtension(projectPath, ".cc") {
 		tasks = append(tasks, detectCTasks(projectPath)...)
+	}
+
+	// Check for Rust tasks
+	if fileExists(filepath.Join(projectPath, "Cargo.toml")) {
+		tasks = append(tasks, detectRustTasks()...)
 	}
 
 	return tasks
