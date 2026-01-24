@@ -199,12 +199,13 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Fixed: Mouse wheel now changes focus instead of scrolling viewport
-		if msg.Type == tea.MouseWheelUp {
+		switch msg.Type {
+		case tea.MouseWheelUp:
 			m.focusedIdx--
 			if m.focusedIdx < 0 {
 				m.focusedIdx = len(m.inputs) - 1
 			}
-		} else if msg.Type == tea.MouseWheelDown {
+		case tea.MouseWheelDown:
 			m.focusedIdx++
 			if m.focusedIdx > len(m.inputs)-1 {
 				m.focusedIdx = 0
