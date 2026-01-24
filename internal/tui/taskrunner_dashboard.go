@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/phravins/devcli/internal/taskrunner"
 )
@@ -23,6 +25,7 @@ type TaskRunnerModel struct {
 	currentTask *taskrunner.Task
 	ctx         context.Context
 	cancel      context.CancelFunc
+	spinner     spinner.Model // New spinner
 	width       int
 	height      int
 	state       int // 0: list, 1: running, 2: completed, 3: help
@@ -45,27 +48,40 @@ type taskCompleteMsg struct {
 }
 
 func NewTaskRunnerModel(workspace string) TaskRunnerModel {
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+
 	return TaskRunnerModel{
 		workspace:  workspace,
 		list:       list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
 		output:     &strings.Builder{},
 		outputView: viewport.New(80, 20),
 		helpView:   viewport.New(80, 20),
+		spinner:    sp,
 		state:      trStateList,
 	}
 }
 
 func (m TaskRunnerModel) Init() tea.Cmd {
-	return func() tea.Msg {
-		tasks := taskrunner.DetectTasks(m.workspace)
-		return tasksDetectedMsg{tasks: tasks}
-	}
+	return tea.Batch(
+		func() tea.Msg {
+			tasks := taskrunner.DetectTasks(m.workspace)
+			return tasksDetectedMsg{tasks: tasks}
+		},
+		m.spinner.Tick,
+	)
 }
 
 func (m TaskRunnerModel) Update(msg tea.Msg) (TaskRunnerModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
 	case tasksDetectedMsg:
 		m.tasks = msg.tasks
 		items := make([]list.Item, len(m.tasks))
@@ -263,6 +279,8 @@ func (m TaskRunnerModel) Update(msg tea.Msg) (TaskRunnerModel, tea.Cmd) {
 }
 
 func (m TaskRunnerModel) View() string {
+	contentWidth := m.width - 4
+
 	switch m.state {
 	case trStateList:
 		if len(m.tasks) == 0 {
@@ -278,113 +296,128 @@ func (m TaskRunnerModel) View() string {
 				"Press R to refresh • ? for help • Esc to go back"
 
 			return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
-				lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(empty))
+				WizardCardStyle.Render(empty))
 		}
 
 		header := lipgloss.NewStyle().
-			Width(m.width).
+			Width(contentWidth).
 			Align(lipgloss.Center).
-			PaddingTop(1).
 			Render(titleStyle.Render("Task Runner"))
 
 		footer := lipgloss.NewStyle().
-			Width(m.width).
-			Align(lipgloss.Left).
-			PaddingLeft(4).
+			Width(contentWidth).
+			Align(lipgloss.Center).
 			PaddingTop(1).
-			Render(subtleStyle.Render("↑/↓: Navigate • Enter: Run Task • R: Refresh • ?: Help • Esc: Back"))
+			Render(subtleStyle.Render("↑/↓: Navigate • Enter: Run • R: Refresh • ?: Help • Esc: Back"))
 
-		// Left aligned content area
+		// Styled List Container
 		listView := lipgloss.NewStyle().
-			PaddingLeft(4).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(colorPurple).
+			Padding(1, 2).
+			Width(contentWidth).
+			Height(m.height - 8).
 			Render(m.list.View())
 
-		content := lipgloss.JoinVertical(lipgloss.Left,
+		content := lipgloss.JoinVertical(lipgloss.Center,
 			header,
-			"\n",
 			listView,
-			"\n",
 			footer,
 		)
-		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 
 	case trStateRunning:
 		header := lipgloss.NewStyle().
-			Width(m.width).
+			Width(contentWidth).
 			Align(lipgloss.Center).
-			PaddingTop(1).
-			Render(titleStyle.Render(fmt.Sprintf("Running: %s", m.currentTask.Name)))
+			Render(titleStyle.Render(fmt.Sprintf("%s Running: %s", m.currentTask.Icon, m.currentTask.Name)))
 
-		status := lipgloss.NewStyle().
-			Width(m.width).
-			Align(lipgloss.Center).
-			Foreground(lipgloss.Color("226")).
-			Render("Task in progress...")
+		// Spinner Status
+		status := WizardCardStyle.Render(fmt.Sprintf("\n %s Execution in progress...\n\n %s\n", m.spinner.View(), subtleStyle.Render("Streaming output below")))
+
+		outputBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(colorYellow).
+			Width(contentWidth).
+			Height(m.height-15).
+			Padding(0, 1).
+			Render(m.outputView.View())
 
 		footer := lipgloss.NewStyle().
-			Width(m.width).
-			Align(lipgloss.Left).
-			PaddingLeft(4).
+			Width(contentWidth).
+			Align(lipgloss.Center).
+			PaddingTop(1).
 			Render(subtleStyle.Render("Ctrl+C: Cancel Task • ?: Help"))
 
-		content := lipgloss.JoinVertical(lipgloss.Left,
+		content := lipgloss.JoinVertical(lipgloss.Center,
 			header,
+			"\n",
 			status,
 			"\n",
-			lipgloss.NewStyle().PaddingLeft(4).Render(m.outputView.View()),
-			"\n",
+			outputBox,
 			footer,
 		)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 
 	case trStateCompleted:
+		title := "Task Completed"
+		borderColor := colorGreen
+		if strings.Contains(m.output.String(), "Error") || strings.Contains(m.output.String(), "fail") {
+			title = "Task Failed"
+			borderColor = colorRed
+		}
+
 		header := lipgloss.NewStyle().
-			Width(m.width).
+			Width(contentWidth).
 			Align(lipgloss.Center).
-			PaddingTop(1).
-			Render(titleStyle.Render(fmt.Sprintf("Task Complete: %s", m.currentTask.Name)))
+			Render(lipgloss.NewStyle().
+				Foreground(borderColor).
+				Bold(true).
+				Padding(0, 1).
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(borderColor).
+				Render(title))
+
+		outputBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(borderColor).
+			Width(contentWidth).
+			Height(m.height-8).
+			Padding(0, 1).
+			Render(m.outputView.View())
 
 		footer := lipgloss.NewStyle().
-			Width(m.width).
-			Align(lipgloss.Left).
-			PaddingLeft(4).
-			Render(subtleStyle.Render("Press Enter or Esc to continue • ?: Help"))
+			Width(contentWidth).
+			Align(lipgloss.Center).
+			PaddingTop(1).
+			Render(subtleStyle.Render("Enter/Esc: Continue • ?: Help"))
 
-		content := lipgloss.JoinVertical(lipgloss.Left,
+		content := lipgloss.JoinVertical(lipgloss.Center,
 			header,
 			"\n",
-			lipgloss.NewStyle().PaddingLeft(4).Render(m.outputView.View()),
-			"\n",
+			outputBox,
 			footer,
 		)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 
 	case trStateHelp:
-		header := lipgloss.NewStyle().
-			Width(m.width).
-			Align(lipgloss.Center).
-			PaddingTop(1).
-			Render(titleStyle.Render("Task Runner Help"))
-
-		footer := lipgloss.NewStyle().
-			Width(m.width).
-			Align(lipgloss.Center).
-			Render(subtleStyle.Render("↑/↓ or Mouse Wheel: Scroll • Esc: Back"))
-
-		helpBox := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#0F9E99")).
-			Padding(0, 1).
-			Render(m.helpView.View())
-
-		content := lipgloss.JoinVertical(lipgloss.Center,
-			header,
-			"\n",
-			helpBox,
-			"\n",
-			footer,
+		// Markdown Render
+		renderer, _ := glamour.NewTermRenderer(
+			glamour.WithAutoStyle(),
+			glamour.WithWordWrap(m.width-10),
 		)
-		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+		helpText, _ := renderer.Render(TaskRunnerHelp)
+
+		// Reuse Help Viewport but set content
+		m.helpView.SetContent(helpText)
+
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
+			lipgloss.JoinVertical(lipgloss.Center,
+				lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).MarginBottom(1).Render("Task Runner Help"),
+				lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(colorPurple).Padding(0, 1).Render(m.helpView.View()),
+				lipgloss.NewStyle().Foreground(lipgloss.Color("240")).MarginTop(1).Render("Press [Esc] or [?] to go back"),
+			),
+		)
 	}
 
 	return ""
