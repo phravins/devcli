@@ -312,8 +312,6 @@ func (m TaskRunnerModel) View() string {
 
 		// Styled List Container
 		listView := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(colorPurple).
 			Padding(1, 2).
 			Width(contentWidth).
 			Height(m.height - 8).
