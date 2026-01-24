@@ -179,14 +179,14 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 				// Go to save mode
 				m.state = snStateSave
 				m.saveInput.SetValue("./" + m.selectedSnip.ID + ".txt") // Default attempt
-				// Try to guess extension
-				if m.selectedSnip.Language == "go" {
+				switch m.selectedSnip.Language {
+				case "go":
 					m.saveInput.SetValue("./snippet.go")
-				} else if m.selectedSnip.Language == "python" {
+				case "python":
 					m.saveInput.SetValue("./snippet.py")
-				} else if m.selectedSnip.Language == "javascript" {
+				case "javascript":
 					m.saveInput.SetValue("./snippet.js")
-				} else {
+				default:
 					m.saveInput.SetValue("./snippet.txt")
 				}
 				m.saveInput.Focus()
@@ -291,16 +291,8 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 			}
 			m.streamIndex = end
 			m.viewport.SetContent(m.fullContent[:m.streamIndex])
-
-			// Auto scroll to bottom while typing?
-			// Usually for code display, we might want to stay at top or follow cursor.
-			// Let's just set content. Viewport stays at top by default unless we move it.
-			// But if content grows, we might want to ensure it's visible?
-			// Actually, typical "hacker" effect writes linearly.
-			// Let's keep it simple.
 			return m, snTickCmd()
 		} else if m.state == snStateView {
-			// Animation done, ensure full content is set cleanly
 			m.viewport.SetContent(m.fullContent)
 		}
 		return m, nil
