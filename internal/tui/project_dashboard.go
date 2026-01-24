@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/phravins/devcli/internal/history"
 	"github.com/phravins/devcli/internal/project"
@@ -33,6 +34,7 @@ type ProjectDashboardModel struct {
 
 	// State
 	state         int
+	previousState int // Track where we came from
 	width, height int
 
 	// Data
@@ -139,8 +141,18 @@ func NewProjectDashboardModel() ProjectDashboardModel {
 
 	// Help Viewport
 	hv := viewport.New(80, 20)
-	hv.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62"))
-	hv.SetContent(ProjectToolsHelp)
+	hv.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(1, 2)
+
+	// Render Markdown Help
+	renderer, _ := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(80),
+	)
+	out, err := renderer.Render(ProjectToolsHelp)
+	if err != nil {
+		out = ProjectToolsHelp
+	}
+	hv.SetContent(out)
 
 	return ProjectDashboardModel{
 		menuList:         menu,
@@ -383,21 +395,30 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.MouseMsg:
-		// Manual scroll handling for reliability
-		if msg.Type == tea.MouseWheelUp {
-			m.menuList.CursorUp()
-			return m, nil
-		}
-		if msg.Type == tea.MouseWheelDown {
-			m.menuList.CursorDown()
-			return m, nil
-		}
 		var cmd tea.Cmd
 
 		switch m.state {
 		case StateMenu:
+			// Manual scroll handling for reliability
+			if msg.Type == tea.MouseWheelUp {
+				m.menuList.CursorUp()
+				return m, nil
+			}
+			if msg.Type == tea.MouseWheelDown {
+				m.menuList.CursorDown()
+				return m, nil
+			}
 			m.menuList, cmd = m.menuList.Update(msg)
 		case StateProjectList:
+			// Manual scroll for Project List
+			if msg.Type == tea.MouseWheelUp {
+				m.projectList.CursorUp()
+				return m, nil
+			}
+			if msg.Type == tea.MouseWheelDown {
+				m.projectList.CursorDown()
+				return m, nil
+			}
 			m.projectList, cmd = m.projectList.Update(msg)
 		case StateSelectTemplate:
 			m.templateList, cmd = m.templateList.Update(msg)
@@ -425,6 +446,10 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case StateMenu:
 			switch msg.String() {
+			case "?":
+				m.state = StateProjectHelp
+				m.helpView.GotoTop()
+				return m, nil
 			case "enter":
 				i, ok := m.menuList.SelectedItem().(item)
 				if ok {
@@ -546,7 +571,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case StateProjectHelp:
 			switch msg.String() {
 			case "esc", "enter", "?":
-				m.state = StateProjectList
+				m.state = m.previousState
 				return m, nil
 			}
 			var cmd tea.Cmd
@@ -556,6 +581,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case StateProjectList:
 			switch msg.String() {
 			case "?":
+				m.previousState = StateProjectList
 				m.state = StateProjectHelp
 				m.helpView.GotoTop()
 				return m, nil
@@ -815,7 +841,7 @@ func (m ProjectDashboardModel) View() string {
 		)
 
 		footer := lipgloss.NewStyle().Align(lipgloss.Center).Width(contentWidth).Render(
-			subtleStyle.Render("Use ↑/↓ to Navigate • Enter to Select • Q to Quit"),
+			subtleStyle.Render("Use ↑/↓ to Navigate • Enter to Select • ? Help • Q to Quit"),
 		)
 
 		// Join vertically
@@ -934,7 +960,13 @@ func (m ProjectDashboardModel) View() string {
 
 	case StateProjectHelp:
 		// Render help content
-		innerContent = lipgloss.Place(contentWidth, contentHeight, lipgloss.Center, lipgloss.Center, m.helpView.View())
+		innerContent = lipgloss.Place(contentWidth, contentHeight, lipgloss.Center, lipgloss.Center,
+			lipgloss.JoinVertical(lipgloss.Center,
+				lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).MarginBottom(1).Render("Project Tools Help"),
+				m.helpView.View(),
+				lipgloss.NewStyle().Foreground(lipgloss.Color("240")).MarginTop(1).Render("Press [Esc] or [?] to go back"),
+			),
+		)
 
 	default:
 		// Default List View (Select Template)

@@ -7,63 +7,62 @@ import (
 // Help content for all features (without emojis)
 const (
 	ProjectToolsHelp = `
-          PROJECT TOOLS - Help & Usage Guide                  
+# PROJECT TOOLS - Help & Usage Guide
 
+## OVERVIEW
+Project Tools helps you create, manage, and maintain software projects with pre-configured templates and automated setup workflows.
 
-OVERVIEW
-Project Tools helps you create, manage, and maintain software projects
-with pre-configured templates and automated setup workflows.
+## KEYBOARD SHORTCUTS
+| Key | Description |
+| :--- | :--- |
+| **?** | Show this help |
+| **Esc** | Go back / Return to previous menu |
+| **Up/Down** | Navigate through lists |
+| **Enter** | Select / Confirm action |
+| **b** | Backup selected project (in project list) |
+| **d** | Delete history entry (in history view) |
 
-KEYBOARD SHORTCUTS
-Key         Description
-         
-?           Show this help
-Esc         Go back / Return to previous menu
-Up/Down     Navigate through lists
-Enter       Select / Confirm action
-b           Backup selected project (in project list)
-d           Delete history entry (in history view)
+## HOW TO USE
 
-HOW TO USE
+### 1. PROJECT CREATION
+- Select **"Project Creation & Management"** from main menu
+- Choose **"+ New Project"** to start wizard
+- Pick a template (Go, Python, Web, Full-Stack, etc.)
+- Enter project name (auto-suggested based on template)
+- Specify parent directory path
+- Wait for automated setup and dependency installation
 
-1. PROJECT CREATION
-   • Select "Project Creation & Management" from main menu
-   • Choose "+ New Project" to start wizard
-   • Pick a template (Go, Python, Web, Full-Stack, etc.)
-   • Enter project name (auto-suggested based on template)
-   • Specify parent directory path
-   • Wait for automated setup and dependency installation
+### 2. PROJECT TEMPLATES
+Available templates include:
+- **Go Web Server** - Basic HTTP server with routing
+- **Python Flask** - Web framework with virtual environment
+- **Full-Stack** - React frontend + Python backend
+- **Node.js Express** - JavaScript web server
+- And more...
 
-2. PROJECT TEMPLATES
-   Available templates include:
-   • Go Web Server - Basic HTTP server with routing
-   • Python Flask - Web framework with virtual environment
-   • Full-Stack - React frontend + Python backend
-   • Node.js Express - JavaScript web server
-   • And more...
+### 3. PROJECT BACKUP
+- Navigate to project list
+- Select the project you want to backup
+- Press **'b'** key
+- Enter destination path
+- Project will be copied with all files
 
-3. PROJECT BACKUP
-   • Navigate to project list
-   • Select the project you want to backup
-   • Press 'b' key
-   • Enter destination path
-   • Project will be copied with all files
+### 4. PROJECT HISTORY
+- View all previously created projects
+- See creation timestamps and paths
+- Delete old entries with **'d'** key
+- Auto-cleanup for entries older than 30 days
 
-4. PROJECT HISTORY
-   • View all previously created projects
-   • See creation timestamps and paths
-   • Delete old entries with 'd' key
-   • Auto-cleanup for entries older than 30 days
-
-PROJECT STRUCTURE
+## PROJECT STRUCTURE
 Each project is created with:
-• Template-specific file structure
-• Dependency configuration files
-• README with usage instructions
-• Git initialization (if applicable)
-• Virtual environment (for Python projects)
+- Template-specific file structure
+- Dependency configuration files
+- README with usage instructions
+- Git initialization (if applicable)
+- Virtual environment (for Python projects)
 
-Press Esc to close this help`
+---
+*Press **Esc** to close this help*`
 
 	VenvWizardHelp = `
       VIRTUAL ENVIRONMENT WIZARD - Help & Usage Guide         

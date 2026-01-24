@@ -1,0 +1,23 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Python Virtual Environments
+Lib/
+Scripts/
+Include/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Local Configs
+.idea/
+.vscode/
+*.swp
+*.log
+tmp/
