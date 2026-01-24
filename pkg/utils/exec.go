@@ -23,8 +23,6 @@ func OpenBrowser(url string) error {
 	}
 	return cmd.Start()
 }
-
-// OpenFile opens a file or directory using the system default application.
 func OpenFile(path string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
