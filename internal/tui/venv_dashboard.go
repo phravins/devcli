@@ -1,4 +1,4 @@
-﻿package tui
+package tui
 
 import (
 	"fmt"
@@ -518,9 +518,10 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 		}
 		// List handles mouse events if delegate supports it (bubbles/list/defaultitem doesn't always, but list.Model does for scrolling)
 		if m.state == StateVenvList {
-			if msg.Type == tea.MouseWheelUp {
+			switch msg.Type {
+			case tea.MouseWheelUp:
 				m.list.CursorUp()
-			} else if msg.Type == tea.MouseWheelDown {
+			case tea.MouseWheelDown:
 				m.list.CursorDown()
 			}
 			m.list, cmd = m.list.Update(msg)
