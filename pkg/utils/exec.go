@@ -41,9 +41,6 @@ func OpenFile(path string) error {
 	return cmd.Start()
 }
 
-// GetShellCommand returns a prepared *exec.Cmd for running a shell command
-// using the appropriate shell for the current OS.
-// It prioritizes user preference or standard shells.
 func GetShellCommand(command string) *exec.Cmd {
 	if runtime.GOOS == "windows" {
 		// Try PowerShell first, then Cmd
