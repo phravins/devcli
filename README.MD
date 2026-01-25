@@ -82,12 +82,16 @@ package installation is needed.
 
 To see the complete dependency tree:
 
-  go mod graph
+```bash
+go mod graph
+```
 
 To update dependencies to latest versions:
 
-  go get -u ./...
-  go mod tidy
+```bash
+go get -u ./...
+go mod tidy
+```
 
 
 Installation
@@ -104,29 +108,39 @@ For a complete "no-hassle" installation that sets up Go and DevCLI automatically
     -   Install the latest version of DevCLI.
     -   Configure your system PATH.
 
-Once finished, simply restart your terminal and run `devcli`.
+Once finished, simply restart your terminal and run:
+
+```bash
+devcli
+```
 
 METHOD 2: Single Command Installation (If Go is already installed)
 
-Install DevCLI directly using the go install command:
+Install DevCLI directly using the `go install` command:
 
-  go install github.com/phravins/devcli@latest
+```bash
+go install github.com/phravins/devcli@latest
+```
 
-This will download, build, and install the DevCLI binary to your $GOPATH/bin
-directory. Ensure that $GOPATH/bin is in your system PATH to access the
-devcli command from anywhere.
+This will download, build, and install the DevCLI binary to your `$GOPATH/bin`
+directory. Ensure that `$GOPATH/bin` is in your system PATH to access the
+`devcli` command from anywhere.
 
 To verify the installation:
 
-  devcli --version
+```bash
+devcli --version
+```
 
 METHOD 3: Building from Source
 
 Clone the repository and build manually:
 
-  git clone https://github.com/phravins/devcli.git
-  cd devcli
-  go build -o devcli.exe .
+```bash
+git clone https://github.com/phravins/devcli.git
+cd devcli
+go build -o devcli.exe .
+```
 
 After building, move the executable to a directory in your PATH to access
 it from anywhere in your terminal.
@@ -336,7 +350,9 @@ INTERACTIVE MODE
 
 Launch the main dashboard:
 
-  devcli
+```bash
+devcli
+```
 
 Use arrow keys to navigate menus and Enter to select. Press Esc or Q to
 go back through menus or exit the application.
@@ -345,10 +361,12 @@ DIRECT SUBCOMMANDS
 
 Access specific features directly:
 
-  devcli dev          Open project management tools
-  devcli file         Launch file manager
-  devcli ai           Start AI chat session
-  devcli editor FILE  Open file in built-in editor
+```bash
+devcli dev          # Open project management tools
+devcli file         # Launch file manager
+devcli ai           # Start AI chat session
+devcli editor FILE  # Open file in built-in editor
+```
 
 Direct subcommands are useful for scripting or when you know exactly which
 tool you need.
@@ -458,7 +476,7 @@ includes appropriate tests. Use gofmt for code formatting.
 License
 -------
 
-This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 Support
 -------
