@@ -33,10 +33,21 @@ The tool is particularly useful for developers who:
 
 ## System Requirements
 
-  - Go 1.21 or higher (for building from source)
-  - Python 3.8 or newer (required for virtual environment features)
-  - Node.js (optional, needed for JavaScript project templates)
-  - Terminal with Unicode support (for proper rendering)
+**Operating System:**
+*   **Windows:** Windows 10, Windows 11 (or newer)
+*   **Linux:** Ubuntu, Debian, Fedora, Arch Linux (or any modern distribution)
+*   **macOS:** macOS 11 (Big Sur) or newer
+
+**Hardware:**
+*   **Processor:** Dual-core processor (Intel/AMD x64 or ARM64)
+*   **RAM:** 4GB minimum (8GB+ recommended for development workloads)
+*   **Storage:** 200MB free disk space for application components
+
+**Software:**
+*   Go 1.21 or higher (for building from source)
+*   Python 3.8 or newer (required for virtual environment features)
+*   Node.js (optional, needed for JavaScript project templates)
+*   Terminal with Unicode support (for proper rendering)
 
 ## Dependencies
 
