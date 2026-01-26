@@ -650,8 +650,16 @@ func summarizeUpdatesCmd(p ai.Provider, log string) tea.Cmd {
 
 func installDevCLIUpdatesCmd() tea.Cmd {
 	return func() tea.Msg {
-		// git pull
-		pull := exec.Command("git", "pull")
+		// Get current branch
+		branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+		branchOut, err := branchCmd.Output()
+		if err != nil {
+			return installMsg{err: fmt.Errorf("failed to get current branch: %w", err)}
+		}
+		branch := strings.TrimSpace(string(branchOut))
+
+		// git pull with explicit remote and branch
+		pull := exec.Command("git", "pull", "origin", branch)
 		if output, err := pull.CombinedOutput(); err != nil {
 			return installMsg{err: fmt.Errorf("git pull failed: %s", string(output))}
 		}
