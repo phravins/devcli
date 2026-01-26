@@ -328,16 +328,13 @@ func (m TaskRunnerModel) View() string {
 		header := lipgloss.NewStyle().
 			Width(contentWidth).
 			Align(lipgloss.Center).
-			Render(titleStyle.Render(fmt.Sprintf("%s Running: %s", m.currentTask.Icon, m.currentTask.Name)))
-
-		// Spinner Status
-		status := WizardCardStyle.Render(fmt.Sprintf("\n %s Execution in progress...\n\n %s\n", m.spinner.View(), subtleStyle.Render("Streaming output below")))
+			Render(titleStyle.Render(fmt.Sprintf("%s %s Running: %s", m.spinner.View(), m.currentTask.Icon, m.currentTask.Name)))
 
 		outputBox := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(colorYellow).
 			Width(contentWidth).
-			Height(m.height-15).
+			Height(m.height-8).
 			Padding(0, 1).
 			Render(m.outputView.View())
 
@@ -349,8 +346,6 @@ func (m TaskRunnerModel) View() string {
 
 		content := lipgloss.JoinVertical(lipgloss.Center,
 			header,
-			"\n",
-			status,
 			"\n",
 			outputBox,
 			footer,
