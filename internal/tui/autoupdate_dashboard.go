@@ -658,10 +658,36 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 		}
 		branch := strings.TrimSpace(string(branchOut))
 
+		// Check if there are uncommitted changes
+		statusCmd := exec.Command("git", "status", "--porcelain")
+		statusOut, err := statusCmd.Output()
+		hasChanges := err == nil && len(statusOut) > 0
+
+		// Stash changes if any exist
+		if hasChanges {
+			stash := exec.Command("git", "stash", "push", "-m", "DevCLI auto-update backup")
+			if output, err := stash.CombinedOutput(); err != nil {
+				return installMsg{err: fmt.Errorf("git stash failed: %s", string(output))}
+			}
+		}
+
 		// git pull with explicit remote and branch
 		pull := exec.Command("git", "pull", "origin", branch)
 		if output, err := pull.CombinedOutput(); err != nil {
+			// If pull fails, restore stashed changes
+			if hasChanges {
+				exec.Command("git", "stash", "pop").Run()
+			}
 			return installMsg{err: fmt.Errorf("git pull failed: %s", string(output))}
+		}
+
+		// Restore stashed changes after successful pull
+		if hasChanges {
+			pop := exec.Command("git", "stash", "pop")
+			if output, err := pop.CombinedOutput(); err != nil {
+				// Don't fail the update if stash pop has conflicts, just warn
+				return installMsg{err: fmt.Errorf("update succeeded but stash restore had conflicts: %s\nYour changes are in 'git stash list'", string(output))}
+			}
 		}
 
 		// go build
