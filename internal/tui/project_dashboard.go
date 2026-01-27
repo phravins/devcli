@@ -420,7 +420,16 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.projectList, cmd = m.projectList.Update(msg)
+
 		case StateSelectTemplate:
+			if msg.Type == tea.MouseWheelUp {
+				m.templateList.CursorUp()
+				return m, nil
+			}
+			if msg.Type == tea.MouseWheelDown {
+				m.templateList.CursorDown()
+				return m, nil
+			}
 			m.templateList, cmd = m.templateList.Update(msg)
 		case StateHistoryList:
 			m.historyList, cmd = m.historyList.Update(msg)
