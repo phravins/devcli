@@ -70,8 +70,6 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showCommands = false
 				return m, nil
 			}
-
-			// Handle viewport scrolling
 			var cmd tea.Cmd
 			m.commandView, cmd = m.commandView.Update(msg)
 			return m, cmd
@@ -79,9 +77,6 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.showSettings {
 			var cmd tea.Cmd
-			// We need to cast back to SettingsModel to access internal fields if needed,
-			// but Update returns tea.Model.
-			// Check if quitting from settings
 			updatedModel, cmd := m.settings.Update(msg)
 			m.settings = updatedModel.(SettingsModel)
 
@@ -102,7 +97,6 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				if i.title == "DevCLI Commands" {
 					m.showCommands = true
-					// Ensure content is fresh and viewport resized if necessary
 					m.commandView.SetContent(generateCommandsHelp())
 					m.commandView.GotoTop()
 					return m, nil
@@ -151,13 +145,10 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.showSettings {
 			var cmd tea.Cmd
-			// Cast to tea.Model because m.settings.Update returns tea.Model
 			updatedModel, cmd := m.settings.Update(msg)
 			m.settings = updatedModel.(SettingsModel)
 			return m, cmd
 		}
-
-		// Handle Main List Scrolling
 		if msg.Type == tea.MouseWheelUp {
 			m.list.CursorUp()
 			return m, nil
@@ -178,10 +169,7 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			updatedSettings, _ := m.settings.Update(msg)
 			m.settings = updatedSettings.(SettingsModel)
 		}
-
-		// Resize Command Viewport
-		// Calculate available space similar to View() logic
-		availableHeight := m.height - 2 - lipgloss.Height(lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render("Crafted & Engineered by phravins")) - 2 // Approximate header/footer
+		availableHeight := m.height - 8
 		if availableHeight < 0 {
 			availableHeight = 0
 		}
@@ -226,7 +214,7 @@ func (m DashboardModel) View() string {
 		Width(m.width).
 		Align(lipgloss.Center).
 		Foreground(lipgloss.Color("#666666")). // Grey for "smaller" feel
-		Render("OPENDEV TOOLKIT")
+		Render("Opendev Toolkit")
 
 	version := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#666666")).
@@ -237,24 +225,30 @@ func (m DashboardModel) View() string {
 
 	// --- COMMANDS VIEW ---
 	if m.showCommands {
-		return docStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		// Use shared titleStyle for consistency/correctness (matches Project Tools)
+		commandsTitle := lipgloss.NewStyle().
+			Width(m.width).
+			Align(lipgloss.Center).
+			Render(titleStyle.Render("DEVCLI COMMANDS"))
+
+		// Construct content
+		content := lipgloss.JoinVertical(lipgloss.Center,
+			"\n", // Explicit top margin to prevent title frame cutoff
+			commandsTitle,
+			strings.Repeat("\n", 1), // Gap below title
 			m.commandView.View(),
-			strings.Repeat("\n", 1), // Small gap
+			strings.Repeat("\n", 1), // Gap above footer
 			footer,
-		))
+		)
+
+		// Use Place to ensure it starts at (0,0) and doesn't get scrolled up
+		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 	}
-
-	// --- DASHBOARD LIST VIEW ---
-
-	// Create the main content stack (Header + List) first to measure its height
 	contentView := lipgloss.JoinVertical(lipgloss.Left,
 		centeredHeader,
 		"\n",
 		m.list.View(),
 	)
-
-	// Calculate how much space we have left for the footer to be at the absolute bottom
-	// -2 for margings (docStyle padding)
 	availableHeight := m.height - 2
 	contentHeight := lipgloss.Height(contentView)
 	footerHeight := lipgloss.Height(footer)
