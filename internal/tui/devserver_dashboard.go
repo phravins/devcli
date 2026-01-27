@@ -61,8 +61,6 @@ type logReceivedMsg struct {
 
 type serverStoppedMsg struct{}
 
-// DevServerBackMsg is now defined in root.go
-
 func NewDevServerDashboardModel(projectPath string) DevServerDashboardModel {
 	vp := viewport.New(80, 20)
 	vp.Style = lipgloss.NewStyle().
@@ -121,20 +119,15 @@ func detectProjectCmd(path string) tea.Cmd {
 		return detectDoneMsg{info: info, err: nil}
 	}
 }
-
 func stopServerCmd(runner *devserver.Runner) tea.Cmd {
 	return func() tea.Msg {
 		runner.Stop()
 		return serverStoppedMsg{}
 	}
 }
-
 func waitForLogCmd(runner *devserver.Runner) tea.Cmd {
 	return func() tea.Msg {
 		logChan := runner.GetLogChannel()
-
-		// Use select with timeout to avoid blocking indefinitely
-		// This allows keyboard events to be processed
 		select {
 		case log, ok := <-logChan:
 			if !ok {
@@ -222,8 +215,6 @@ func (m DevServerDashboardModel) Update(msg tea.Msg) (DevServerDashboardModel, t
 				}
 				return m, nil
 			default:
-				// Ignore other keys - NO redundant polling loop here!
-				// The existing background loop will handle it.
 				return m, nil
 			}
 		}
@@ -399,17 +390,6 @@ func (m DevServerDashboardModel) Update(msg tea.Msg) (DevServerDashboardModel, t
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-
-		// Calculate space for log view
-		// Header: 3 lines (title + status + blank)
-		// Filters: 1 line
-		// Server filter (if fullstack): 1 line
-		// Search: 1 line
-		// Auto-scroll: 1 line
-		// Blank before logs: 1 line
-		// Blank after logs: 1 line
-		// Footer: 1 line
-		// Total UI elements: ~10-11 lines
 
 		m.logView.Width = msg.Width - 4    // Full width minus small padding
 		m.logView.Height = msg.Height - 14 // Increased padding for header
@@ -609,26 +589,14 @@ func (m DevServerDashboardModel) renderPathInput() string {
 		Bold(true).
 		Render("Auto-Detect Framework")
 
-	subtitle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("255")).
-		Render("Step 1: Choose Project Path")
-
 	instruction := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("226")).
 		Render("Enter the path to your project folder:")
-
-	// Example
-	example := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
-		Italic(true).
-		Render("Example: C:\\Projects\\my-app  or  D:\\django-blog")
 
 	pathLabel := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("141")).
 		Bold(true).
 		Render("Path:")
-
-	// Make input more visible
 	inputBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("141")).
@@ -653,11 +621,8 @@ func (m DevServerDashboardModel) renderPathInput() string {
 
 	content := lipgloss.JoinVertical(lipgloss.Left,
 		title,
-		subtitle,
 		"",
 		instruction,
-		"",
-		example,
 		"",
 		pathLabel,
 		inputBox,
