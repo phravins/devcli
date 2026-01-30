@@ -372,9 +372,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var bonusCmd tea.Cmd
 		// Intercept WindowSizeMsg to pass inner dimensions
 		if wMsg, ok := msg.(tea.WindowSizeMsg); ok {
-			h, v := AppBorderStyle.GetFrameSize()
-			innerMsg := tea.WindowSizeMsg{Width: wMsg.Width - h, Height: wMsg.Height - v}
-			m.bonusModel, bonusCmd = m.bonusModel.Update(innerMsg)
+			m.bonusModel, bonusCmd = m.bonusModel.Update(wMsg)
 		} else {
 			m.bonusModel, bonusCmd = m.bonusModel.Update(msg)
 		}
@@ -808,7 +806,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.venvModel, _ = m.venvModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
 		m.boilerplateModel, _ = m.boilerplateModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
 		m.devServerModel, _ = m.devServerModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
-		m.bonusModel, _ = m.bonusModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
+		m.bonusModel, _ = m.bonusModel.Update(msg)
 
 		m.width = msg.Width
 		m.height = msg.Height
@@ -983,9 +981,6 @@ func (m ProjectDashboardModel) View() string {
 		footer := subtleStyle.Render("\n [Enter] Select • [b] Backup Project • [?] Help • [Esc] Back")
 		innerContent = docStyle.Render(lipgloss.JoinVertical(lipgloss.Left, listContent, footer))
 	}
-
-	// WRAP EVERYTHING IN GLOBAL BORDER
-	// Removed AppBorderStyle as requested
 	return innerContent
 }
 
