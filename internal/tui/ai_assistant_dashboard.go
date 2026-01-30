@@ -194,15 +194,14 @@ func (m AIAssistantModel) View() string {
 	mainAreaWidth := m.width - sidebarWidth - 4
 
 	// Sync heights to ensure the vertical boundary reaches the bottom
-	workspaceHeight := m.height - 2
+	workspaceHeight := m.height
 
 	sidebarStyle := lipgloss.NewStyle().
 		Width(sidebarWidth).
 		Height(workspaceHeight).
 		Border(lipgloss.NormalBorder(), false, true, false, false).
 		BorderForeground(lipgloss.Color("240")).
-		Padding(1, 1).
-		MarginRight(1)
+		Padding(0, 1)
 
 	// Sidebar Content
 	agentNames := []string{"CodeGen-v1", "Architect", "Debugger"}
@@ -229,7 +228,9 @@ func (m AIAssistantModel) View() string {
 		agentItems = append(agentItems, item)
 	}
 
+	// Correctly render sidebar once
 	sidebar := sidebarStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		"\n",
 		lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7D56F4")).Render(" AGENTS"),
 		"\n",
 		lipgloss.JoinVertical(lipgloss.Left, agentItems...),
