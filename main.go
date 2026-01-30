@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"fmt"
@@ -31,13 +31,7 @@ func init() {
 	rootCmd.AddCommand(fileops.FileCmd)
 	rootCmd.AddCommand(ai.AICmd)
 	rootCmd.AddCommand(tui.EditorCmd)
-
-	// Register the TUI Chat command under the AI command group
-	// This replaces the old CLI chat command we removed from internal/ai/chat.go
 	ai.AICmd.AddCommand(tui.ChatCmd)
-
-	// User explicitly requested to start a project
-	// Usage: devcli start [name] [stack]
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "start [name] [stack]",
 		Short: "Initialize a new project",
@@ -58,9 +52,6 @@ func init() {
 			}
 		},
 	})
-
-	// Dev Server Launcher
-	// Usage: devcli dev
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "dev",
 		Short: "Auto-detect and run dev server",
@@ -76,9 +67,6 @@ func init() {
 			}
 		},
 	})
-
-	// Self Installation Command
-	// Usage: devcli install
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "install",
 		Short: "Install DevCLI globally to your system",
@@ -119,9 +107,6 @@ func init() {
 			}
 
 			fmt.Printf("Binary deployed to: %s\n", destPath)
-
-			// Add to User PATH via PowerShell
-			// Check if already in path first
 			script := fmt.Sprintf(`
 				$binPath = "%s"
 				$currentPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
@@ -151,7 +136,6 @@ func init() {
 	})
 
 }
-
 func main() {
 	// If args were passed (CLI mode), just run once
 	if len(os.Args) > 1 {
@@ -161,7 +145,6 @@ func main() {
 		}
 		return
 	}
-
 	// Default TUI mode (Unified Root)
 	tui.RunRoot()
 }
