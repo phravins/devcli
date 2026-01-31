@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/phravins/devcli/internal/ai"
@@ -31,13 +32,7 @@ func init() {
 	rootCmd.AddCommand(fileops.FileCmd)
 	rootCmd.AddCommand(ai.AICmd)
 	rootCmd.AddCommand(tui.EditorCmd)
-
-	// Register the TUI Chat command under the AI command group
-	// This replaces the old CLI chat command we removed from internal/ai/chat.go
 	ai.AICmd.AddCommand(tui.ChatCmd)
-
-	// User explicitly requested to start a project
-	// Usage: devcli start [name] [stack]
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "start [name] [stack]",
 		Short: "Initialize a new project",
@@ -58,9 +53,6 @@ func init() {
 			}
 		},
 	})
-
-	// Dev Server Launcher
-	// Usage: devcli dev
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "dev",
 		Short: "Auto-detect and run dev server",
@@ -76,9 +68,6 @@ func init() {
 			}
 		},
 	})
-
-	// Self Installation Command
-	// Usage: devcli install
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "install",
 		Short: "Install DevCLI globally to your system",
@@ -98,13 +87,24 @@ func init() {
 				return
 			}
 
-			binDir := filepath.Join(home, ".devcli", "bin")
+			// Destination Directory
+			var binDir string
+			var destPath string
+			if runtime.GOOS == "windows" {
+				binDir = filepath.Join(home, ".devcli", "bin")
+				destPath = filepath.Join(binDir, "devcli.exe")
+			} else {
+				// Unix: standard is often ~/.local/bin or just ~/go/bin, but let's stick to .devcli/bin for consistency
+				// or use /usr/local/bin if root? Let's use user-local to avoid permission issues.
+				binDir = filepath.Join(home, ".devcli", "bin")
+				destPath = filepath.Join(binDir, "devcli")
+			}
+
 			if err := os.MkdirAll(binDir, 0755); err != nil {
 				fmt.Printf("Error creating bin directory: %v\n", err)
 				return
 			}
 
-			destPath := filepath.Join(binDir, "devcli.exe")
 			// Read binary
 			data, err := os.ReadFile(exePath)
 			if err != nil {
@@ -120,9 +120,9 @@ func init() {
 
 			fmt.Printf("Binary deployed to: %s\n", destPath)
 
-			// Add to User PATH via PowerShell
-			// Check if already in path first
-			script := fmt.Sprintf(`
+			// Update PATH
+			if runtime.GOOS == "windows" {
+				script := fmt.Sprintf(`
 				$binPath = "%s"
 				$currentPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
 				if ($currentPath -notlike "*$binPath*") {
@@ -133,25 +133,69 @@ func init() {
 				}
 			`, binDir)
 
-			out, err := exec.Command("powershell", "-Command", script).CombinedOutput()
-			if err != nil {
-				fmt.Printf("Warning: Automated PATH update failed: %v\n", err)
-				fmt.Printf("Please add this folder to your PATH manually: %s\n", binDir)
-			} else {
-				res := strings.TrimSpace(string(out))
-				if res == "ADDED" {
-					fmt.Println("Successfully added DevCLI to your User PATH!")
-					fmt.Println("Installation complete. PLEASE RESTART YOUR TERMINAL to use 'devcli' from anywhere.")
+				out, err := exec.Command("powershell", "-Command", script).CombinedOutput()
+				if err != nil {
+					fmt.Printf("Warning: Automated PATH update failed: %v\n", err)
+					fmt.Printf("Please add this folder to your PATH manually: %s\n", binDir)
 				} else {
-					fmt.Println("DevCLI already exists in your PATH.")
-					fmt.Println("Installation complete.")
+					res := strings.TrimSpace(string(out))
+					if res == "ADDED" {
+						fmt.Println("Successfully added DevCLI to your User PATH!")
+						fmt.Println("Installation complete. PLEASE RESTART YOUR TERMINAL to use 'devcli' from anywhere.")
+					} else {
+						fmt.Println("DevCLI already exists in your PATH.")
+						fmt.Println("Installation complete.")
+					}
+				}
+			} else {
+				// Unix/Linux/Mac
+				// Check current Shell
+				shell := os.Getenv("SHELL")
+				rcFile := ""
+				if strings.Contains(shell, "zsh") {
+					rcFile = filepath.Join(home, ".zshrc")
+				} else if strings.Contains(shell, "bash") {
+					rcFile = filepath.Join(home, ".bashrc")
+				}
+
+				// Check if already in PATH (rough check)
+				pathEnv := os.Getenv("PATH")
+				if !strings.Contains(pathEnv, binDir) {
+					if rcFile != "" {
+						fmt.Printf("Detecting shell: %s. Attempting to update %s...\n", shell, rcFile)
+						// Append export line
+						exportLine := fmt.Sprintf("\nexport PATH=$PATH:%s\n", binDir)
+
+						// Check if file already has it
+						content, _ := os.ReadFile(rcFile)
+						if strings.Contains(string(content), binDir) {
+							fmt.Println("PATH already seems to be configured in RC file.")
+						} else {
+							f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+							if err != nil {
+								fmt.Printf("Error opening rc file: %v\n", err)
+							} else {
+								defer f.Close()
+								if _, err = f.WriteString(exportLine); err != nil {
+									fmt.Printf("Error writing to rc file: %v\n", err)
+								} else {
+									fmt.Println("Successfully added to install path to shell configuration.")
+									fmt.Printf("Run 'source %s' or restart terminal to apply changes.\n", rcFile)
+								}
+							}
+						}
+					} else {
+						fmt.Printf("Could not detect shell configuration file (.bashrc/.zshrc).\n")
+						fmt.Printf("Please manually add the following to your PATH:\n%s\n", binDir)
+					}
+				} else {
+					fmt.Println("DevCLI is already in your PATH.")
 				}
 			}
 		},
 	})
 
 }
-
 func main() {
 	// If args were passed (CLI mode), just run once
 	if len(os.Args) > 1 {
@@ -161,7 +205,6 @@ func main() {
 		}
 		return
 	}
-
 	// Default TUI mode (Unified Root)
 	tui.RunRoot()
 }

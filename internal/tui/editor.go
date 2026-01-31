@@ -183,6 +183,10 @@ func (m *model) resolveExecutable(cmdName string, fallbacks []string) string {
 		`C:\Program Files (x86)`,
 		filepath.Join(userHome, "Downloads"),
 		`C:\`,
+		"/usr/bin",
+		"/usr/local/bin",
+		"/opt",
+		filepath.Join(userHome, ".local/bin"),
 	}
 
 	// Filter roots that exist
