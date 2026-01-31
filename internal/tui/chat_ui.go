@@ -264,7 +264,7 @@ func (m ChatModel) View() string {
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Background(lipgloss.Color("#008069")). // WhatsApp Teal Header
 		Bold(true).
-		Render(fmt.Sprintf(" WA Chat :: %s (%s) ", m.provider.Name(), m.provider.Model()))
+		Render(fmt.Sprintf(" Devcli Chat :: %s (%s) ", m.provider.Name(), m.provider.Model()))
 
 	chatView := m.viewport.View()
 
