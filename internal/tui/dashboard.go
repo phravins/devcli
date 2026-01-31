@@ -35,14 +35,14 @@ type DashboardModel struct {
 
 func NewDashboard() DashboardModel {
 	items := []list.Item{
-		item{title: "Project Tools", desc: "Create projects, sync, clone, scan"},
-		item{title: "AI Chat", desc: "Chat with AI models"},
-		item{title: "Editor", desc: "Built-in code editor"},
-		item{title: "File Manager", desc: "Explore, Search, and Manage Files (RW/Move)"},
-		item{title: "Settings / Configuration", desc: "Configure AI backends and Keys"},
-		item{title: "DevCLI Commands", desc: "List all available project commands"},
-		item{title: "Auto-Update", desc: "Update Languages, AI Keys, and DevCLI"},
-		item{title: "Exit", desc: "Quit DevCLI"},
+		item{title: "📂 Project Tools", desc: "Create projects, sync, clone, scan"},
+		item{title: "🤖 AI Chat", desc: "Chat with AI models"},
+		item{title: "✏️ Editor", desc: "Built-in code editor"},
+		item{title: "🗂️ File Manager", desc: "Explore, Search, and Manage Files (RW/Move)"},
+		item{title: "⚙️ Settings / Configuration", desc: "Configure AI backends and Keys"},
+		item{title: "💻 DevCLI Commands", desc: "List all available project commands"},
+		item{title: "🔄 Auto-Update", desc: "Update Languages, AI Keys, and DevCLI"},
+		item{title: "🚪 Exit", desc: "Quit DevCLI"},
 	}
 
 	m := DashboardModel{
@@ -95,13 +95,13 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
-				if i.title == "DevCLI Commands" {
+				if i.title == "💻 DevCLI Commands" {
 					m.showCommands = true
 					m.commandView.SetContent(generateCommandsHelp())
 					m.commandView.GotoTop()
 					return m, nil
 				}
-				if i.title == "Settings / Configuration" {
+				if i.title == "⚙️ Settings / Configuration" {
 					m.showSettings = true
 					// Re-init settings to read fresh config?
 					m.settings = NewSettingsModel()
@@ -112,23 +112,23 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					return m, m.settings.inputs[0].Focus()
 				}
-				if i.title == "File Manager" {
+				if i.title == "🗂️ File Manager" {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateFileManager} }
 				}
-				if i.title == "Project Tools" {
+				if i.title == "📂 Project Tools" {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateProject} }
 				}
-				if i.title == "AI Chat" {
+				if i.title == "🤖 AI Chat" {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateChat} }
 				}
-				if i.title == "Editor" {
+				if i.title == "✏️ Editor" {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateEditor} }
 				}
-				if i.title == "Auto-Update" {
+				if i.title == "🔄 Auto-Update" {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateAutoUpdate} }
 				}
