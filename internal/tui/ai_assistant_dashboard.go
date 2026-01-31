@@ -179,9 +179,9 @@ func (m AIAssistantModel) Update(msg tea.Msg) (AIAssistantModel, tea.Cmd) {
 		sidebarWidth := 20
 		mainWidth := m.width - sidebarWidth - 4
 		m.input.SetWidth(mainWidth)
-		m.input.SetHeight(m.height - 10)
+		m.input.SetHeight(m.height - 6)
 		m.output.Width = mainWidth
-		m.output.Height = m.height - 10
+		m.output.Height = m.height - 6
 		m.helpView.Width = mainWidth
 		m.helpView.Height = msg.Height
 	}
@@ -194,15 +194,14 @@ func (m AIAssistantModel) View() string {
 	mainAreaWidth := m.width - sidebarWidth - 4
 
 	// Sync heights to ensure the vertical boundary reaches the bottom
-	workspaceHeight := m.height - 2
+	workspaceHeight := m.height
 
 	sidebarStyle := lipgloss.NewStyle().
 		Width(sidebarWidth).
 		Height(workspaceHeight).
 		Border(lipgloss.NormalBorder(), false, true, false, false).
 		BorderForeground(lipgloss.Color("240")).
-		Padding(1, 1).
-		MarginRight(1)
+		Padding(0, 1)
 
 	// Sidebar Content
 	agentNames := []string{"CodeGen-v1", "Architect", "Debugger"}
@@ -229,7 +228,9 @@ func (m AIAssistantModel) View() string {
 		agentItems = append(agentItems, item)
 	}
 
+	// Correctly render sidebar once
 	sidebar := sidebarStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		"\n",
 		lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7D56F4")).Render(" AGENTS"),
 		"\n",
 		lipgloss.JoinVertical(lipgloss.Left, agentItems...),
@@ -262,7 +263,7 @@ func (m AIAssistantModel) View() string {
 			BorderForeground(lipgloss.Color("#7D56F4")).
 			Padding(1, 2).
 			Width(mainAreaWidth).
-			Height(m.height - 8).
+			Height(m.height - 6).
 			Render(m.input.View())
 		footer := subtleStyle.Render("Ctrl+D: Dispatch • Ctrl+P/Tab: Switch Agent")
 		mainContent = lipgloss.JoinVertical(lipgloss.Center, header, inputBox, footer)
@@ -284,7 +285,7 @@ func (m AIAssistantModel) View() string {
 			BorderForeground(lipgloss.Color("#059669")).
 			Padding(1, 2).
 			Width(mainAreaWidth).
-			Height(m.height - 8).
+			Height(m.height - 6).
 			Render(m.output.View())
 		footer := subtleStyle.Render("N: New • Esc: Back • Ctrl+P/Tab: Switch Agent")
 		mainContent = lipgloss.JoinVertical(lipgloss.Center, header, viewportBox, footer)
