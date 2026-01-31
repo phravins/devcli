@@ -141,8 +141,7 @@ Press Esc to close this help`
 	DevServerHelp = `
           DEV SERVER - Help & Usage Guide                     
 
-
-OVERVIEW
+UNDERSTAND
 Dev Server automatically detects and launches development servers for
 your projects with live log viewing and filtering capabilities.
 
@@ -159,7 +158,7 @@ a           Toggle auto-scroll
 c           Clear logs
 Up/Down     Scroll through logs
 
-HOW TO USE
+DO (ACTIONS)
 
 1. AUTO-DETECTION
    • Dev Server scans your project for:
@@ -177,24 +176,24 @@ HOW TO USE
      - Red: Errors
      - Blue: Info
 
-3. LOG FILTERING
-   • Press 'f' to toggle filters
-   • Filter by log level (ERROR, WARN, INFO)
-   • Only matching logs are displayed
-   • Great for debugging specific issues
+3. UNDERSTANDING OUTPUT
+   • [TIME] - Timestamp of the log entry
+   • [SERVER] - Source (e.g., backend, frontend)
+   • Log Content - The actual message from your app
+   
+   Output Colors:
+   • White: Standard output (stdout)
+   • Red: Standard error (stderr) or critical issues
 
-4. SEARCH LOGS
-   • Press '/' to activate search
-   • Type search query
-   • Matching lines are highlighted
-   • Navigate with arrow keys
+4. LOG FILTERING & SEARCH
+   • Press 'f' to cycle filters (All -> Errors -> Warnings)
+   • Press '/' to search for specific errors or terms
+   • Highlighted terms show in yellow/black
 
-5. FULL-STACK PROJECTS
-   • Press 'b' to switch between:
-     - Frontend server (React/Vue)
-     - Backend server (Python/Go)
-   • Each runs in separate process
-   • Independent log streams
+5. TROUBLESHOOTING
+   • "Port already in use": Stop other running servers
+   • "Command not found": Ensure dependencies are installed (npm install, pip install)
+   • "Permission denied": Run DevCLI as Administrator/Sudo
 
 SUPPORTED FRAMEWORKS
 • Node.js (npm start, npm run dev)
