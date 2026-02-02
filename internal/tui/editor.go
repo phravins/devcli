@@ -37,7 +37,7 @@ var EditorCmd = &cobra.Command{
 }
 
 func RunEditor(filename string) {
-	p := tea.NewProgram(initialModel(filename), tea.WithAltScreen(), tea.WithMouseCellMotion())
+	p := tea.NewProgram(Wrap(initialModel(filename)), tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running editor: %v\n", err)
 		os.Exit(1)
@@ -483,7 +483,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.language = newLang
 					m.updateLayout()
 				}
-			case "ctrl+c":
+			case "ctrl+c", "ctrl+q":
 				return m, tea.Quit
 			case "q", "esc":
 				return m, func() tea.Msg { return BackMsg{} }
@@ -499,7 +499,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showCursorLine = true
 
 			switch msg.Type {
-			case tea.KeyCtrlC:
+			case tea.KeyCtrlC, tea.KeyCtrlQ:
 				return m, tea.Quit
 			case tea.KeyEsc:
 				// Go back to selection menu instead of exiting editor completely

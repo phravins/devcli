@@ -144,7 +144,7 @@ func waitForLogCmd(runner *devserver.Runner) tea.Cmd {
 
 type tickMsg struct{}
 
-func (m DevServerDashboardModel) Update(msg tea.Msg) (DevServerDashboardModel, tea.Cmd) {
+func (m DevServerDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -204,7 +204,7 @@ func (m DevServerDashboardModel) Update(msg tea.Msg) (DevServerDashboardModel, t
 			case "y", "Y":
 				// User confirmed - execute the pending action
 				return m.executePendingAction()
-			case "n", "N":
+			case "n", "N", "esc":
 				// User cancelled - return to running state
 				m.state = StateDevServerRunning
 				m.pendingAction = ""

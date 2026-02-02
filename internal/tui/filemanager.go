@@ -1101,36 +1101,3 @@ func (m FileManagerModel) Init() tea.Cmd {
 	}
 	return tea.Batch(cmds...)
 }
-
-func RunFileManager() {
-	// Initialize Once
-	m := NewFileManagerModel("")
-
-	for {
-		p := tea.NewProgram(m, tea.WithAltScreen())
-		finalModel, err := p.Run()
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			return
-		}
-
-		if fm, ok := finalModel.(FileManagerModel); ok {
-			// Update our persistent model with the state from the run
-			m = fm
-			if m.selectedFile != "" {
-				// Launch Editor
-				RunEditor(m.selectedFile)
-				m.selectedFile = ""
-				m.quitting = false
-				continue
-			}
-
-			// Normal exit
-			if m.quitting {
-				break
-			}
-			break
-		}
-		break
-	}
-}

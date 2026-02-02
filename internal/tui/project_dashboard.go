@@ -331,14 +331,16 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.state == StateDevServer {
 		var devCmd tea.Cmd
+		var devModel tea.Model
 		// Intercept WindowSizeMsg to pass inner dimensions
 		if wMsg, ok := msg.(tea.WindowSizeMsg); ok {
 			h, v := AppBorderStyle.GetFrameSize()
 			innerMsg := tea.WindowSizeMsg{Width: wMsg.Width - h, Height: wMsg.Height - v}
-			m.devServerModel, devCmd = m.devServerModel.Update(innerMsg)
+			devModel, devCmd = m.devServerModel.Update(innerMsg)
 		} else {
-			m.devServerModel, devCmd = m.devServerModel.Update(msg)
+			devModel, devCmd = m.devServerModel.Update(msg)
 		}
+		m.devServerModel = devModel.(DevServerDashboardModel)
 		return m, devCmd
 	}
 
@@ -485,7 +487,8 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						h, v := AppBorderStyle.GetFrameSize()
 						innerW := m.width - h - 2
 						innerH := m.height - v
-						m.devServerModel, _ = m.devServerModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
+						devModel, _ := m.devServerModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
+						m.devServerModel = devModel.(DevServerDashboardModel)
 						return m, m.devServerModel.Init()
 					}
 					if i.title == "Boilerplate Generator" {
@@ -805,7 +808,8 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Also update venvModel so it's consistent if we switch to it
 		m.venvModel, _ = m.venvModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
 		m.boilerplateModel, _ = m.boilerplateModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
-		m.devServerModel, _ = m.devServerModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
+		devModel, _ := m.devServerModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
+		m.devServerModel = devModel.(DevServerDashboardModel)
 		m.bonusModel, _ = m.bonusModel.Update(msg)
 
 		m.width = msg.Width
