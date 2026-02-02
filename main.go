@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/phravins/devcli/internal/ai"
-	"github.com/phravins/devcli/internal/devserver"
 	"github.com/phravins/devcli/internal/fileops"
 	"github.com/phravins/devcli/internal/project"
 	"github.com/phravins/devcli/internal/tui"
@@ -29,6 +28,10 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	// Add all subcommands
+	// Add all subcommands
+	fileops.FileCmd.Run = func(cmd *cobra.Command, args []string) {
+		tui.RunFileManager("")
+	}
 	rootCmd.AddCommand(fileops.FileCmd)
 	rootCmd.AddCommand(ai.AICmd)
 	rootCmd.AddCommand(tui.EditorCmd)
@@ -55,17 +58,10 @@ func init() {
 	})
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "dev",
-		Short: "Auto-detect and run dev server",
+		Short: "Auto-detect and run dev server (TUI)",
 		Run: func(cmd *cobra.Command, args []string) {
 			cwd, _ := os.Getwd()
-			info := devserver.Detect(cwd)
-			if info.Type == devserver.TypeUnknown {
-				fmt.Println(" Could not detect project type (Node, Python, Go).")
-				return
-			}
-			if err := devserver.Run(info); err != nil {
-				fmt.Printf("Error running server: %v\n", err)
-			}
+			tui.RunDevServer(cwd)
 		},
 	})
 	rootCmd.AddCommand(&cobra.Command{

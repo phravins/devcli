@@ -124,6 +124,9 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case BackMsg:
+		if m.state == StateDashboard {
+			return m, tea.Quit
+		}
 		m.state = StateDashboard
 	}
 

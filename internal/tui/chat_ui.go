@@ -293,12 +293,13 @@ func (m ChatModel) View() string {
 }
 
 func RunChat() {
-	p := tea.NewProgram(NewChatModel(), tea.WithAltScreen(), tea.WithMouseCellMotion())
+	p := tea.NewProgram(Wrap(NewChatModel()), tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running chat: %v\n", err)
 		os.Exit(1)
 	}
 }
+
 var ChatCmd = &cobra.Command{
 	Use:   "chat",
 	Short: "Start AI chat session (TUI)",
