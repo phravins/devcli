@@ -18,6 +18,8 @@ type BonusDashboardModel struct {
 	smartFileModel   SmartFileModel
 	snippetsModel    SnippetsModel
 	aiAssistantModel AIAssistantModel
+	timeMachineModel interface{} // Will hold *TimeMachineModel
+	timeMachinePath  string
 	helpView         viewport.Model
 }
 
@@ -27,6 +29,7 @@ const (
 	StateBonusSmartFile
 	StateBonusSnippets
 	StateBonusAIAssistant
+	StateBonusTimeMachine
 	StateBonusHelp // Help Screen
 )
 
@@ -36,6 +39,7 @@ func NewBonusDashboardModel(workspace string) BonusDashboardModel {
 		item{title: "Smart File Creator", desc: "Generate config files (.env, Dockerfile, etc.)"},
 		item{title: "Snippet Library", desc: "Personal vault of reusable code"},
 		item{title: "AI Assistant", desc: "AI-powered code generation and assistance"},
+		item{title: "Code Time Machine", desc: "Track code evolution, find bugs, and analyze history"},
 	}
 
 	menu := list.New(items, list.NewDefaultDelegate(), 60, 14)
@@ -102,6 +106,20 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		m.aiAssistantModel, aiCmd = m.aiAssistantModel.Update(msg)
 		return m, aiCmd
 
+	case StateBonusTimeMachine:
+		if m.timeMachineModel != nil {
+			if tm, ok := m.timeMachineModel.(*TimeMachineModel); ok {
+				var tmCmd tea.Cmd
+				var updatedModel tea.Model
+				updatedModel, tmCmd = tm.Update(msg)
+				if updated, ok := updatedModel.(*TimeMachineModel); ok {
+					m.timeMachineModel = updated
+				}
+				return m, tmCmd
+			}
+		}
+		return m, nil
+
 	case StateBonusHelp:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -148,6 +166,22 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 					case "AI Assistant":
 						m.state = StateBonusAIAssistant
 						return m, m.aiAssistantModel.Init()
+					case "Code Time Machine":
+						// Initialize Time Machine with a default file (README.md) from current repo
+						cwd := m.taskRunnerModel.workspace
+						if cwd == "" {
+							cwd = "."
+						}
+
+						// Try to create Time Machine model with README.md
+						filePath := "README.md"
+						if tm, err := NewTimeMachineModel(cwd, filePath); err == nil {
+							m.timeMachineModel = tm
+							m.state = StateBonusTimeMachine
+							return m, tm.Init()
+						}
+						// If failed, stay in menu
+						return m, nil
 					}
 				}
 			}
@@ -217,6 +251,13 @@ func (m BonusDashboardModel) View() string {
 		return m.snippetsModel.View()
 	case StateBonusAIAssistant:
 		return m.aiAssistantModel.View()
+	case StateBonusTimeMachine:
+		if m.timeMachineModel != nil {
+			if tm, ok := m.timeMachineModel.(*TimeMachineModel); ok {
+				return tm.View()
+			}
+		}
+		return "Code Time Machine not initialized. Press ESC to return."
 	case StateBonusHelp:
 		helpWithBorder := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
