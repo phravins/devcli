@@ -57,11 +57,20 @@ func init() {
 		},
 	})
 	rootCmd.AddCommand(&cobra.Command{
-		Use:   "dev",
-		Short: "Auto-detect and run dev server (TUI)",
+		Use:   "timemachine [file]",
+		Short: "Code Time Machine - Track code evolution and find bugs",
+		Long:  `Interactive Git blame and history viewer showing line-by-line changes, bug risks, and commit timeline.`,
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			var filePath string
+			if len(args) > 0 {
+				filePath = args[0]
+			}
 			cwd, _ := os.Getwd()
-			tui.RunDevServer(cwd)
+			if err := tui.RunTimeMachine(cwd, filePath); err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
 		},
 	})
 	rootCmd.AddCommand(&cobra.Command{
