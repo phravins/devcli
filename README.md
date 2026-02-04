@@ -164,26 +164,6 @@ go build -o devcli.exe .
 After building, move the executable to a directory in your PATH to access
 it from anywhere in your terminal.
 
-
-EMBEDDED ASSETS
-
-DevCLI uses Go's embed package to bundle all necessary assets (logo, templates,
-configurations) directly into the binary. This means:
-
-  - **Single Binary Distribution**: When you run `go install github.com/phravins/devcli@latest`,
-    you get a complete, self-contained executable with everything embedded
-  - **No Missing Files**: All assets are included automatically - no separate
-    asset downloads or installation required
-  - **Works Everywhere**: The binary works immediately after installation without
-    needing access to the source repository or external files
-  - **Smaller Distribution**: No need to distribute asset folders separately
-
-All dependencies including Lipgloss, Bubble Tea, and other frameworks are
-automatically downloaded and compiled during the `go install` process. The
-resulting binary contains everything needed to run DevCLI.
-
-To access embedded assets programmatically:
-
 ```go
 import "github.com/phravins/devcli/assets"
 
