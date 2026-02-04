@@ -161,23 +161,6 @@ cd devcli
 go build -o devcli.exe .
 ```
 
-After building, move the executable to a directory in your PATH to access
-it from anywhere in your terminal.
-
-```go
-import "github.com/phravins/devcli/assets"
-
-// Get the logo
-logo, err := assets.GetLogo()
-
-// Get any asset by name 
-asset, err := assets.GetAsset("filename.ext")
-
-// Check if asset exists
-exists := assets.AssetExists("filename.ext")
-```
-
-
 Core Features
 -------------
 
