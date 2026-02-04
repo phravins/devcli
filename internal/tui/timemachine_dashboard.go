@@ -39,11 +39,23 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	// Generate author colors
 	colors := generateAuthorColors(timeline.GetAuthors())
 
+	// Create viewports with default size (will be resized on WindowSizeMsg)
+	blameVp := viewport.New(80, 20)
+	detailVp := viewport.New(80, 15)
+
 	model := &TimeMachineModel{
-		timeline:     timeline,
-		bugSuspects:  suspects,
-		authorColors: colors,
+		timeline:       timeline,
+		bugSuspects:    suspects,
+		authorColors:   colors,
+		blameViewport:  blameVp,
+		detailViewport: detailVp,
+		width:          160,
+		height:         40,
+		ready:          true, // Mark as ready immediately
 	}
+
+	// Set initial content
+	model.updateViewports()
 
 	return model, nil
 }
@@ -102,14 +114,8 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-
-		if !m.ready {
-			m.setupViewports()
-			m.updateViewports()
-			m.ready = true
-		} else {
-			m.resizeViewports()
-		}
+		m.resizeViewports()
+		m.updateViewports()
 		return m, nil
 	}
 
@@ -169,12 +175,17 @@ func (m *TimeMachineModel) resizeViewports() {
 	timelineHeight := 3
 	footerHeight := 2
 
-	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 4
+	// Account for borders (2 lines) and padding (2 lines) = 4 extra lines per box
+	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
 
 	blameHeight := int(float64(availableHeight) * 0.6)
 	detailHeight := availableHeight - blameHeight
 
-	halfWidth := (m.width - 3) / 2
+	// Account for borders: 2 boxes × 2 border lines (left+right) = 4
+	// Account for padding: 2 boxes × 2 padding = 4
+	// Total extra width needed = 8
+	availableWidth := m.width - 8
+	halfWidth := availableWidth / 2
 
 	m.blameViewport.Width = halfWidth
 	m.blameViewport.Height = blameHeight
@@ -375,16 +386,12 @@ func (m *TimeMachineModel) renderMainContent() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(1).
-		Width(m.blameViewport.Width + 4).
-		Height(m.blameViewport.Height + 2).
 		Render(m.blameViewport.View())
 
 	detailBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
 		Padding(1).
-		Width(m.detailViewport.Width + 4).
-		Height(m.detailViewport.Height + 2).
 		Render(m.detailViewport.View())
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, blameBox, detailBox)
