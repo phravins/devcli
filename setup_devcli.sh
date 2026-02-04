@@ -7,11 +7,13 @@ set -e
 echo "==========================================="
 echo "      DevCLI Automated Installer"
 echo "==========================================="
+echo ""
 
 # Check for Go
 echo "[INFO] Checking for Go installation..."
 if ! command -v go &> /dev/null; then
     echo "[WARN] Go not found. Starting installation..."
+    echo ""
     
     OS="$(uname -s)"
     ARCH="$(uname -m)"
@@ -32,7 +34,7 @@ if ! command -v go &> /dev/null; then
 
     if [[ "$GOOS" == *"UNKNOWN"* || "$GOARCH" == *"UNKNOWN"* ]]; then
         echo "[ERROR] Could not detect OS/Arch automatically ($GOOS / $GOARCH)."
-        echo "Please install Go manually from https://go.dev/dl/"
+        echo "[ERROR] Please install Go manually from https://go.dev/dl/"
         exit 1
     fi
 
@@ -41,73 +43,167 @@ if ! command -v go &> /dev/null; then
     GO_URL="https://go.dev/dl/${GO_TAR}"
     
     echo "[INFO] Downloading Go ${GO_VER} for ${GOOS}/${GOARCH}..."
-    curl -L -o "/tmp/${GO_TAR}" "${GO_URL}"
+    if ! curl -L -o "/tmp/${GO_TAR}" "${GO_URL}"; then
+        echo "[ERROR] Failed to download Go. Please check your internet connection."
+        echo "[ERROR] You can manually download from: ${GO_URL}"
+        exit 1
+    fi
     
     echo "[INFO] Installing Go to /usr/local/go..."
     if [ "$EUID" -ne 0 ]; then
-        echo "Root privileges required to install Go to /usr/local/go. Please enter password if prompted."
-        sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "/tmp/${GO_TAR}"
+        echo "[INFO] Root privileges required to install Go to /usr/local/go."
+        echo "[INFO] Please enter password if prompted."
+        if ! sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "/tmp/${GO_TAR}"; then
+            echo "[ERROR] Failed to install Go. Please try installing manually."
+            exit 1
+        fi
     else
-        rm -rf /usr/local/go && tar -C /usr/local -xzf "/tmp/${GO_TAR}"
+        if ! rm -rf /usr/local/go && tar -C /usr/local -xzf "/tmp/${GO_TAR}"; then
+            echo "[ERROR] Failed to install Go. Please try installing manually."
+            exit 1
+        fi
     fi
     
     export PATH=$PATH:/usr/local/go/bin
     echo "[INFO] Go installed successfully."
 else
     echo "[INFO] Go is already installed."
+    echo "[INFO] $(go version)"
 fi
+
+echo ""
+echo "[INFO] Verifying Go installation..."
+if ! command -v go &> /dev/null; then
+    echo "[ERROR] Go installation verification failed."
+    echo "[ERROR] Please restart your terminal and try again, or install Go manually."
+    exit 1
+fi
+
+echo "[INFO] Go is ready."
+echo ""
 
 # Install DevCLI
 echo "[INFO] Installing DevCLI..."
 
 if [ -f "go.mod" ]; then
-    echo "[INFO] 'go.mod' found. Installing from local source..."
+    echo "[INFO] Found 'go.mod'. Installing from local source..."
     go install .
 else
     echo "[INFO] Installing latest version from GitHub..."
     go install github.com/phravins/devcli@latest
 fi
 
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Failed to install DevCLI."
+    echo "[ERROR] Please check your internet connection and Go installation."
+    exit 1
+fi
+
 # Ensure GOPATH/bin is in PATH
 GOPATH=$(go env GOPATH)
 GOBIN="$GOPATH/bin"
 
+echo ""
+echo "[INFO] Verifying DevCLI installation..."
+
+# Check if PATH already contains GOBIN
+PATH_UPDATED=0
 if [[ ":$PATH:" != *":$GOBIN:"* ]]; then
     echo "[WARN] $GOBIN is not in your PATH."
+    echo "[INFO] Adding to PATH configuration..."
+    
+    # Detect shell and appropriate RC file
     SHELL_RC=""
-    if [ -f "$HOME/.zshrc" ]; then
-        SHELL_RC="$HOME/.zshrc"
-    elif [ -f "$HOME/.bashrc" ]; then
-        SHELL_RC="$HOME/.bashrc"
-    fi
+    SHELL_NAME=$(basename "$SHELL")
+    
+    case "$SHELL_NAME" in
+        bash)
+            if [ -f "$HOME/.bashrc" ]; then
+                SHELL_RC="$HOME/.bashrc"
+            elif [ -f "$HOME/.bash_profile" ]; then
+                SHELL_RC="$HOME/.bash_profile"
+            elif [ -f "$HOME/.profile" ]; then
+                SHELL_RC="$HOME/.profile"
+            fi
+            ;;
+        zsh)
+            SHELL_RC="$HOME/.zshrc"
+            ;;
+        fish)
+            SHELL_RC="$HOME/.config/fish/config.fish"
+            ;;
+        *)
+            if [ -f "$HOME/.profile" ]; then
+                SHELL_RC="$HOME/.profile"
+            fi
+            ;;
+    esac
     
     if [ -n "$SHELL_RC" ]; then
-        echo "Would you like to add it to $SHELL_RC? [y/N]"
-        read -r response
-        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-            echo "export PATH=\$PATH:$GOBIN" >> "$SHELL_RC"
-            echo "[SUCCESS] Added to $SHELL_RC. Run 'source $SHELL_RC' to apply."
+        # Check if already in RC file
+        if grep -q "GOPATH/bin" "$SHELL_RC" 2>/dev/null || grep -q "$GOBIN" "$SHELL_RC" 2>/dev/null; then
+            echo "[INFO] PATH export already exists in $SHELL_RC"
         else
-            echo "Please manually add '$GOBIN' to your PATH."
+            # Add PATH export to RC file
+            if [ "$SHELL_NAME" = "fish" ]; then
+                echo "set -gx PATH \$PATH $GOBIN" >> "$SHELL_RC"
+            else
+                echo "" >> "$SHELL_RC"
+                echo "# Add Go binaries to PATH (added by DevCLI installer)" >> "$SHELL_RC"
+                echo "export PATH=\$PATH:$GOBIN" >> "$SHELL_RC"
+            fi
+            echo "[SUCCESS] Added PATH export to $SHELL_RC"
+            PATH_UPDATED=1
         fi
     else
-         echo "Please manually add '$GOBIN' to your PATH."
+        echo "[WARN] Could not detect shell configuration file."
+        echo "[WARN] Please manually add '$GOBIN' to your PATH."
     fi
+    
+    # Add to current session
+    export PATH=$PATH:$GOBIN
+else
+    echo "[INFO] $GOBIN is already in your PATH."
 fi
 
-# Verify
-echo "[INFO] Verifying DevCLI installation..."
+# Verify DevCLI
+echo ""
+echo "[INFO] Final verification..."
 if command -v devcli &> /dev/null; then
     echo ""
     echo "[SUCCESS] DevCLI has been installed successfully!"
     echo ""
     devcli --version
+    echo ""
+    echo "[INFO] You can now use 'devcli' command in your terminal."
+    
+    if [ $PATH_UPDATED -eq 1 ]; then
+        echo ""
+        echo "[INFO] PATH has been updated in $SHELL_RC"
+        echo "[INFO] To use DevCLI in this session, run:"
+        echo "[INFO]   source $SHELL_RC"
+        echo "[INFO] Or close and reopen your terminal."
+    fi
 else
-    echo "[WARN] DevCLI installed but not found in PATH."
-    echo "Make sure '$GOBIN' is in your PATH."
+    echo "[WARN] DevCLI installed but not immediately available."
+    echo ""
+    echo "[INFO] Please follow these steps:"
+    echo "[INFO]   1. Close this terminal window"
+    echo "[INFO]   2. Open a new terminal window"
+    echo "[INFO]   3. Run 'devcli --version' to verify installation"
+    echo ""
+    if [ -n "$SHELL_RC" ]; then
+        echo "[INFO] Or run: source $SHELL_RC"
+    fi
+    echo ""
+    echo "[INFO] If you still have issues, ensure '$GOBIN' is in your PATH."
 fi
 
 echo ""
 echo "==========================================="
 echo "       Installation Complete"
 echo "==========================================="
+echo ""
+echo "For help, run: devcli --help"
+echo ""
+
