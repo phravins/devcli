@@ -25,6 +25,7 @@ DevCLI serves as a central hub for common development tasks. Instead of grouping
 *   **Virtual Environment Wizard**: Centralized management of Python venvs and Node modules.
 *   **Dev Server**: Auto-detecting live reload servers for web development.
 *   **Smart File Creator**: Instant generation of Dockerfiles, .env, Makefiles, and CI/CD configs.
+*   **Code Time Machine**: Git-powered code evolution tracker with bug detection and blame visualization.
 *   **Boilerplate Generator**: Instant code snippets and architectural patterns.
 *   **Snippet Library**: Your personal vault for reusable code blocks.
 *   **AI Assistant**: Built-in chat for coding help, debugging, and explanations.
@@ -320,6 +321,36 @@ AI Assistant:
   - Integrates with existing AI provider configuration
   - Multi-turn conversations support
   - Context-aware code suggestions
+
+Code Time Machine:
+  - Interactive Git blame and history visualization
+  - Line-by-line author tracking with color coding
+  - Timeline navigation through commit history (forward/backward/jump)
+  - Bug risk detection using pattern analysis
+  - Identifies suspicious commits (late-night, large refactors, quick fixes)
+  - Split-pane layout showing blame view and commit details
+  - Real-time diff stats and file change tracking
+  - Visual risk indicators (⚠) for high-risk commits
+  - Keyboard-driven navigation (←/→ for timeline, ↑/↓ for scrolling)
+  - Built-in help screen with all shortcuts
+  - CLI access: `devcli timemachine <file>`
+  
+  Bug Detection Patterns:
+    - Late-night commits (11PM-5AM) - Higher error probability
+    - Large refactors (>200 lines) - Complex changes prone to bugs
+    - Quick fixes (<2 hours apart) - Original commit likely broken
+    - WIP/TODO markers - Incomplete work
+    - Friday evening commits - End-of-week rush
+    - Multiple file changes (>5) - Integration bugs
+    - "fix", "hotfix", "patch" keywords - Indicates previous bug
+  
+  Use Cases:
+    - Find when/who introduced a bug
+    - Understand code evolution over time
+    - Identify risky commits during code review
+    - Track down regression sources
+    - Analyze team contribution patterns
+
 
 
 AI INTEGRATION
