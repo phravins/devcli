@@ -17,6 +17,7 @@ type TimeMachineModel struct {
 	viewport       viewport.Model
 	blameViewport  viewport.Model
 	detailViewport viewport.Model
+	helpViewport   viewport.Model
 	width          int
 	height         int
 	ready          bool
@@ -42,6 +43,8 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	// Create viewports with default size (will be resized on WindowSizeMsg)
 	blameVp := viewport.New(80, 20)
 	detailVp := viewport.New(80, 15)
+	helpVp := viewport.New(80, 30)
+	helpVp.MouseWheelEnabled = true
 
 	model := &TimeMachineModel{
 		timeline:       timeline,
@@ -49,6 +52,7 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 		authorColors:   colors,
 		blameViewport:  blameVp,
 		detailViewport: detailVp,
+		helpViewport:   helpVp,
 		width:          160,
 		height:         40,
 		ready:          true, // Mark as ready immediately
@@ -80,6 +84,12 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "?":
 			m.showHelp = !m.showHelp
+			if m.showHelp {
+				// Resize and update help viewport when showing
+				m.helpViewport.Width = m.width - 8
+				m.helpViewport.Height = m.height - 4
+				m.helpViewport.SetContent(m.getHelpContent())
+			}
 			return m, nil
 
 		case "left", "h":
@@ -116,12 +126,23 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.resizeViewports()
 		m.updateViewports()
+		// Also resize help viewport
+		if m.showHelp {
+			m.helpViewport.Width = m.width - 8
+			m.helpViewport.Height = m.height - 4
+		}
 		return m, nil
 	}
 
 	// Update viewports
 	var cmd tea.Cmd
-	m.blameViewport, cmd = m.blameViewport.Update(msg)
+	if m.showHelp {
+		// Update help viewport when help is shown
+		m.helpViewport, cmd = m.helpViewport.Update(msg)
+	} else {
+		// Update blame viewport when help is not shown
+		m.blameViewport, cmd = m.blameViewport.Update(msg)
+	}
 	return m, cmd
 }
 
@@ -425,15 +446,9 @@ func (m *TimeMachineModel) renderFooter() string {
 	return footerStyle.Render(shortcuts)
 }
 
-// renderHelp shows the help screen
-func (m *TimeMachineModel) renderHelp() string {
-	helpStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Padding(2).
-		Width(m.width - 4)
-
-	help := `
+// getHelpContent returns the help text content
+func (m *TimeMachineModel) getHelpContent() string {
+	return `
 ===== CODE TIME MACHINE - HELP =====
 
 WHAT IS IT:
@@ -466,6 +481,10 @@ KEYBOARD SHORTCUTS:
     Home              Jump to newest commit (current)
     End               Jump to oldest commit (initial)
 
+  Scrolling (in this help screen):
+    Up / Down         Scroll help content
+    Mouse Wheel       Scroll with mouse
+
   Actions:
     ?                 Toggle this help screen
     Q / Esc           Return to bonus features menu
@@ -481,11 +500,31 @@ TIPS:
   - Different author names appear in different colors
   - The tracking history box shows the code as it was at that commit
   - Press ? again to close this help and return to the main view
+  - Scroll up/down with arrow keys or mouse wheel in this help screen
 
 ========================================
 `
+}
 
-	return helpStyle.Render(help)
+// renderHelp shows the help screen
+func (m *TimeMachineModel) renderHelp() string {
+	helpBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#4ECDC4")).
+		Padding(1).
+		Width(m.width - 4).
+		Height(m.height - 2)
+
+	footer := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		Padding(0, 1).
+		Render("↑/↓ Scroll │ ? Close Help │ Q/Esc Back")
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		helpBox.Render(m.helpViewport.View()),
+		footer,
+	)
 }
 
 // generateAuthorColors creates consistent colors for authors
