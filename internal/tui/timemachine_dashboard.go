@@ -214,7 +214,7 @@ func (m *TimeMachineModel) renderHeader() string {
 	fileStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6BCF7F"))
 
-	title := titleStyle.Render("⏱ Code Time Machine")
+	title := titleStyle.Render("Code Time Machine")
 	file := fileStyle.Render(m.timeline.FilePath)
 
 	return lipgloss.JoinVertical(
@@ -317,7 +317,7 @@ func (m *TimeMachineModel) renderBlameView() string {
 		if suspiciousCommits[line.CommitHash] {
 			risk = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#FF4444")).
-				Render("⚠  ")
+				Render("!  ")
 		} else {
 			risk = "  "
 		}
@@ -434,32 +434,55 @@ func (m *TimeMachineModel) renderHelp() string {
 		Width(m.width - 4)
 
 	help := `
-Code Time Machine - Help
+===== CODE TIME MACHINE - HELP =====
 
-NAVIGATION:
-  ← / H       Previous commit (newer)
-  → / L       Next commit (older)
-  Home        Jump to newest commit
-  End         Jump to oldest commit
+WHAT IS IT:
+  Code Time Machine lets you travel through your code's history to see
+  how it evolved over time. You can view line-by-line changes, identify
+  who made each change, and spot potentially risky commits.
 
-VIEW:
-  ?           Toggle this help
-  Q / Esc     Go back
-  Ctrl+C      Force quit
+HOW TO USE:
 
-FEATURES:
-  • Line-by-line blame showing who changed what and when
-  • Author color coding for easy identification
-  • Bug risk indicators (⚠) for suspicious commits
-  • Timeline navigation through commit history
-  • Commit details with stats and messages
+  1. TRACKING HISTORY BOX (Top):
+     - Shows line-by-line code with author and date information
+     - Each line is color-coded by author for easy identification
+     - Lines with '!' indicator show commits with higher bug risk
+     - Use arrow keys to navigate through different commits
+
+  2. COMMIT DETAILS BOX (Bottom):
+     - Shows detailed information about the current commit
+     - Displays: commit hash, author, date, message, and file stats
+     - Risk analysis for potentially problematic commits
+
+  3. TIMELINE (Middle):
+     - Visual progress bar showing your position in commit history
+     - Displays current commit number and date
+
+KEYBOARD SHORTCUTS:
+
+  Navigation:
+    Left Arrow / H    Go to previous commit (newer)
+    Right Arrow / L   Go to next commit (older)
+    Home              Jump to newest commit (current)
+    End               Jump to oldest commit (initial)
+
+  Actions:
+    ?                 Toggle this help screen
+    Q / Esc           Return to bonus features menu
+    Ctrl+C            Exit the application
 
 BUG RISK INDICATORS:
-  ⚠ High Risk     Large refactors, late-night commits, WIP
-  ⚠ Medium Risk   Significant changes, quick fixes
-  No indicator    Low risk
+  !  High Risk   - Large refactors, late-night commits, WIP messages
+  !  Medium Risk - Significant changes, quick fixes
+     No mark     - Low risk, normal commits
 
-Press ? to close this help.
+TIPS:
+  - Use the timeline to quickly see how far back in history you are
+  - Different author names appear in different colors
+  - The tracking history box shows the code as it was at that commit
+  - Press ? again to close this help and return to the main view
+
+========================================
 `
 
 	return helpStyle.Render(help)
