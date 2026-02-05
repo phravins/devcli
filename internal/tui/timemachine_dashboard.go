@@ -175,21 +175,22 @@ func (m *TimeMachineModel) resizeViewports() {
 	timelineHeight := 3
 	footerHeight := 2
 
-	// Account for borders (2 lines) and padding (2 lines) = 4 extra lines per box
+	// For vertical stacking: 2 boxes with borders and padding
+	// Each box has: top border (1) + bottom border (1) + top padding (1) + bottom padding (1) = 4 lines
+	// Total for 2 boxes = 8 lines
 	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
 
-	blameHeight := int(float64(availableHeight) * 0.6)
+	// Split height: 75% for blame view (tracking history), 25% for commit details
+	blameHeight := int(float64(availableHeight) * 0.75)
 	detailHeight := availableHeight - blameHeight
 
-	// Account for borders: 2 boxes × 2 border lines (left+right) = 4
-	// Account for padding: 2 boxes × 2 padding = 4
-	// Total extra width needed = 8
-	availableWidth := m.width - 8
-	halfWidth := availableWidth / 2
+	// Use full width minus borders and padding
+	// Account for: left border (1) + right border (1) + left padding (1) + right padding (1) = 4
+	availableWidth := m.width - 4
 
-	m.blameViewport.Width = halfWidth
+	m.blameViewport.Width = availableWidth
 	m.blameViewport.Height = blameHeight
-	m.detailViewport.Width = halfWidth
+	m.detailViewport.Width = availableWidth
 	m.detailViewport.Height = detailHeight
 }
 
@@ -394,7 +395,8 @@ func (m *TimeMachineModel) renderMainContent() string {
 		Padding(1).
 		Render(m.detailViewport.View())
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, blameBox, detailBox)
+	// Stack vertically: tracking history (blame) on top, commit details below
+	return lipgloss.JoinVertical(lipgloss.Left, blameBox, detailBox)
 }
 
 // renderFooter creates the footer with shortcuts
