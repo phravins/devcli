@@ -511,9 +511,7 @@ func (m *TimeMachineModel) renderHelp() string {
 	helpBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Padding(1).
-		Width(m.width - 4).
-		Height(m.height - 2)
+		Padding(1)
 
 	footer := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#888888")).
