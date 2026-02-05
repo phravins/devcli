@@ -180,8 +180,8 @@ func (m *TimeMachineModel) resizeViewports() {
 	// Total for 2 boxes = 8 lines
 	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
 
-	// Split height: 75% for blame view (tracking history), 25% for commit details
-	blameHeight := int(float64(availableHeight) * 0.75)
+	// Split height: 85% for blame view (tracking history), 15% for commit details
+	blameHeight := int(float64(availableHeight) * 0.85)
 	detailHeight := availableHeight - blameHeight
 
 	// Use full width minus borders and padding
