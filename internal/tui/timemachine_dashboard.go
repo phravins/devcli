@@ -10,6 +10,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/phravins/devcli/internal/timemachine"
 )
+
+// TimeMachineModel represents the Code Time Machine TUI state
 type TimeMachineModel struct {
 	timeline       *timemachine.Timeline
 	viewport       viewport.Model
@@ -30,9 +32,14 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Analyze bug risks
 	suspects := timemachine.AnalyzeBugRisks(timeline.Commits)
 
+	// Generate author colors
 	colors := generateAuthorColors(timeline.GetAuthors())
+
+	// Create viewports with default size (will be resized on WindowSizeMsg)
 	blameVp := viewport.New(80, 20)
 	detailVp := viewport.New(80, 15)
 
@@ -148,9 +155,18 @@ func (m *TimeMachineModel) setupViewports() {
 	headerHeight := 3
 	timelineHeight := 3
 	footerHeight := 2
+
+	// For vertical stacking: 2 boxes with borders and padding
+	// Each box has: top border (1) + bottom border (1) + top padding (1) + bottom padding (1) = 4 lines
+	// Total for 2 boxes = 8 lines
 	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
+
+	// Split height: 85% for blame view (tracking history), 15% for commit details
 	blameHeight := int(float64(availableHeight) * 0.85)
 	detailHeight := availableHeight - blameHeight
+
+	// Use full width minus borders and padding
+	// Account for: left border (1) + right border (1) + left padding (1) + right padding (1) = 4
 	availableWidth := m.width - 4
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
@@ -162,11 +178,18 @@ func (m *TimeMachineModel) resizeViewports() {
 	headerHeight := 3
 	timelineHeight := 3
 	footerHeight := 2
+
+	// For vertical stacking: 2 boxes with borders and padding
+	// Each box has: top border (1) + bottom border (1) + top padding (1) + bottom padding (1) = 4 lines
+	// Total for 2 boxes = 8 lines
 	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
 
 	// Split height: 85% for blame view (tracking history), 15% for commit details
 	blameHeight := int(float64(availableHeight) * 0.85)
 	detailHeight := availableHeight - blameHeight
+
+	// Use full width minus borders and padding
+	// Account for: left border (1) + right border (1) + left padding (1) + right padding (1) = 4
 	availableWidth := m.width - 4
 
 	m.blameViewport.Width = availableWidth
@@ -175,6 +198,7 @@ func (m *TimeMachineModel) resizeViewports() {
 	m.detailViewport.Height = detailHeight
 }
 
+// updateViewports refreshes viewport content
 func (m *TimeMachineModel) updateViewports() {
 	m.blameViewport.SetContent(m.renderBlameView())
 	m.detailViewport.SetContent(m.renderCommitDetails())
@@ -200,6 +224,7 @@ func (m *TimeMachineModel) renderHeader() string {
 	)
 }
 
+// renderTimeline creates the timeline visualization
 func (m *TimeMachineModel) renderTimeline() string {
 	if len(m.timeline.Commits) == 0 {
 		return ""
@@ -253,6 +278,14 @@ func (m *TimeMachineModel) renderBlameView() string {
 		suspiciousCommits[suspect.Commit.Hash] = true
 	}
 
+	// Calculate available width for code content
+	// Line number (5) + separator (3) + risk (3) + author (15) + date (12) + separator (3) = 41 chars
+	fixedColumnsWidth := 41
+	availableCodeWidth := m.blameViewport.Width - fixedColumnsWidth
+	if availableCodeWidth < 20 {
+		availableCodeWidth = 20 // Minimum width for code
+	}
+
 	for _, line := range m.timeline.BlameData {
 		// Get author color
 		color := m.authorColors[line.Author]
@@ -289,9 +322,13 @@ func (m *TimeMachineModel) renderBlameView() string {
 			risk = "  "
 		}
 
-		// Code content
+		// Code content - truncate to available width
+		codeContent := line.Content
+		if len(codeContent) > availableCodeWidth {
+			codeContent = codeContent[:availableCodeWidth-1] + "…"
+		}
 		codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))
-		code := codeStyle.Render(line.Content)
+		code := codeStyle.Render(codeContent)
 
 		fullLine := fmt.Sprintf("%s │ %s%s %s │ %s", lineNum, risk, author, date, code)
 		lines = append(lines, fullLine)
