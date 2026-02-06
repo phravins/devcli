@@ -21,3 +21,4 @@ __pycache__/
 *.swp
 *.log
 tmp/
+dist/
