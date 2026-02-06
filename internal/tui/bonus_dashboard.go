@@ -20,6 +20,7 @@ type BonusDashboardModel struct {
 	aiAssistantModel AIAssistantModel
 	timeMachineModel interface{} // Will hold *TimeMachineModel
 	timeMachinePath  string
+	updaterModel     UpdaterModel
 	helpView         viewport.Model
 }
 
@@ -30,6 +31,7 @@ const (
 	StateBonusSnippets
 	StateBonusAIAssistant
 	StateBonusTimeMachine
+	StateBonusUpdate
 	StateBonusHelp // Help Screen
 )
 
@@ -40,6 +42,7 @@ func NewBonusDashboardModel(workspace string) BonusDashboardModel {
 		item{title: "Snippet Library", desc: "Personal vault of reusable code"},
 		item{title: "AI Assistant", desc: "AI-powered code generation and assistance"},
 		item{title: "Code Time Machine", desc: "Track code evolution, find bugs, and analyze history"},
+		item{title: "Check for Updates", desc: "Update DevCLI to the latest version"},
 	}
 
 	menu := list.New(items, list.NewDefaultDelegate(), 60, 14)
@@ -54,6 +57,7 @@ func NewBonusDashboardModel(workspace string) BonusDashboardModel {
 		smartFileModel:   NewSmartFileModel(workspace),
 		snippetsModel:    NewSnippetsModel(),
 		aiAssistantModel: NewAIAssistantModel(),
+		updaterModel:     NewUpdaterModel(),
 		helpView:         viewport.New(80, 20),
 	}
 }
@@ -120,6 +124,11 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		}
 		return m, nil
 
+	case StateBonusUpdate:
+		var upCmd tea.Cmd
+		m.updaterModel, upCmd = m.updaterModel.Update(msg)
+		return m, upCmd
+
 	case StateBonusHelp:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -182,6 +191,9 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 						}
 						// If failed, stay in menu
 						return m, nil
+					case "Check for Updates":
+						m.state = StateBonusUpdate
+						return m, m.updaterModel.Init()
 					}
 				}
 			}
@@ -230,6 +242,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		m.smartFileModel, _ = m.smartFileModel.Update(msg)
 		m.snippetsModel, _ = m.snippetsModel.Update(msg)
 		m.aiAssistantModel, _ = m.aiAssistantModel.Update(msg)
+		m.updaterModel, _ = m.updaterModel.Update(msg)
 
 		m.helpView.Width = msg.Width
 		m.helpView.Height = msg.Height
@@ -258,6 +271,8 @@ func (m BonusDashboardModel) View() string {
 			}
 		}
 		return "Code Time Machine not initialized. Press ESC to return."
+	case StateBonusUpdate:
+		return m.updaterModel.View()
 	case StateBonusHelp:
 		helpWithBorder := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
