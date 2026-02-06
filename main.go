@@ -12,6 +12,7 @@ import (
 	"github.com/phravins/devcli/internal/fileops"
 	"github.com/phravins/devcli/internal/project"
 	"github.com/phravins/devcli/internal/tui"
+	"github.com/phravins/devcli/internal/updater"
 	"github.com/spf13/cobra"
 )
 
@@ -197,6 +198,44 @@ func init() {
 					fmt.Println("DevCLI is already in your PATH.")
 				}
 			}
+		},
+	})
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "update",
+		Short: "Update DevCLI to the latest version",
+		Long:  `Checks for the latest version of DevCLI on GitHub and updates the binary if a new version is available.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("🔍 Checking for updates...")
+
+			info, err := updater.CheckForUpdates()
+			if err != nil {
+				fmt.Printf("❌ Error checking for updates: %v\n", err)
+				return
+			}
+
+			fmt.Printf("📦 Current version: %s\n", info.CurrentVersion)
+			fmt.Printf("📦 Latest version:  %s\n", info.LatestVersion)
+
+			if !info.IsUpdateAvailable {
+				fmt.Println("✅ You are already running the latest version!")
+				return
+			}
+
+			fmt.Printf("\n🎉 New version available: %s\n", info.LatestVersion)
+			if info.ReleaseNotes != "" {
+				fmt.Printf("\n📝 Release Notes:\n%s\n", info.ReleaseNotes)
+			}
+
+			fmt.Println("\n⬇️  Downloading and installing update...")
+			if err := updater.PerformUpdate(); err != nil {
+				fmt.Printf("❌ Update failed: %v\n", err)
+				fmt.Println("\n💡 You can try updating manually by downloading from:")
+				fmt.Printf("   %s\n", info.ReleaseURL)
+				return
+			}
+
+			fmt.Println("✅ Update successful!")
+			fmt.Println("🔄 Please restart DevCLI to use the new version.")
 		},
 	})
 
