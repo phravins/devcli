@@ -155,13 +155,24 @@ func init() {
 				}
 			} else {
 				// Unix/Linux/Mac
+				// Make the binary executable
+				if err := os.Chmod(destPath, 0755); err != nil {
+					fmt.Printf("Warning: Failed to make binary executable: %v\n", err)
+				}
+
 				// Check current Shell
 				shell := os.Getenv("SHELL")
 				rcFile := ""
+
+				// Detect Shell Configuration File
 				if strings.Contains(shell, "zsh") {
 					rcFile = filepath.Join(home, ".zshrc")
 				} else if strings.Contains(shell, "bash") {
 					rcFile = filepath.Join(home, ".bashrc")
+				} else if strings.Contains(shell, "fish") {
+					// Fish shell support
+					configDir, _ := os.UserConfigDir() // usually ~/.config
+					rcFile = filepath.Join(configDir, "fish", "config.fish")
 				}
 
 				// Check if already in PATH (rough check)
@@ -169,12 +180,26 @@ func init() {
 				if !strings.Contains(pathEnv, binDir) {
 					if rcFile != "" {
 						fmt.Printf("Detecting shell: %s. Attempting to update %s...\n", shell, rcFile)
-						// Append export line
-						exportLine := fmt.Sprintf("\nexport PATH=$PATH:%s\n", binDir)
+
+						// Prepare export line based on shell
+						var exportLine string
+						if strings.Contains(shell, "fish") {
+							exportLine = fmt.Sprintf("\n# DevCLI\nset -gx PATH $PATH %s\n", binDir)
+						} else {
+							exportLine = fmt.Sprintf("\n# DevCLI\nexport PATH=\"$PATH:%s\"\n", binDir)
+						}
 
 						// Check if file already has it
-						content, _ := os.ReadFile(rcFile)
-						if strings.Contains(string(content), binDir) {
+						content, err := os.ReadFile(rcFile)
+						// If file doesn't exist, Create it
+						if os.IsNotExist(err) {
+							// For fish, ensure directory exists
+							if strings.Contains(shell, "fish") {
+								os.MkdirAll(filepath.Dir(rcFile), 0755)
+							}
+						}
+
+						if err == nil && strings.Contains(string(content), binDir) {
 							fmt.Println("PATH already seems to be configured in RC file.")
 						} else {
 							f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -185,13 +210,13 @@ func init() {
 								if _, err = f.WriteString(exportLine); err != nil {
 									fmt.Printf("Error writing to rc file: %v\n", err)
 								} else {
-									fmt.Println("Successfully added to install path to shell configuration.")
+									fmt.Println("Successfully added install path to shell configuration.")
 									fmt.Printf("Run 'source %s' or restart terminal to apply changes.\n", rcFile)
 								}
 							}
 						}
 					} else {
-						fmt.Printf("Could not detect shell configuration file (.bashrc/.zshrc).\n")
+						fmt.Printf("Could not detect shell configuration file (.bashrc/.zshrc/config.fish).\n")
 						fmt.Printf("Please manually add the following to your PATH:\n%s\n", binDir)
 					}
 				} else {

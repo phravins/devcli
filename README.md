@@ -116,7 +116,7 @@ go mod tidy
 Installation
 ------------
 
-METHOD 1: Automated Installation (Windows - Recommended)
+METHOD 1: Automated Installation (Windows)
 
 For a complete "no-hassle" installation that sets up Go and DevCLI automatically:
 
@@ -127,13 +127,21 @@ For a complete "no-hassle" installation that sets up Go and DevCLI automatically
     -   Install the latest version of DevCLI.
     -   Configure your system PATH.
 
-Once finished, simply restart your terminal and run:
+METHOD 2: Automated Installation (Linux/macOS)
+
+For Linux and macOS users, use the provided install script:
+
+1.  Download the [install.sh](install.sh) script.
+2.  Run the script in your terminal:
 
 ```bash
-devcli
+chmod +x install.sh
+./install.sh
 ```
 
-METHOD 2: Single Command Installation (If Go is already installed)
+This will automatically detect your OS/Arch, set up the binary, and configure your shell (Bash, Zsh, or Fish).
+
+METHOD 3: Single Command Installation (If Go is already installed)
 
 Install DevCLI directly using the `go install` command:
 
