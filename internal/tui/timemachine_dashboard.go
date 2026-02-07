@@ -162,38 +162,49 @@ func (m *TimeMachineModel) View() string {
 	mainContent := m.renderMainContent()
 	footer := m.renderFooter()
 
-	return lipgloss.JoinVertical(
+	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		header,
 		timeline,
 		mainContent,
 		footer,
 	)
+
+	// Wrap in a style with global padding to prevent edges from being hidden
+	return lipgloss.NewStyle().
+		Padding(1, 2).
+		Render(content)
 }
 
 // setupViewports initializes the viewports
 func (m *TimeMachineModel) setupViewports() {
-	headerHeight := 3
-	timelineHeight := 3
-	footerHeight := 2
+	// Accurate height budget:
+	// Header: 3 lines (1 pad-top, 1 title, 1 file)
+	// Timeline: 3 lines (1 pad-top, 1 bar, 1 pad-bot)
+	// Footer: 3 lines (1 pad-top, 1 text, 1 pad-bot)
+	// Box Overhead: 4 lines per box (border top/bot + padding top/bot) = 8 lines total
+	// Global Padding: 2 lines (1 top, 1 bottom)
+	fixedHeight := 3 + 3 + 3 + 8 + 2
+	availableHeight := m.height - fixedHeight
 
-	// For vertical stacking: 2 boxes with borders and padding
-	// Each box has: top border (1) + bottom border (1) + top padding (1) + bottom padding (1) = 4 lines
-	// Total for 2 boxes = 8 lines
-	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
+	if availableHeight < 5 {
+		availableHeight = 5 // Minimum fallback
+	}
 
-	// Fixed height for details (enough for hash, author, date, msg, stats, risk)
-	// Approx 12 lines needed
+	// Split height: 12 lines for details, rest for blame
 	detailHeight := 12
-	if availableHeight < 36 {
-		// On very small screens, use 1/3
+	if availableHeight < 24 {
 		detailHeight = availableHeight / 3
 	}
 	blameHeight := availableHeight - detailHeight
 
-	// Use full width minus borders and padding
-	// Account for: left border (1) + right border (1) + left padding (1) + right padding (1) = 4
-	availableWidth := m.width - 4
+	// Width budget:
+	// Box Overhead: 4 chars per box (border left/right + padding left/right)
+	// Global Padding: 4 chars (2 left, 2 right)
+	availableWidth := m.width - 4 - 4
+	if availableWidth < 20 {
+		availableWidth = 20
+	}
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
 	m.detailViewport = viewport.New(availableWidth, detailHeight)
@@ -201,27 +212,23 @@ func (m *TimeMachineModel) setupViewports() {
 
 // resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
-	headerHeight := 3
-	timelineHeight := 3
-	footerHeight := 2
+	fixedHeight := 3 + 3 + 3 + 8 + 2
+	availableHeight := m.height - fixedHeight
 
-	// For vertical stacking: 2 boxes with borders and padding
-	// Each box has: top border (1) + bottom border (1) + top padding (1) + bottom padding (1) = 4 lines
-	// Total for 2 boxes = 8 lines
-	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
+	if availableHeight < 5 {
+		availableHeight = 5
+	}
 
-	// Fixed height for details (enough for hash, author, date, msg, stats, risk)
-	// Approx 12 lines needed
 	detailHeight := 12
-	if availableHeight < 36 {
-		// On very small screens, use 1/3
+	if availableHeight < 24 {
 		detailHeight = availableHeight / 3
 	}
 	blameHeight := availableHeight - detailHeight
 
-	// Use full width minus borders and padding
-	// Account for: left border (1) + right border (1) + left padding (1) + right padding (1) = 4
-	availableWidth := m.width - 4
+	availableWidth := m.width - 4 - 4
+	if availableWidth < 20 {
+		availableWidth = 20
+	}
 
 	m.blameViewport.Width = availableWidth
 	m.blameViewport.Height = blameHeight
@@ -240,7 +247,7 @@ func (m *TimeMachineModel) renderHeader() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#FF6B6B")).
-		Padding(0, 1)
+		Padding(1, 1, 0, 1) // Add top padding to separate from terminal edge
 
 	fileStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6BCF7F"))
@@ -265,7 +272,11 @@ func (m *TimeMachineModel) renderTimeline() string {
 	current := m.timeline.GetCurrentCommit()
 
 	// Timeline bar
-	barWidth := m.width - 20
+	// Timeline bar - account for global padding (4) and labels
+	barWidth := m.width - 20 - 4
+	if barWidth < 10 {
+		barWidth = 10
+	}
 	filledWidth := int(float64(barWidth) * progress)
 
 	filled := strings.Repeat("═", filledWidth)
