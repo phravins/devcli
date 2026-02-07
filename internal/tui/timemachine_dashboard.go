@@ -162,8 +162,8 @@ func (m *TimeMachineModel) View() string {
 	mainContent := m.renderMainContent()
 	footer := m.renderFooter()
 
-	content := lipgloss.JoinVertical(
-		lipgloss.Center,
+	finalContent := lipgloss.JoinVertical(
+		lipgloss.Left, // Left align components
 		header,
 		timeline,
 		"", // Spacer
@@ -171,15 +171,17 @@ func (m *TimeMachineModel) View() string {
 		footer,
 	)
 
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
+	// Anchoring to Top with a 1-line margin is safer than Center for avoiding hidden tops
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top,
+		lipgloss.NewStyle().PaddingTop(1).Render(finalContent))
 }
 func (m *TimeMachineModel) setupViewports() {
-	// Conservative height overhead for Windows (22 lines)
-	fixedHeight := 22
+	// Very aggressive height overhead (28 lines) to ensure zero overflow on any Windows console
+	fixedHeight := 28
 	availableHeight := m.height - fixedHeight
 
-	if availableHeight < 6 {
-		availableHeight = 6
+	if availableHeight < 5 {
+		availableHeight = 5
 	}
 
 	// Details gets roughly 1/3 but max 12
@@ -201,11 +203,11 @@ func (m *TimeMachineModel) setupViewports() {
 
 // resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
-	fixedHeight := 22
+	fixedHeight := 28
 	availableHeight := m.height - fixedHeight
 
-	if availableHeight < 6 {
-		availableHeight = 6
+	if availableHeight < 5 {
+		availableHeight = 5
 	}
 
 	detailHeight := availableHeight / 3
