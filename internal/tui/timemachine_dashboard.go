@@ -156,14 +156,14 @@ func (m *TimeMachineModel) View() string {
 		return m.renderHelp()
 	}
 
-	// Build the layout components
+	// Build the content stack with specific alignment
 	header := m.renderHeader()
 	timeline := m.renderTimeline()
 	mainContent := m.renderMainContent()
 	footer := m.renderFooter()
 
-	finalContent := lipgloss.JoinVertical(
-		lipgloss.Left, // Left align components
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
 		header,
 		timeline,
 		"", // Spacer
@@ -171,30 +171,29 @@ func (m *TimeMachineModel) View() string {
 		footer,
 	)
 
-	// Anchoring to Top with a 1-line margin is safer than Center for avoiding hidden tops
+	// Ensure the entire content is positioned safely
+	// We use Place to center it horizontally and anchor it to the top with a 2-line margin
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top,
-		lipgloss.NewStyle().PaddingTop(1).Render(finalContent))
+		lipgloss.NewStyle().PaddingTop(2).Render(content))
 }
 func (m *TimeMachineModel) setupViewports() {
-	// Very aggressive height overhead (28 lines) to ensure zero overflow on any Windows console
-	fixedHeight := 28
+	// Fixed height components/overhead:
+	fixedHeight := 16
 	availableHeight := m.height - fixedHeight
-
-	if availableHeight < 5 {
-		availableHeight = 5
+	if availableHeight < 6 {
+		availableHeight = 6
 	}
 
-	// Details gets roughly 1/3 but max 12
 	detailHeight := availableHeight / 3
-	if detailHeight > 12 {
-		detailHeight = 12
+	if detailHeight > 10 {
+		detailHeight = 10
 	}
 	blameHeight := availableHeight - detailHeight
 
-	// Width: account for borders (4) and safety (2)
-	availableWidth := m.width - 6
-	if availableWidth < 40 {
-		availableWidth = 40
+	// Width overhead: borders/padding (2+2) = 4
+	availableWidth := m.width - 4
+	if availableWidth < 20 {
+		availableWidth = 20
 	}
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
@@ -203,22 +202,21 @@ func (m *TimeMachineModel) setupViewports() {
 
 // resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
-	fixedHeight := 28
+	fixedHeight := 16
 	availableHeight := m.height - fixedHeight
-
-	if availableHeight < 5 {
-		availableHeight = 5
+	if availableHeight < 6 {
+		availableHeight = 6
 	}
 
 	detailHeight := availableHeight / 3
-	if detailHeight > 12 {
-		detailHeight = 12
+	if detailHeight > 10 {
+		detailHeight = 10
 	}
 	blameHeight := availableHeight - detailHeight
 
-	availableWidth := m.width - 8
-	if availableWidth < 40 {
-		availableWidth = 40
+	availableWidth := m.width - 4
+	if availableWidth < 20 {
+		availableWidth = 20
 	}
 
 	m.blameViewport.Width = availableWidth
@@ -301,7 +299,7 @@ func (m *TimeMachineModel) renderTimeline() string {
 	)
 }
 
-// renderBlameView creates the blame/code view
+// renderBlameView creates the blame/code view with rock-solid column alignment
 func (m *TimeMachineModel) renderBlameView() string {
 	var lines []string
 
@@ -310,51 +308,52 @@ func (m *TimeMachineModel) renderBlameView() string {
 		suspiciousCommits[suspect.Commit.Hash] = true
 	}
 
-	// Columns setup for alignment
-	lineNumWidth := 5
-	riskWidth := 3
-	authorWidth := 15
-	dateWidth := 12
-	overhead := lineNumWidth + 3 + riskWidth + authorWidth + 1 + dateWidth + 3 // 42 total
+	// Column Styles
+	numStyle := lipgloss.NewStyle().Width(5).Align(lipgloss.Right).Foreground(lipgloss.Color("#666666"))
+	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
+	riskStyle := lipgloss.NewStyle().Width(3).Foreground(lipgloss.Color("#FF4444"))
+	authorStyle := lipgloss.NewStyle().Width(15)
+	dateStyle := lipgloss.NewStyle().Width(13).Foreground(lipgloss.Color("#888888"))
+	codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))
 
+	// Overhead: 5(num) + 3(sep) + 3(risk) + 15(author) + 1(space) + 13(date) + 3(sep) = 43
+	overhead := 43
 	availableCodeWidth := m.blameViewport.Width - overhead
 	if availableCodeWidth < 20 {
 		availableCodeWidth = 20
 	}
 
 	for _, line := range m.timeline.BlameData {
-		color := m.authorColors[line.Author]
-
-		// Line number
-		lNum := fmt.Sprintf("%*d", lineNumWidth, line.LineNumber)
-		lineNum := lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render(lNum)
+		// Line Number
+		lNum := numStyle.Render(fmt.Sprintf("%d", line.LineNumber))
 
 		// Separator
-		sep := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444")).Render(" │ ")
+		sep := sepStyle.Render(" │ ")
 
 		// Risk
-		riskStr := "   "
+		rStr := "   "
 		if suspiciousCommits[line.CommitHash] {
-			riskStr = "!  "
+			rStr = "!  "
 		}
-		risk := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF4444")).Render(riskStr)
+		risk := riskStyle.Render(rStr)
 
 		// Author
-		aName := truncate(line.Author, authorWidth)
-		author := lipgloss.NewStyle().Foreground(color).Width(authorWidth).Render(aName)
+		aName := truncate(line.Author, 15)
+		author := authorStyle.Foreground(m.authorColors[line.Author]).Render(aName)
 
 		// Date
 		dStr := line.Timestamp.Format("Jan 02 15:04")
-		date := lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")).Render(dStr)
+		date := dateStyle.Render(dStr)
 
 		// Code
-		codeContent := line.Content
-		if len(codeContent) > availableCodeWidth {
-			codeContent = codeContent[:availableCodeWidth-1] + "…"
+		cStr := line.Content
+		if len(cStr) > availableCodeWidth {
+			cStr = truncate(cStr, availableCodeWidth)
 		}
-		code := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0")).Render(codeContent)
+		code := codeStyle.Render(cStr)
 
-		fullLine := fmt.Sprintf("%s%s%s%s %s%s%s", lineNum, sep, risk, author, date, sep, code)
+		// Join horizontally to ensure width alignment is preserved
+		fullLine := lipgloss.JoinHorizontal(lipgloss.Bottom, lNum, sep, risk, author, " ", date, sep, code)
 		lines = append(lines, fullLine)
 	}
 
@@ -421,18 +420,23 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 	return strings.Join(details, "\n")
 }
 
-// renderMainContent combines blame and details panels
+// renderMainContent combines blame and details panels with strict width containment
 func (m *TimeMachineModel) renderMainContent() string {
+	// Box style with MaxWidth/MaxHeight for strict containment
 	blameBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(1).
+		Width(m.blameViewport.Width + 2).
+		Height(m.blameViewport.Height + 2).
 		Render(m.blameViewport.View())
 
 	detailBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
 		Padding(1).
+		Width(m.detailViewport.Width + 2).
+		Height(m.detailViewport.Height + 2).
 		Render(m.detailViewport.View())
 
 	// Stack vertically: tracking history (blame) on top, commit details below
