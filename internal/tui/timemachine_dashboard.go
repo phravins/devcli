@@ -171,17 +171,17 @@ func (m *TimeMachineModel) View() string {
 		footer,
 	)
 
-	// Ensure the entire content is positioned safely
-	// We use Place to center it horizontally and anchor it to the top with a 2-line margin
+	// Anchoring to Top with a 2-line margin is even safer for Windows command prompts
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top,
 		lipgloss.NewStyle().PaddingTop(2).Render(content))
 }
 func (m *TimeMachineModel) setupViewports() {
-	// Fixed height components/overhead:
-	fixedHeight := 16
+	// Extremely safe height overhead for Windows (30 lines)
+	// Covers Header, Timeline, Spacing, 2x Borders, 2x Padding, Footer, and Safety Margin
+	fixedHeight := 30
 	availableHeight := m.height - fixedHeight
-	if availableHeight < 6 {
-		availableHeight = 6
+	if availableHeight < 4 {
+		availableHeight = 4
 	}
 
 	detailHeight := availableHeight / 3
@@ -190,10 +190,10 @@ func (m *TimeMachineModel) setupViewports() {
 	}
 	blameHeight := availableHeight - detailHeight
 
-	// Width overhead: borders/padding (2+2) = 4
-	availableWidth := m.width - 4
-	if availableWidth < 20 {
-		availableWidth = 20
+	// Width overhead: 4 for borders/padding, plus 2 for safety (total 6 instead of 10)
+	availableWidth := m.width - 6
+	if availableWidth < 60 {
+		availableWidth = 60
 	}
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
@@ -202,10 +202,10 @@ func (m *TimeMachineModel) setupViewports() {
 
 // resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
-	fixedHeight := 16
+	fixedHeight := 30
 	availableHeight := m.height - fixedHeight
-	if availableHeight < 6 {
-		availableHeight = 6
+	if availableHeight < 4 {
+		availableHeight = 4
 	}
 
 	detailHeight := availableHeight / 3
@@ -214,9 +214,9 @@ func (m *TimeMachineModel) resizeViewports() {
 	}
 	blameHeight := availableHeight - detailHeight
 
-	availableWidth := m.width - 4
-	if availableWidth < 20 {
-		availableWidth = 20
+	availableWidth := m.width - 6
+	if availableWidth < 60 {
+		availableWidth = 60
 	}
 
 	m.blameViewport.Width = availableWidth

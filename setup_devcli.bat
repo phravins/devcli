@@ -102,13 +102,6 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
-:: Add Go bin to PATH permanently for the user if not already there
-echo [INFO] Ensuring DevCLI is in your PATH...
-set "GOBIN_PATH=%USERPROFILE%\go\bin"
-powershell -Command "if ([Environment]::GetEnvironmentVariable('Path', 'User') -notlike '*%GOBIN_PATH%*') { [Environment]::SetEnvironmentVariable('Path', [Environment]::GetEnvironmentVariable('Path', 'User') + ';%GOBIN_PATH%', 'User'); echo '[INFO] Added %GOBIN_PATH% to User PATH permanently.' } else { echo '[INFO] %GOBIN_PATH% is already in PATH.' }"
-
-echo [SUCCESS] DevCLI installed successfully!
-echo [INFO] You may need to restart your terminal for 'devcli' command to be recognized everywhere.
 :: Add GOPATH\bin to PATH for current session
 if exist "%USERPROFILE%\go\bin" (
     set "PATH=%PATH%;%USERPROFILE%\go\bin"
