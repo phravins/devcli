@@ -182,9 +182,14 @@ func (m *TimeMachineModel) setupViewports() {
 	// Total for 2 boxes = 8 lines
 	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
 
-	// Split height: 85% for blame view (tracking history), 15% for commit details
-	blameHeight := int(float64(availableHeight) * 0.85)
-	detailHeight := availableHeight - blameHeight
+	// Fixed height for details (enough for hash, author, date, msg, stats, risk)
+	// Approx 12 lines needed
+	detailHeight := 12
+	if availableHeight < 36 {
+		// On very small screens, use 1/3
+		detailHeight = availableHeight / 3
+	}
+	blameHeight := availableHeight - detailHeight
 
 	// Use full width minus borders and padding
 	// Account for: left border (1) + right border (1) + left padding (1) + right padding (1) = 4
@@ -205,9 +210,14 @@ func (m *TimeMachineModel) resizeViewports() {
 	// Total for 2 boxes = 8 lines
 	availableHeight := m.height - headerHeight - timelineHeight - footerHeight - 8
 
-	// Split height: 85% for blame view (tracking history), 15% for commit details
-	blameHeight := int(float64(availableHeight) * 0.85)
-	detailHeight := availableHeight - blameHeight
+	// Fixed height for details (enough for hash, author, date, msg, stats, risk)
+	// Approx 12 lines needed
+	detailHeight := 12
+	if availableHeight < 36 {
+		// On very small screens, use 1/3
+		detailHeight = availableHeight / 3
+	}
+	blameHeight := availableHeight - detailHeight
 
 	// Use full width minus borders and padding
 	// Account for: left border (1) + right border (1) + left padding (1) + right padding (1) = 4
