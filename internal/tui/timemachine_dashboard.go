@@ -156,7 +156,7 @@ func (m *TimeMachineModel) View() string {
 		return m.renderHelp()
 	}
 
-	// Build the layout
+	// Build the layout components
 	header := m.renderHeader()
 	timeline := m.renderTimeline()
 	mainContent := m.renderMainContent()
@@ -169,41 +169,27 @@ func (m *TimeMachineModel) View() string {
 		mainContent,
 		footer,
 	)
-
-	// Wrap in a style with global padding to prevent edges from being hidden
-	return lipgloss.NewStyle().
-		Padding(1, 2).
-		Render(content)
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 }
-
-// setupViewports initializes the viewports
 func (m *TimeMachineModel) setupViewports() {
-	// Accurate height budget:
-	// Header: 3 lines (1 pad-top, 1 title, 1 file)
-	// Timeline: 3 lines (1 pad-top, 1 bar, 1 pad-bot)
-	// Footer: 3 lines (1 pad-top, 1 text, 1 pad-bot)
-	// Box Overhead: 4 lines per box (border top/bot + padding top/bot) = 8 lines total
-	// Global Padding: 2 lines (1 top, 1 bottom)
-	fixedHeight := 3 + 3 + 3 + 8 + 2
+	fixedHeight := 15
 	availableHeight := m.height - fixedHeight
 
-	if availableHeight < 5 {
-		availableHeight = 5 // Minimum fallback
+	if availableHeight < 10 {
+		availableHeight = 10
 	}
 
-	// Split height: 12 lines for details, rest for blame
-	detailHeight := 12
-	if availableHeight < 24 {
-		detailHeight = availableHeight / 3
+	// Details gets roughly 1/3 but max 12
+	detailHeight := availableHeight / 3
+	if detailHeight > 12 {
+		detailHeight = 12
 	}
 	blameHeight := availableHeight - detailHeight
 
-	// Width budget:
-	// Box Overhead: 4 chars per box (border left/right + padding left/right)
-	// Global Padding: 4 chars (2 left, 2 right)
-	availableWidth := m.width - 4 - 4
-	if availableWidth < 20 {
-		availableWidth = 20
+	// Width: account for borders (4) and safety (2)
+	availableWidth := m.width - 6
+	if availableWidth < 40 {
+		availableWidth = 40
 	}
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
@@ -212,22 +198,22 @@ func (m *TimeMachineModel) setupViewports() {
 
 // resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
-	fixedHeight := 3 + 3 + 3 + 8 + 2
+	fixedHeight := 15
 	availableHeight := m.height - fixedHeight
 
-	if availableHeight < 5 {
-		availableHeight = 5
+	if availableHeight < 10 {
+		availableHeight = 10
 	}
 
-	detailHeight := 12
-	if availableHeight < 24 {
-		detailHeight = availableHeight / 3
+	detailHeight := availableHeight / 3
+	if detailHeight > 12 {
+		detailHeight = 12
 	}
 	blameHeight := availableHeight - detailHeight
 
-	availableWidth := m.width - 4 - 4
-	if availableWidth < 20 {
-		availableWidth = 20
+	availableWidth := m.width - 6
+	if availableWidth < 40 {
+		availableWidth = 40
 	}
 
 	m.blameViewport.Width = availableWidth
@@ -247,10 +233,11 @@ func (m *TimeMachineModel) renderHeader() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#FF6B6B")).
-		Padding(1, 1, 0, 1) // Add top padding to separate from terminal edge
+		Padding(1, 1, 0, 1) // 1 line margin at the very top
 
 	fileStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6BCF7F"))
+		Foreground(lipgloss.Color("#6BCF7F")).
+		Padding(0, 1)
 
 	title := titleStyle.Render("Code Time Machine")
 	file := fileStyle.Render(m.timeline.FilePath)
@@ -298,16 +285,14 @@ func (m *TimeMachineModel) renderTimeline() string {
 		dateStr = current.Date.Format("Jan 02, 2006")
 	}
 
-	return lipgloss.NewStyle().Padding(1, 0).Render(
-		lipgloss.JoinHorizontal(
-			lipgloss.Left,
-			"●",
-			timelineBar,
-			"●  ",
-			position,
-			"  ",
-			dateStr,
-		),
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		"  ● ",
+		timelineBar,
+		" ●  ",
+		position,
+		"  ",
+		dateStr,
 	)
 }
 
@@ -320,59 +305,51 @@ func (m *TimeMachineModel) renderBlameView() string {
 		suspiciousCommits[suspect.Commit.Hash] = true
 	}
 
-	// Calculate available width for code content
-	// Line number (5) + separator (3) + risk (3) + author (15) + date (12) + separator (3) = 41 chars
-	fixedColumnsWidth := 41
-	availableCodeWidth := m.blameViewport.Width - fixedColumnsWidth
+	// Columns setup for alignment
+	lineNumWidth := 5
+	riskWidth := 3
+	authorWidth := 15
+	dateWidth := 12
+	overhead := lineNumWidth + 3 + riskWidth + authorWidth + 1 + dateWidth + 3 // 42 total
+
+	availableCodeWidth := m.blameViewport.Width - overhead
 	if availableCodeWidth < 20 {
-		availableCodeWidth = 20 // Minimum width for code
+		availableCodeWidth = 20
 	}
 
 	for _, line := range m.timeline.BlameData {
-		// Get author color
 		color := m.authorColors[line.Author]
 
 		// Line number
-		lineNumStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#666666")).
-			Width(5).
-			Align(lipgloss.Right)
+		lNum := fmt.Sprintf("%*d", lineNumWidth, line.LineNumber)
+		lineNum := lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render(lNum)
 
-		lineNum := lineNumStyle.Render(fmt.Sprintf("%d", line.LineNumber))
+		// Separator
+		sep := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444")).Render(" │ ")
 
-		// Author info
-		authorStyle := lipgloss.NewStyle().
-			Foreground(color).
-			Width(15)
+		// Risk
+		riskStr := "   "
+		if suspiciousCommits[line.CommitHash] {
+			riskStr = "!  "
+		}
+		risk := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF4444")).Render(riskStr)
 
-		author := authorStyle.Render(truncate(line.Author, 13))
+		// Author
+		aName := truncate(line.Author, authorWidth)
+		author := lipgloss.NewStyle().Foreground(color).Width(authorWidth).Render(aName)
 
 		// Date
-		dateStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#888888")).
-			Width(12)
+		dStr := line.Timestamp.Format("Jan 02 15:04")
+		date := lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")).Render(dStr)
 
-		date := dateStyle.Render(line.Timestamp.Format("Jan 02 15:04"))
-
-		// Risk indicator
-		risk := ""
-		if suspiciousCommits[line.CommitHash] {
-			risk = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FF4444")).
-				Render("!  ")
-		} else {
-			risk = "  "
-		}
-
-		// Code content - truncate to available width
+		// Code
 		codeContent := line.Content
 		if len(codeContent) > availableCodeWidth {
 			codeContent = codeContent[:availableCodeWidth-1] + "…"
 		}
-		codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))
-		code := codeStyle.Render(codeContent)
+		code := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0")).Render(codeContent)
 
-		fullLine := fmt.Sprintf("%s │ %s%s %s │ %s", lineNum, risk, author, date, code)
+		fullLine := fmt.Sprintf("%s%s%s%s %s%s%s", lineNum, sep, risk, author, date, sep, code)
 		lines = append(lines, fullLine)
 	}
 
@@ -588,12 +565,15 @@ func hashToColor(s string) lipgloss.Color {
 	return lipgloss.Color(fmt.Sprintf("#%02X%02X%02X", r, g, b))
 }
 
-// truncate shortens a string to max length
+// truncate shortens a string to max length using literal dots
 func truncate(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}
-	return s[:max-1] + "…"
+	if max < 3 {
+		return s[:max]
+	}
+	return s[:max-3] + "..."
 }
 
 // RunTimeMachine starts the Code Time Machine TUI
