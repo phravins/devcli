@@ -163,20 +163,23 @@ func (m *TimeMachineModel) View() string {
 	footer := m.renderFooter()
 
 	content := lipgloss.JoinVertical(
-		lipgloss.Left,
+		lipgloss.Center,
 		header,
 		timeline,
+		"", // Spacer
 		mainContent,
 		footer,
 	)
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
+
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 }
 func (m *TimeMachineModel) setupViewports() {
-	fixedHeight := 15
+	// Conservative height overhead for Windows (22 lines)
+	fixedHeight := 22
 	availableHeight := m.height - fixedHeight
 
-	if availableHeight < 10 {
-		availableHeight = 10
+	if availableHeight < 6 {
+		availableHeight = 6
 	}
 
 	// Details gets roughly 1/3 but max 12
@@ -198,11 +201,11 @@ func (m *TimeMachineModel) setupViewports() {
 
 // resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
-	fixedHeight := 15
+	fixedHeight := 22
 	availableHeight := m.height - fixedHeight
 
-	if availableHeight < 10 {
-		availableHeight = 10
+	if availableHeight < 6 {
+		availableHeight = 6
 	}
 
 	detailHeight := availableHeight / 3
@@ -211,7 +214,7 @@ func (m *TimeMachineModel) resizeViewports() {
 	}
 	blameHeight := availableHeight - detailHeight
 
-	availableWidth := m.width - 6
+	availableWidth := m.width - 8
 	if availableWidth < 40 {
 		availableWidth = 40
 	}
@@ -233,7 +236,7 @@ func (m *TimeMachineModel) renderHeader() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#FF6B6B")).
-		Padding(1, 1, 0, 1) // 1 line margin at the very top
+		Padding(0, 1)
 
 	fileStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6BCF7F")).
