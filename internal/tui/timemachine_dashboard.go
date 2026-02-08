@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/phravins/devcli/internal/timemachine"
 )
+
 type TimeMachineModel struct {
 	timeline       *timemachine.Timeline
 	viewport       viewport.Model
@@ -159,14 +160,6 @@ func (m *TimeMachineModel) View() string {
 	footer := m.renderFooter()
 	detailBox := m.renderDetailBox()
 
-	// Calculate spacer width to push detail box to the right
-	// Footer width is approximate, but we can rely on Flex layout or safe assumptions
-	// Better approach: JoinHorizontal with alignment
-
-	// Since lipgloss doesn't have "Flex", we calculate space manually or use Place
-	// A simpler way:
-	// [ Footer .................... DetailBox ]
-
 	footerWidth := lipgloss.Width(footer)
 	detailWidth := lipgloss.Width(detailBox)
 	spacerWidth := m.width - footerWidth - detailWidth - 4 // -4 for margins
@@ -195,7 +188,7 @@ func (m *TimeMachineModel) setupViewports() {
 	topUIHeight := 6
 
 	// Fixed height for bottom Detail Box
-	detailHeight := 10 // Small fixed size for details
+	detailHeight := 7 // Even smaller fixed size for details
 
 	// Blame View takes the rest
 	// Total height - TopUI - DetailHeight - Margins
@@ -211,7 +204,7 @@ func (m *TimeMachineModel) setupViewports() {
 	}
 
 	// Detail box width: Fixed or Percentage (e.g., 40% of width or min 60 chars)
-	detailWidth := 60
+	detailWidth := 45
 	if detailWidth > availableWidth {
 		detailWidth = availableWidth
 	}
