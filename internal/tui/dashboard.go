@@ -42,6 +42,7 @@ func NewDashboard() DashboardModel {
 		item{title: "⚙️ Settings / Configuration", desc: "Configure AI backends and Keys"},
 		item{title: "💻 DevCLI Commands", desc: "List all available project commands"},
 		item{title: "🔄 Auto-Update", desc: "Update Languages, AI Keys, and DevCLI"},
+		item{title: "📚 Docs", desc: "Read DevCLI Documentation"},
 		item{title: "🚪 Exit", desc: "Quit DevCLI"},
 	}
 
@@ -131,6 +132,10 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if i.title == "🔄 Auto-Update" {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateAutoUpdate} }
+				}
+				if i.title == "📚 Docs" {
+					m.choice = i.title
+					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateDocs} }
 				}
 
 				m.choice = i.title

@@ -15,6 +15,7 @@ const (
 	StateChat
 	StateEditor
 	StateAutoUpdate
+	StateDocs
 )
 
 // Messages
@@ -44,6 +45,7 @@ type RootModel struct {
 	chat        ChatModel
 	editor      model // Using the struct 'model' from editor.go
 	autoupdate  AutoUpdateModel
+	docs        DocsModel
 
 	// Generic error
 	err error
@@ -121,6 +123,13 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			am, cmd = m.autoupdate.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
 			m.autoupdate = am.(AutoUpdateModel)
 			cmds = append(cmds, cmd, m.autoupdate.Init())
+
+		case StateDocs:
+			m.docs = NewDocsModel()
+			var dm tea.Model
+			dm, cmd = m.docs.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			m.docs = dm.(DocsModel)
+			cmds = append(cmds, cmd, m.docs.Init())
 		}
 
 	case BackMsg:
@@ -155,6 +164,10 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newM, newCmd := m.autoupdate.Update(msg)
 		m.autoupdate = newM.(AutoUpdateModel)
 		cmds = append(cmds, newCmd)
+	case StateDocs:
+		newM, newCmd := m.docs.Update(msg)
+		m.docs = newM.(DocsModel)
+		cmds = append(cmds, newCmd)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -174,6 +187,8 @@ func (m RootModel) View() string {
 		return m.editor.View()
 	case StateAutoUpdate:
 		return m.autoupdate.View()
+	case StateDocs:
+		return m.docs.View()
 	}
 	return "Unknown State"
 }
