@@ -202,8 +202,6 @@ func (m *TimeMachineModel) setupViewports() {
 	if availableWidth < 60 {
 		availableWidth = 60
 	}
-
-	// Detail box width: Fixed or Percentage (e.g., 40% of width or min 60 chars)
 	detailWidth := 45
 	if detailWidth > availableWidth {
 		detailWidth = availableWidth
@@ -212,20 +210,14 @@ func (m *TimeMachineModel) setupViewports() {
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
 	m.detailViewport = viewport.New(detailWidth, detailHeight)
 }
-
-// resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
 	// Re-run setup logic with new dimensions
 	m.setupViewports()
 }
-
-// updateViewports refreshes viewport content
 func (m *TimeMachineModel) updateViewports() {
 	m.blameViewport.SetContent(m.renderBlameView())
 	m.detailViewport.SetContent(m.renderCommitDetails())
 }
-
-// renderHeader creates the header section
 func (m *TimeMachineModel) renderHeader() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -245,8 +237,6 @@ func (m *TimeMachineModel) renderHeader() string {
 		file,
 	)
 }
-
-// renderTimeline creates the timeline visualization
 func (m *TimeMachineModel) renderTimeline() string {
 	if len(m.timeline.Commits) == 0 {
 		return ""
@@ -254,9 +244,6 @@ func (m *TimeMachineModel) renderTimeline() string {
 
 	progress := m.timeline.GetProgress()
 	current := m.timeline.GetCurrentCommit()
-
-	// Timeline bar
-	// Timeline bar - account for global padding (4) and labels
 	barWidth := m.width - 20 - 4
 	if barWidth < 10 {
 		barWidth = 10
@@ -292,8 +279,6 @@ func (m *TimeMachineModel) renderTimeline() string {
 		dateStr,
 	)
 }
-
-// renderBlameView creates the blame/code view with rock-solid column alignment
 func (m *TimeMachineModel) renderBlameView() string {
 	var lines []string
 
@@ -301,16 +286,12 @@ func (m *TimeMachineModel) renderBlameView() string {
 	for _, suspect := range m.bugSuspects {
 		suspiciousCommits[suspect.Commit.Hash] = true
 	}
-
-	// Column Styles
 	numStyle := lipgloss.NewStyle().Width(5).Align(lipgloss.Right).Foreground(lipgloss.Color("#666666"))
 	sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
 	riskStyle := lipgloss.NewStyle().Width(3).Foreground(lipgloss.Color("#FF4444"))
 	authorStyle := lipgloss.NewStyle().Width(15)
 	dateStyle := lipgloss.NewStyle().Width(13).Foreground(lipgloss.Color("#888888"))
 	codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))
-
-	// Overhead: 5(num) + 3(sep) + 3(risk) + 15(author) + 1(space) + 13(date) + 3(sep) = 43
 	overhead := 43
 	availableCodeWidth := m.blameViewport.Width - overhead
 	if availableCodeWidth < 20 {
@@ -330,8 +311,6 @@ func (m *TimeMachineModel) renderBlameView() string {
 			rStr = "!  "
 		}
 		risk := riskStyle.Render(rStr)
-
-		// Author
 		aName := truncate(line.Author, 15)
 		author := authorStyle.Foreground(m.authorColors[line.Author]).Render(aName)
 
