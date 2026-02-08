@@ -171,9 +171,9 @@ func (m *TimeMachineModel) View() string {
 		footer,
 	)
 
-	// Anchoring to Top with a 2-line margin is even safer for Windows command prompts
+	// Anchoring to Top with a 3-line margin is even safer for Windows command prompts
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top,
-		lipgloss.NewStyle().PaddingTop(2).Render(content))
+		lipgloss.NewStyle().PaddingTop(3).Render(content))
 }
 func (m *TimeMachineModel) setupViewports() {
 	// Extremely safe height overhead for Windows (30 lines)
@@ -190,8 +190,8 @@ func (m *TimeMachineModel) setupViewports() {
 	}
 	blameHeight := availableHeight - detailHeight
 
-	// Width overhead: 4 for borders/padding, plus 2 for safety (total 6 instead of 10)
-	availableWidth := m.width - 6
+	// Width overhead: 4 for borders/padding, plus 6 for safety (total 10 instead of 6)
+	availableWidth := m.width - 10
 	if availableWidth < 60 {
 		availableWidth = 60
 	}
@@ -214,7 +214,7 @@ func (m *TimeMachineModel) resizeViewports() {
 	}
 	blameHeight := availableHeight - detailHeight
 
-	availableWidth := m.width - 6
+	availableWidth := m.width - 10
 	if availableWidth < 60 {
 		availableWidth = 60
 	}
@@ -427,7 +427,7 @@ func (m *TimeMachineModel) renderMainContent() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(1).
-		Width(m.blameViewport.Width + 2).
+		Width(m.blameViewport.Width).
 		Height(m.blameViewport.Height + 2).
 		Render(m.blameViewport.View())
 
@@ -435,7 +435,7 @@ func (m *TimeMachineModel) renderMainContent() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
 		Padding(1).
-		Width(m.detailViewport.Width + 2).
+		Width(m.detailViewport.Width).
 		Height(m.detailViewport.Height + 2).
 		Render(m.detailViewport.View())
 
