@@ -90,55 +90,99 @@ func getDocsContent() string {
 	return `
 # DevCLI - Developer's Command Line Interface
 
-DevCLI is a comprehensive terminal-based toolkit designed to streamline your development workflow. It integrates essential tools, AI assistance, project management, and more into a single, unified interface.
+DevCLI is a terminal-based development workspace that consolidates essential developer tools into a single unified interface. It manages projects, files, virtual environments, and provides AI-powered assistance without requiring you to leave the command line.
 
-## 🚀 Key Features
+The application is built using Go and the Bubble Tea framework, providing a fast and responsive terminal user interface that works across all major operating systems.
+
+## 🚀 Core Features
+
+DevCLI serves as a central hub for common development tasks, avoiding the need for scattered scripts.
 
 ### 1. Project Management
-- **Create Projects**: Instantly generate boilerplate for Go, Python, Node.js, and more.
-- **Manage Projects**: Track active projects, view history, and backup important work.
-- **Bonus Features**: Task Runner, Smart File Creator, and Snippet Library.
+- **Project Manager**: Scaffolding, templates, and history tracking.
+- **Task Runner**: One-click execution of build, test, and lint commands (Go, Python, Node, Rust, C++).
+- **Boilerplate Generator**: Instant code snippets and architectural patterns.
+- **Smart File Creator**: Instant generation of Dockerfiles, .env, Makefiles, and CI/CD configs.
 
-### 2. AI Assistance
-- **Chat**: Interact with top AI models (Ollama, Gemini, OpenAI, Claude).
-- **Context Aware**: The AI knows about your project structure and languages.
-- **Agents**: Specialized agents for Code Generation, Architecture, and Debugging.
+### 2. Development Tools
+- **Virtual Environment Wizard**: Centralized management of Python venvs and Node modules.
+- **Dev Server**: Auto-detecting live reload servers for web development.
+- **File Manager & Editor**: Keyboard-driven filesystem navigation and quick editing.
+- **Auto-Update System**: Keeps your languages and tools current.
 
-### 3. Integrated Tools
-- **Editor**: A lightweight, terminal-based IDE with syntax highlighting.
-- **File Manager**: Navigate your file system, manage files, and search globally.
-- **Dev Server**: Auto-detect and run local dev servers (npm start, go run, etc.) with log filtering.
-- **Git Time Machine**: Visualize code history and blame in an interactive TUI.
-
-### 4. Configuration & Updates
-- **Settings**: Easily configure API keys and preferences.
-- **Auto-Update**: Keep DevCLI and your language runtimes up to date.
-
-## ⌨️ Global Shortcuts
-
-| Key | Action |
-| :--- | :--- |
-| **Ctrl+C** | Quit Application (Force Exit) |
-| **Esc / Q** | Go Back / Previous Menu |
-| **Up / Down** | Navigate Menus & Lists |
-| **Enter** | Select Item / Confirm |
-| **?** | Toggle Context-Specific Help |
-
-## 🛠️ Getting Started
-
-1.  **Explore the Dashboard**: Use Arrow keys to navigate the main menu.
-2.  **Configure AI**: Go to **Settings** to set up your preferred AI provider (e.g., free local Ollama or Gemini API).
-3.  **Start a Project**: Use **Project Tools** to scaffold a new application.
-4.  **Need Help?**: Press **?** in any specific tool to see its usage guide.
-
-## 📦 Supported Languages & Stacks
-
-- **Go**: Full support for modules, building, and web servers.
-- **Python**: venv management, pip requirements, Flask/Django/FastAPI.
-- **JavaScript/TypeScript**: Node.js, React, Vue, Vite, Express.
-- **Rust, Java, C/C++**: Basic project templates and compilation support.
+### 3. AI & Analysis
+- **AI Assistant**: Built-in chat for coding help, debugging, and explanations.
+- **Code Time Machine**: Git-powered code evolution tracker with bug detection and blame visualization.
+- **Snippet Library**: Your personal vault for reusable code blocks.
 
 ---
-*DevCLI v1.0.0 - Built for efficiency.*
+
+## 📦 Installation
+
+**Note**: When installed via 'go install', dependencies are managed automatically.
+
+### Method 1: Automated (Windows)
+1. Download 'setup_devcli.bat'.
+2. Right-click -> "Run as administrator".
+3. Automatically installs Go, DevCLI, and sets PATH.
+
+### Method 2: Automated (Linux/macOS)
+1. Download 'install.sh'.
+2. Run:
+   'chmod +x install.sh'
+   './install.sh'
+
+### Method 3: Go Install
+If Go is already installed:
+'go install github.com/phravins/devcli@latest'
+
+### Method 4: Build from Source
+'git clone https://github.com/phravins/devcli.git'
+'cd devcli'
+'go build -o devcli.exe .'
+
+---
+
+## 🛠️ Usage
+
+### Interactive Mode
+Launch the main dashboard:
+'devcli'
+
+Use **Arrow Keys** to navigate, **Enter** to select, and **Esc/Q** to go back.
+
+### Direct Subcommands
+- 'devcli dev'          # Open project management tools
+- 'devcli file'         # Launch file manager
+- 'devcli ai'           # Start AI chat session
+- 'devcli editor FILE'  # Open file in built-in editor
+
+---
+
+## 🔍 Feature Deep Dive
+
+### Project Creation & Management
+Create projects from predefined templates (Go, Python, Node.js, React, etc.). Features smart naming, history tracking, backups, and automatic dependency installation (npm install, pip install).
+
+### Virtual Environment Wizard
+Manage Python venvs and Node modules globally. Recursively scans workspace, syncs requirements.txt, clones environments, and cleans up unused deps.
+
+### Dev Server Launcher
+Intelligent server manager. Detects framework (Next.js, Flask, Go, etc.) and runs the dev server. Features live log streaming, filtering, and search.
+
+### Code Time Machine
+Interactive Git history.
+- **Time Travel**: Step through commits to see code evolution.
+- **Bug Radar**: formatting detects risky commits (late-night, large refactors).
+- **Blame**: Line-by-line author tracking.
+
+### AI Integration
+Chat with Ollama, Gemini, OpenAI, Claude. Supports system prompts, context-aware suggestions, and works offline with local models.
+
+### Built-in Editor
+Lightweight editor for quick fixes. Syntax highlighting for Python/Go, direct execution (Ctrl+R), and basic IDE features.
+
+---
+*DevCLI - The unified workspace for modern developers.*
 `
 }
