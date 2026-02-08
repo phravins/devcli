@@ -37,10 +37,7 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	// Analyze bug risks
 	suspects := timemachine.AnalyzeBugRisks(timeline.Commits)
 
-	// Generate author colors
 	colors := generateAuthorColors(timeline.GetAuthors())
-
-	// Create viewports with default size (will be resized on WindowSizeMsg)
 	blameVp := viewport.New(80, 20)
 	detailVp := viewport.New(80, 15)
 	helpVp := viewport.New(80, 30)
@@ -159,8 +156,31 @@ func (m *TimeMachineModel) View() string {
 	// Build the content stack with specific alignment
 	header := m.renderHeader()
 	timeline := m.renderTimeline()
+
+	// Main content is now just the blame view
 	mainContent := m.renderMainContent()
+
+	// Create bottom row with Footer (left) and Detail Box (right)
 	footer := m.renderFooter()
+	detailBox := m.renderDetailBox()
+
+	// Calculate spacer width to push detail box to the right
+	// Footer width is approximate, but we can rely on Flex layout or safe assumptions
+	// Better approach: JoinHorizontal with alignment
+
+	// Since lipgloss doesn't have "Flex", we calculate space manually or use Place
+	// A simpler way:
+	// [ Footer .................... DetailBox ]
+
+	footerWidth := lipgloss.Width(footer)
+	detailWidth := lipgloss.Width(detailBox)
+	spacerWidth := m.width - footerWidth - detailWidth - 4 // -4 for margins
+	if spacerWidth < 0 {
+		spacerWidth = 0
+	}
+	spacer := strings.Repeat(" ", spacerWidth)
+
+	bottomRow := lipgloss.JoinHorizontal(lipgloss.Bottom, footer, spacer, detailBox)
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -168,7 +188,7 @@ func (m *TimeMachineModel) View() string {
 		timeline,
 		"", // Spacer
 		mainContent,
-		footer,
+		bottomRow,
 	)
 
 	// Anchoring to Top with a 3-line margin is even safer for Windows command prompts
@@ -176,19 +196,18 @@ func (m *TimeMachineModel) View() string {
 		lipgloss.NewStyle().PaddingTop(3).Render(content))
 }
 func (m *TimeMachineModel) setupViewports() {
-	// Extremely safe height overhead for Windows (30 lines)
-	// Covers Header, Timeline, Spacing, 2x Borders, 2x Padding, Footer, and Safety Margin
-	fixedHeight := 30
-	availableHeight := m.height - fixedHeight
-	if availableHeight < 4 {
-		availableHeight = 4
-	}
+	// Fixed height for top UI elements (Header + Timeline + Padding)
+	topUIHeight := 6
 
-	detailHeight := availableHeight / 3
-	if detailHeight > 10 {
-		detailHeight = 10
+	// Fixed height for bottom Detail Box
+	detailHeight := 10 // Small fixed size for details
+
+	// Blame View takes the rest
+	// Total height - TopUI - DetailHeight - Margins
+	blameHeight := m.height - topUIHeight - detailHeight - 4
+	if blameHeight < 10 {
+		blameHeight = 10
 	}
-	blameHeight := availableHeight - detailHeight
 
 	// Width overhead: 4 for borders/padding, plus 6 for safety (total 10 instead of 6)
 	availableWidth := m.width - 10
@@ -196,33 +215,20 @@ func (m *TimeMachineModel) setupViewports() {
 		availableWidth = 60
 	}
 
+	// Detail box width: Fixed or Percentage (e.g., 40% of width or min 60 chars)
+	detailWidth := 60
+	if detailWidth > availableWidth {
+		detailWidth = availableWidth
+	}
+
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
-	m.detailViewport = viewport.New(availableWidth, detailHeight)
+	m.detailViewport = viewport.New(detailWidth, detailHeight)
 }
 
 // resizeViewports adjusts viewport sizes
 func (m *TimeMachineModel) resizeViewports() {
-	fixedHeight := 30
-	availableHeight := m.height - fixedHeight
-	if availableHeight < 4 {
-		availableHeight = 4
-	}
-
-	detailHeight := availableHeight / 3
-	if detailHeight > 10 {
-		detailHeight = 10
-	}
-	blameHeight := availableHeight - detailHeight
-
-	availableWidth := m.width - 10
-	if availableWidth < 60 {
-		availableWidth = 60
-	}
-
-	m.blameViewport.Width = availableWidth
-	m.blameViewport.Height = blameHeight
-	m.detailViewport.Width = availableWidth
-	m.detailViewport.Height = detailHeight
+	// Re-run setup logic with new dimensions
+	m.setupViewports()
 }
 
 // updateViewports refreshes viewport content
@@ -420,27 +426,31 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 	return strings.Join(details, "\n")
 }
 
-// renderMainContent combines blame and details panels with strict width containment
+// renderMainContent returns JUST the blame view box
 func (m *TimeMachineModel) renderMainContent() string {
 	// Box style with MaxWidth/MaxHeight for strict containment
 	blameBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Padding(1).
+		Padding(0, 1).
 		Width(m.blameViewport.Width).
-		Height(m.blameViewport.Height + 2).
+		Height(m.blameViewport.Height).
 		Render(m.blameViewport.View())
 
+	return blameBox
+}
+
+// renderDetailBox returns the standalone detail box
+func (m *TimeMachineModel) renderDetailBox() string {
 	detailBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
-		Padding(1).
+		Padding(0, 1). // Reduced padding to save space
 		Width(m.detailViewport.Width).
-		Height(m.detailViewport.Height + 2).
+		Height(m.detailViewport.Height).
 		Render(m.detailViewport.View())
 
-	// Stack vertically: tracking history (blame) on top, commit details below
-	return lipgloss.JoinVertical(lipgloss.Left, blameBox, detailBox)
+	return detailBox
 }
 
 // renderFooter creates the footer with shortcuts
