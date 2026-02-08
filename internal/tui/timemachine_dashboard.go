@@ -10,8 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/phravins/devcli/internal/timemachine"
 )
-
-// TimeMachineModel represents the Code Time Machine TUI state
 type TimeMachineModel struct {
 	timeline       *timemachine.Timeline
 	viewport       viewport.Model
@@ -27,14 +25,11 @@ type TimeMachineModel struct {
 	authorColors   map[string]lipgloss.Color
 }
 
-// NewTimeMachineModel creates a new Time Machine model
 func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	timeline, err := timemachine.NewTimeline(repoPath, filePath)
 	if err != nil {
 		return nil, err
 	}
-
-	// Analyze bug risks
 	suspects := timemachine.AnalyzeBugRisks(timeline.Commits)
 
 	colors := generateAuthorColors(timeline.GetAuthors())
