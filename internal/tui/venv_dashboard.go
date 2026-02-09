@@ -55,7 +55,8 @@ func NewVenvDashboardModel() VenvDashboardModel {
 	mgr := venv.NewManager("")
 
 	// Initial List - Delegate handles styling
-	items := loadVenvs(mgr)
+	// items := loadVenvs(mgr) // Removed blocking call
+	items := []list.Item{item{title: "Loading environments...", desc: "Please wait"}}
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = venvSelectedStyle
 	delegate.Styles.SelectedDesc = venvSelectedStyle.Copy().Foreground(colorGray)
@@ -137,8 +138,15 @@ func loadVenvs(mgr *venv.Manager) []list.Item {
 }
 
 func (m VenvDashboardModel) Init() tea.Cmd {
-	return m.spinner.Tick
+	return tea.Batch(
+		m.spinner.Tick,
+		tea.Tick(10*time.Millisecond, func(t time.Time) tea.Msg {
+			return loadVenvsMsg(loadVenvs(m.manager))
+		}),
+	)
 }
+
+type loadVenvsMsg []list.Item
 
 type venvMsg struct {
 	err error
@@ -398,6 +406,10 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			m.input, cmd = m.input.Update(msg)
 			return m, cmd
 		}
+
+	case loadVenvsMsg:
+		m.list.SetItems(msg)
+		return m, nil
 
 	case venvMsg:
 		m.state = StateVenvList

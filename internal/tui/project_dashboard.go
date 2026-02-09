@@ -94,7 +94,8 @@ func NewProjectDashboardModel() ProjectDashboardModel {
 	menu.SetShowTitle(false)
 
 	// 2. Project List (Sub-feature)
-	items := loadProjects(mgr.Workspace)
+	// items := loadProjects(mgr.Workspace) // Removed blocking call
+	items := []list.Item{item{title: "Loading projects...", desc: "Please wait"}}
 	items = append([]list.Item{item{title: "+ New Project", desc: "Create a new project from template"}}, items...)
 	pl := list.New(items, list.NewDefaultDelegate(), 0, 0)
 	pl.Title = "My Projects"
@@ -228,7 +229,14 @@ func (m ProjectDashboardModel) Init() tea.Cmd {
 			m.venvModel.Init(),
 		)
 	}
-	return tea.Batch(m.spinner.Tick, m.venvModel.Init(), m.boilerplateModel.Init())
+	return tea.Batch(
+		tea.Tick(10*time.Millisecond, func(t time.Time) tea.Msg {
+			return loadProjectsMsg(loadProjects(m.manager.Workspace))
+		}),
+		m.spinner.Tick,
+		m.venvModel.Init(),
+		m.boilerplateModel.Init(),
+	)
 }
 
 type cleanupPromptMsg struct{}
@@ -240,6 +248,8 @@ type projectCreatedMsg struct {
 }
 
 type delayedSuccessMsg struct{}
+
+type loadProjectsMsg []list.Item
 
 type installDoneMsg struct{ err error }
 
@@ -315,6 +325,14 @@ func readNextLine(proc *cmdProcess) tea.Cmd {
 
 func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+
+	// Handle project loading
+	if items, ok := msg.(loadProjectsMsg); ok {
+		// Prepend New Project button
+		finalItems := append([]list.Item{item{title: "+ New Project", desc: "Create a new project from template"}}, items...)
+		m.projectList.SetItems(finalItems)
+		return m, nil
+	}
 
 	// --- Navigation Messages ---
 	switch msg.(type) {
