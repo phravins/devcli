@@ -46,8 +46,6 @@ func (m DocsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m DocsModel) View() string {
 	if !m.ready {
-		// Initialize viewport on first view if not ready (or wait for Resize)
-		// But better to simulate a resize or just return empty/loading
 		return "Loading Docs..."
 	}
 
