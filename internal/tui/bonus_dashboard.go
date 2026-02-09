@@ -1,4 +1,4 @@
-﻿package tui
+package tui
 
 import (
 	"github.com/charmbracelet/bubbles/list"
@@ -17,6 +17,7 @@ type BonusDashboardModel struct {
 	taskRunnerModel  TaskRunnerModel
 	smartFileModel   SmartFileModel
 	snippetsModel    SnippetsModel
+	projectDashModel ProjectDashModel
 	aiAssistantModel AIAssistantModel
 	timeMachineModel interface{} // Will hold *TimeMachineModel
 	timeMachinePath  string
@@ -29,6 +30,7 @@ const (
 	StateBonusTaskRunner
 	StateBonusSmartFile
 	StateBonusSnippets
+	StateBonusProjectDash
 	StateBonusAIAssistant
 	StateBonusTimeMachine
 	StateBonusUpdate
@@ -39,6 +41,7 @@ func NewBonusDashboardModel(workspace string) BonusDashboardModel {
 	items := []list.Item{
 		item{title: "Task Runner", desc: "One-click build, test, format, and lint"},
 		item{title: "Smart File Creator", desc: "Generate config files (.env, Dockerfile, etc.)"},
+		item{title: "Project Dashboard", desc: "Overview of all your projects and stats"},
 		item{title: "Snippet Library", desc: "Personal vault of reusable code"},
 		item{title: "AI Assistant", desc: "AI-powered code generation and assistance"},
 		item{title: "Code Time Machine", desc: "Track code evolution, find bugs, and analyze history"},
@@ -56,6 +59,7 @@ func NewBonusDashboardModel(workspace string) BonusDashboardModel {
 		taskRunnerModel:  NewTaskRunnerModel(workspace),
 		smartFileModel:   NewSmartFileModel(workspace),
 		snippetsModel:    NewSnippetsModel(),
+		projectDashModel: NewProjectDashModel(workspace),
 		aiAssistantModel: NewAIAssistantModel(),
 		updaterModel:     NewUpdaterModel(),
 		helpView:         viewport.New(80, 20),
@@ -104,6 +108,10 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		var snCmd tea.Cmd
 		m.snippetsModel, snCmd = m.snippetsModel.Update(msg)
 		return m, snCmd
+	case StateBonusProjectDash:
+		var pdCmd tea.Cmd
+		m.projectDashModel, pdCmd = m.projectDashModel.Update(msg)
+		return m, pdCmd
 
 	case StateBonusAIAssistant:
 		var aiCmd tea.Cmd
@@ -172,6 +180,9 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 					case "Snippet Library":
 						m.state = StateBonusSnippets
 						return m, m.snippetsModel.Init()
+					case "Project Dashboard":
+						m.state = StateBonusProjectDash
+						return m, m.projectDashModel.Init()
 					case "AI Assistant":
 						m.state = StateBonusAIAssistant
 						return m, m.aiAssistantModel.Init()
@@ -213,6 +224,9 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		case StateBonusSnippets:
 			m.snippetsModel, cmd = m.snippetsModel.Update(msg)
 			return m, cmd
+		case StateBonusProjectDash:
+			m.projectDashModel, cmd = m.projectDashModel.Update(msg)
+			return m, cmd
 		case StateBonusAIAssistant:
 			m.aiAssistantModel, cmd = m.aiAssistantModel.Update(msg)
 			return m, cmd
@@ -241,6 +255,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		m.taskRunnerModel, _ = m.taskRunnerModel.Update(msg)
 		m.smartFileModel, _ = m.smartFileModel.Update(msg)
 		m.snippetsModel, _ = m.snippetsModel.Update(msg)
+		m.projectDashModel, _ = m.projectDashModel.Update(msg)
 		m.aiAssistantModel, _ = m.aiAssistantModel.Update(msg)
 		m.updaterModel, _ = m.updaterModel.Update(msg)
 
@@ -262,6 +277,8 @@ func (m BonusDashboardModel) View() string {
 		return m.smartFileModel.View()
 	case StateBonusSnippets:
 		return m.snippetsModel.View()
+	case StateBonusProjectDash:
+		return m.projectDashModel.View()
 	case StateBonusAIAssistant:
 		return m.aiAssistantModel.View()
 	case StateBonusTimeMachine:
