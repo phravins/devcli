@@ -65,7 +65,7 @@ func (m ProjectDashModel) Update(msg tea.Msg) (ProjectDashModel, tea.Cmd) {
 
 		switch msg.String() {
 		case "esc", "q":
-			return m, func() tea.Msg { return BackMsg{} }
+			return m, func() tea.Msg { return SubFeatureBackMsg{} }
 		case "r":
 			// Refresh
 			m.loading = true
