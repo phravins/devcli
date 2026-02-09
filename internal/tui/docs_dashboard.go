@@ -3,6 +3,7 @@ package tui
 import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -11,12 +12,20 @@ type DocsModel struct {
 	width    int
 	height   int
 	ready    bool
+	renderer *glamour.TermRenderer
 }
 
 func NewDocsModel() DocsModel {
+	// Initialize glamour renderer
+	r, _ := glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(100), // Default, will be updated on resize
+	)
+
 	return DocsModel{
-		width:  100, // Default, will be resized
-		height: 30,
+		width:    100, // Default, will be resized
+		height:   30,
+		renderer: r,
 	}
 }
 
@@ -53,11 +62,15 @@ func (m DocsModel) View() string {
 		Bold(true).
 		Foreground(lipgloss.Color("#0F9E99")).
 		Padding(1, 0).
+		Align(lipgloss.Center).
+		Width(m.width).
 		Render("DevCLI Documentation")
 
 	footer := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#666666")).
 		Padding(1, 0).
+		Align(lipgloss.Center).
+		Width(m.width).
 		Render("Esc/Q: Back • ↑/↓: Scroll")
 
 	return lipgloss.JoinVertical(
@@ -73,114 +86,120 @@ func (m *DocsModel) resizeViewport() {
 	footerHeight := 3 // Footer + Padding
 	verticalMarginHeight := headerHeight + footerHeight
 
+	// Re-create renderer with new width
+	contentWidth := m.width - 4 // Padding
+	if contentWidth < 20 {
+		contentWidth = 20
+	}
+
+	m.renderer, _ = glamour.NewTermRenderer(
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(contentWidth),
+	)
+
+	renderedContent, err := m.renderer.Render(getDocsContent())
+	if err != nil {
+		renderedContent = "Error rendering documentation: " + err.Error()
+	}
+
 	if !m.ready {
 		// First time initialization
 		m.viewport = viewport.New(m.width, m.height-verticalMarginHeight)
-		m.viewport.SetContent(getDocsContent())
+		m.viewport.SetContent(renderedContent)
 		m.ready = true
 	} else {
 		m.viewport.Width = m.width
 		m.viewport.Height = m.height - verticalMarginHeight
+		m.viewport.SetContent(renderedContent) // Re-render content for wrapping
 	}
 }
 
 func getDocsContent() string {
 	return `
-# DevCLI - Developer's Command Line Interface
+# DevCLI - Unified Developer Workspace
 
-DevCLI is a terminal-based development workspace that consolidates essential developer tools into a single unified interface. It manages projects, files, virtual environments, and provides AI-powered assistance without requiring you to leave the command line.
+DevCLI is a terminal-based power tool designed to consolidate your entire development workflow into a single, keyboard-driven interface. It replaces scattered scripts and context switching with a unified dashboard for project management, coding, and AI assistance.
 
-The application is built using Go and the Bubble Tea framework, providing a fast and responsive terminal user interface that works across all major operating systems.
+> **Philosophy**: "Stay in the flow." DevCLI brings your tools to you, right in your terminal.
 
-## 🚀 Core Features
+---
 
-DevCLI serves as a central hub for common development tasks, avoiding the need for scattered scripts.
+## 🚀 Key Features
 
 ### 1. Project Management
-- **Project Manager**: Scaffolding, templates, and history tracking.
-- **Task Runner**: One-click execution of build, test, and lint commands (Go, Python, Node, Rust, C++).
-- **Boilerplate Generator**: Instant code snippets and architectural patterns.
-- **Smart File Creator**: Instant generation of Dockerfiles, .env, Makefiles, and CI/CD configs.
+*   **Project Dashboard**: Get a bird's-eye view of all your projects (status, tech stack, last modified).
+*   **One-Click Scaffolding**: Create production-ready projects in Go, Python, Node.js, React, and more.
+*   **Task Runner**: Auto-detects ` + "`package.json`" + `, ` + "`Makefile`" + `, ` + "`go.mod`" + `, etc., and lets you run build/test commands instantly.
+*   **Smart File Creator**: Generate ` + "`.gitignore`" + `, ` + "`Dockerfile`" + `, ` + "`README.md`" + `, or CI/CD configs in seconds.
 
-### 2. Development Tools
-- **Virtual Environment Wizard**: Centralized management of Python venvs and Node modules.
-- **Dev Server**: Auto-detecting live reload servers for web development.
-- **File Manager & Editor**: Keyboard-driven filesystem navigation and quick editing.
-- **Auto-Update System**: Keeps your languages and tools current.
+### 2. Development Environment
+*   **Dev Server Launcher**: Automatically detects your web framework (Next.js, Flask, Django) and launches the dev server with live log streaming.
+*   **Virtual Environment Wizard**: Centralized management for Python ` + "`venvs`" + ` and Node ` + "`node_modules`" + `. scan, sync, and clean up to save disk space.
+*   **Built-in Editor**: A lightweight, nano-like editor with syntax highlighting for quick edits without leaving DevCLI.
+*   **File Manager**: A fully functional file explorer with fuzzy search and file operations.
 
 ### 3. AI & Analysis
-- **AI Assistant**: Built-in chat for coding help, debugging, and explanations.
-- **Code Time Machine**: Git-powered code evolution tracker with bug detection and blame visualization.
-- **Snippet Library**: Your personal vault for reusable code blocks.
+*   **AI Assistant**: Chat with LLMs (Ollama, OpenAI, Claude, Gemini) directly in your terminal. Context-aware code generation and debugging.
+*   **Code Time Machine**: A visual interface for Git history. Step through commits, see blame annotations, and get AI-powered bug risk analysis.
+*   **Snippet Library**: Save and organize your favorite code blocks for instant reuse.
 
 ---
 
-## 📦 Installation
+## ⚙️ Configuration
 
-**Note**: When installed via 'go install', dependencies are managed automatically.
+DevCLI stores its configuration in ` + "`~/.devcli/config.yaml`" + ` (or ` + "`%USERPROFILE%\\.devcli\\config.yaml`" + ` on Windows).
 
-### Method 1: Automated (Windows)
-1. Download 'setup_devcli.bat'.
-2. Right-click -> "Run as administrator".
-3. Automatically installs Go, DevCLI, and sets PATH.
+### AI Providers
+You can configure multiple AI backends. Go to **Settings** in the main menu or edit the config file directly.
 
-### Method 2: Automated (Linux/macOS)
-1. Download 'install.sh'.
-2. Run:
-   'chmod +x install.sh'
-   './install.sh'
+` + "```yaml" + `
+ai:
+  provider: "ollama" # or "openai", "anthropic", "gemini"
+  model: "llama3"    # Model name
+  api_key: ""        # Required for cloud providers
+  base_url: ""       # Optional custom endpoint
+` + "```" + `
 
-### Method 3: Go Install
-If Go is already installed:
-'go install github.com/phravins/devcli@latest'
-
-### Method 4: Build from Source
-'git clone https://github.com/phravins/devcli.git'
-'cd devcli'
-'go build -o devcli.exe .'
+### Customizing Styles
+DevCLI supports themes. Currently, it defaults to an adaptive theme based on your terminal's background color.
 
 ---
 
-## 🛠️ Usage
+## ⌨️ Global Shortcuts
 
-### Interactive Mode
-Launch the main dashboard:
-'devcli'
-
-Use **Arrow Keys** to navigate, **Enter** to select, and **Esc/Q** to go back.
-
-### Direct Subcommands
-- 'devcli dev'          # Open project management tools
-- 'devcli file'         # Launch file manager
-- 'devcli ai'           # Start AI chat session
-- 'devcli editor FILE'  # Open file in built-in editor
+| Key | Action |
+| :--- | :--- |
+| **Ctrl+C** | Quit Application |
+| **Esc / Q** | Go Back / Close View |
+| **Arrow Keys** | Navigate Menus & Lists |
+| **Enter** | Select / Confirm |
+| **?** | Show Help (Context Sensitive) |
+| **Ctrl+L** | Clear Screen / Redraw |
 
 ---
 
-## 🔍 Feature Deep Dive
+## ❓ FAQ & Troubleshooting
 
-### Project Creation & Management
-Create projects from predefined templates (Go, Python, Node.js, React, etc.). Features smart naming, history tracking, backups, and automatic dependency installation (npm install, pip install).
+**Q: DevCLI doesn't detect my project type.**
+A: Ensure your project has standard marker files like ` + "`package.json`" + `, ` + "`go.mod`" + `, ` + "`requirements.txt`" + `, or ` + "`pom.xml`" + `.
 
-### Virtual Environment Wizard
-Manage Python venvs and Node modules globally. Recursively scans workspace, syncs requirements.txt, clones environments, and cleans up unused deps.
+**Q: The AI Assistant isn't working.**
+A: 
+1. Check your internet connection.
+2. If using **Ollama**, ensure the service is running (` + "`ollama serve`" + `).
+3. If using **OpenAI/Claude**, verify your API key in **Settings**.
 
-### Dev Server Launcher
-Intelligent server manager. Detects framework (Next.js, Flask, Go, etc.) and runs the dev server. Features live log streaming, filtering, and search.
-
-### Code Time Machine
-Interactive Git history.
-- **Time Travel**: Step through commits to see code evolution.
-- **Bug Radar**: formatting detects risky commits (late-night, large refactors).
-- **Blame**: Line-by-line author tracking.
-
-### AI Integration
-Chat with Ollama, Gemini, OpenAI, Claude. Supports system prompts, context-aware suggestions, and works offline with local models.
-
-### Built-in Editor
-Lightweight editor for quick fixes. Syntax highlighting for Python/Go, direct execution (Ctrl+R), and basic IDE features.
+**Q: How do I update DevCLI?**
+A: Go to **Bonus Features** -> **Check for Updates**. DevCLI can self-update by pulling the latest code and rebuilding itself.
 
 ---
-*DevCLI - The unified workspace for modern developers.*
+
+## 🤝 Contributing
+
+DevCLI is open source! We welcome contributions.
+*   **Repo**: https://github.com/phravins/devcli
+*   **Issues**: Report bugs or request features on GitHub issues.
+
+*Built with ❤️ using Go, Bubble Tea, and Lip Gloss.*
 `
 }
