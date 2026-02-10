@@ -29,6 +29,7 @@ DevCLI serves as a central hub for common development tasks. Instead of grouping
 *   **Boilerplate Generator**: Instant code snippets and architectural patterns.
 *   **Snippet Library**: Your personal vault for reusable code blocks.
 *   **AI Assistant**: Built-in chat for coding help, debugging, and explanations.
+*   **Documentation**: Comprehensive in-app docs with multi-language support (English, Spanish, French, German, Chinese, Japanese).
 *   **File Manager & Editor**: Keyboard-driven filesystem navigation and quick editing.
 *   **Auto-Update System**: Keeps your languages and tools current.
 
@@ -322,6 +323,36 @@ Code Time Machine:
     - Track down regression sources
     - Analyze team contribution patterns
 
+Documentation:
+  - Comprehensive in-app documentation system
+  - Multi-language support (6 languages):
+    * English - Full feature documentation
+    * Spanish (Español) - Complete translation
+    * French (Français) - Complete translation
+    * German (Deutsch) - Complete translation
+    * Chinese (中文) - Complete translation
+    * Japanese (日本語) - Complete translation
+  - Language switching with 'L' key (cycles through all languages)
+  - Scrollable viewport for easy navigation
+  - Markdown-rendered content with syntax highlighting
+  - Covers all major features:
+    * Project management and scaffolding
+    * Development tools (task runner, dev server, venv manager)
+    * Integrated editing and file management
+    * AI integration and intelligence features
+    * Advanced configuration options
+    * Complete keyboard shortcut reference
+    * Troubleshooting guides
+  - Quick access via main dashboard
+  - Accessible without internet connection
+  - CLI access: `devcli` → "Docs" menu option
+  
+  Language Support Details:
+    - All UI navigation in selected language
+    - Code examples with proper syntax highlighting
+    - Consistent formatting across all languages
+    - Cultural adaptation of examples where relevant
+    - Full keyboard shortcut documentation in each language
 
 
 AI INTEGRATION
@@ -487,6 +518,11 @@ Editor:
   Ctrl+N          New file
   Ctrl+H          Toggle help
   Ctrl+C          Exit editor
+
+Docs:
+  L               Cycle through languages (EN → ES → FR → DE → ZH → JA)
+  ↑/↓ Arrow Keys  Scroll documentation
+  Esc or Q        Return to main menu
 
 Each feature displays its available shortcuts in the footer area of the
 interface.
