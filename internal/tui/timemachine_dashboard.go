@@ -149,63 +149,58 @@ func (m *TimeMachineModel) View() string {
 		return m.renderHelp()
 	}
 
-	// Build the content stack with specific alignment
+	// Build the content stack
 	header := m.renderHeader()
 	timeline := m.renderTimeline()
 
-	// Main content is now just the blame view
-	mainContent := m.renderMainContent()
+	// Tracking History Box (top box with blame view)
+	trackingBox := m.renderMainContent()
 
-	// Create bottom row with Footer (left) and Detail Box (right)
-	footer := m.renderFooter()
+	// Commit Details Box (bottom box)
 	detailBox := m.renderDetailBox()
 
-	footerWidth := lipgloss.Width(footer)
-	detailWidth := lipgloss.Width(detailBox)
-	spacerWidth := m.width - footerWidth - detailWidth - 4 // -4 for margins
-	if spacerWidth < 0 {
-		spacerWidth = 0
-	}
-	spacer := strings.Repeat(" ", spacerWidth)
+	// Footer (shortcuts)
+	footer := m.renderFooter()
 
-	bottomRow := lipgloss.JoinHorizontal(lipgloss.Bottom, footer, spacer, detailBox)
-
+	// Stack vertically: header, timeline, tracking box, detail box, footer
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		header,
 		timeline,
 		"", // Spacer
-		mainContent,
-		bottomRow,
+		trackingBox,
+		"", // Spacer between boxes
+		detailBox,
+		"", // Spacer
+		footer,
 	)
 
-	// Anchoring to Top with a 3-line margin is even safer for Windows command prompts
+	// Add margins and center the content
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top,
-		lipgloss.NewStyle().PaddingTop(3).Render(content))
+		lipgloss.NewStyle().PaddingTop(2).PaddingLeft(2).PaddingRight(2).Render(content))
 }
 func (m *TimeMachineModel) setupViewports() {
 	// Fixed height for top UI elements (Header + Timeline + Padding)
 	topUIHeight := 6
 
-	// Fixed height for bottom Detail Box
-	detailHeight := 7 // Even smaller fixed size for details
+	// Fixed height for bottom Detail Box - make it bigger
+	detailHeight := 12 // Increased from 7 to show more commit info
 
-	// Blame View takes the rest
-	// Total height - TopUI - DetailHeight - Margins
-	blameHeight := m.height - topUIHeight - detailHeight - 4
+	// Blame View (Tracking History) takes the rest
+	// Total height - TopUI - DetailHeight - Margins (more generous)
+	blameHeight := m.height - topUIHeight - detailHeight - 8 // Increased margin from 4 to 8
 	if blameHeight < 10 {
 		blameHeight = 10
 	}
 
-	// Width overhead: 4 for borders/padding, plus 6 for safety (total 10 instead of 6)
-	availableWidth := m.width - 10
+	// Width with better margins: 8 chars total (4 on each side)
+	availableWidth := m.width - 12 // Increased from 10 to 12 for wider margins
 	if availableWidth < 60 {
 		availableWidth = 60
 	}
-	detailWidth := 45
-	if detailWidth > availableWidth {
-		detailWidth = availableWidth
-	}
+
+	// Detail box should be wide enough but not too wide
+	detailWidth := availableWidth // Make detail box same width as blame box
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
 	m.detailViewport = viewport.New(detailWidth, detailHeight)
@@ -393,28 +388,29 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 	return strings.Join(details, "\n")
 }
 
-// renderMainContent returns JUST the blame view box
+// renderMainContent returns the tracking history box (blame view)
 func (m *TimeMachineModel) renderMainContent() string {
-	// Box style with MaxWidth/MaxHeight for strict containment
+	// Tracking History Box with proper sizing and padding
 	blameBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(0, 1).
-		Width(m.blameViewport.Width).
-		Height(m.blameViewport.Height).
+		Width(m.blameViewport.Width + 4).   // Add padding to width
+		Height(m.blameViewport.Height + 2). // Add padding to height
 		Render(m.blameViewport.View())
 
 	return blameBox
 }
 
-// renderDetailBox returns the standalone detail box
+// renderDetailBox returns the commit details box
 func (m *TimeMachineModel) renderDetailBox() string {
+	// Commit Details Box with proper sizing and padding
 	detailBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
-		Padding(0, 1). // Reduced padding to save space
-		Width(m.detailViewport.Width).
-		Height(m.detailViewport.Height).
+		Padding(0, 1).
+		Width(m.detailViewport.Width + 4).   // Add padding to width
+		Height(m.detailViewport.Height + 2). // Add padding to height
 		Render(m.detailViewport.View())
 
 	return detailBox
