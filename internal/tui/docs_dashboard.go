@@ -19,10 +19,11 @@ type DocsModel struct {
 const (
 	LangEnglish  = "en"
 	LangSpanish  = "es"
+	LangHindi    = "hi"
 	LangFrench   = "fr"
 	LangGerman   = "de"
 	LangChinese  = "zh"
-	LangJapanese = "jp"
+	LangJapanese = "ja"
 
 	Backtick = "`"
 )
@@ -717,67 +718,134 @@ A: DevCLI erfordert, dass ` + Backtick + `git` + Backtick + ` installiert und in
 `
 }
 
+func getDocsContentHindi() string {
+	return `
+# DevCLI - यूनिफाइड डेवलपर वर्कस्पेस
+
+DevCLI एक टर्मिनल-आधारित पावर टूल है जिसे आपके पूरे डेवलपमेंट वर्कफ़्लो को एक सिंगल, कीबोर्ड-संचालित इंटरफ़ेस में समेकित करने के लिए डिज़ाइन किया गया है।
+
+> **दर्शन**: "प्रवाह में रहें।" DevCLI आपके टूल को सीधे आपके टर्मिनल में लाता है।
+
+---
+
+## 🚀 मुख्य विशेषताएं
+
+### 1. प्रोजेक्ट प्रबंधन
+*   **प्रोजेक्ट डैशबोर्ड**: अपने सभी प्रोजेक्ट्स (स्थिति, तकनीक स्टैक, अंतिम संशोधन) का विहंगम दृश्य प्राप्त करें।
+*   **वन-क्लिक स्कैफोल्डिंग**: Go, Python, Node.js, React, आदि में प्रोडक्शन-रेडी प्रोजेक्ट्स बनाएं।
+*   **टास्क रनर**: स्वचालित रूप से ` + "`package.json`" + `, ` + "`Makefile`" + `, ` + "`go.mod`" + `, आदि का पता लगाता है, और आपको बिल्ड/टेस्ट कमांड तुरंत चलाने देता है।
+*   **स्मार्ट फाइल क्रिएटर**: सेकंड में ` + "`.gitignore`" + `, ` + "`Dockerfile`" + `, ` + "`README.md`" + ` उत्पन्न करें।
+
+### 2. डेवलपमेंट एनवायरनमेंट
+*   **डेव सर्वर लॉन्चर**: स्वचालित रूप से आपके वेब फ्रेमवर्क (Next.js, Flask, Django) का पता लगाता है और लाइव लॉग स्ट्रीमिंग के साथ डेव सर्वर लॉन्च करता है।
+*   **वर्चुअल एनवायरनमेंट विजार्ड**: Python ` + "`venvs`" + ` और Node ` + "`node_modules`" + ` के लिए केंद्रीकृत प्रबंधन। डिस्क स्थान बचाने के लिए स्कैन, सिंक और क्लीन अप करें।
+*   **बिल्ट-इन एडिटर**: DevCLI को छोड़े बिना त्वरित संपादन के लिए सिंटैक्स हाइलाइटिंग के साथ एक हल्का एडिटर।
+*   **फाइल मैनेजर**: फजी सर्च और फाइल ऑपरेशंस के साथ एक पूरी तरह से कार्यात्मक फाइल एक्सप्लोरर।
+
+### 3. एआई और विश्लेषण
+*   **एआई असिस्टेंट**: सीधे अपने टर्मिनल में एलएलएम (Ollama, OpenAI, Claude, Gemini) के साथ चैट करें। संदर्भ-जागरूक कोड जनरेशन और डिबगिंग।
+*   **कोड टाइम मशीन**: Git इतिहास के लिए एक दृश्य इंटरफ़ेस। कमिट्स के माध्यम से कदम बढ़ाएं और एआई-संचालित बग जोखिम विश्लेषण प्राप्त करें।
+
+---
+
+## ⚙️ कॉन्फ़िगरेशन
+
+DevCLI अपना कॉन्फ़िगरेशन ` + "`~/.devcli/config.yaml`" + ` में स्टोर करता है।
+
+### एआई प्रदाता
+आप कई एआई बैकएंड कॉन्फ़िगर कर सकते हैं। मुख्य मेनू में **सेटिंग्स** पर जाएं।
+
+` + "```yaml" + `
+ai:
+  provider: "ollama" # या "openai", "anthropic", "gemini"
+  model: "llama3"    # मॉडल का नाम
+  api_key: ""        # क्लाउड प्रदाताओं के लिए आवश्यक
+` + "```" + `
+
+---
+
+## ⌨️ ग्लोबल शॉर्टकट्स
+
+| कुंजी | कार्रवाई |
+| :--- | :--- |
+| **Ctrl+C** | एप्लिकेशन छोड़ें |
+| **Esc / Q** | वापस जाएं / दृश्य बंद करें |
+| **Arrow Keys** | मेनू और सूचियों नेविगेट करें |
+| **Enter** | चुनें / पुष्टि करें |
+| **?** | मदद दिखाएं |
+
+---
+
+## 🤝 योगदान
+
+DevCLI ओपन सोर्स है! हम योगदान का स्वागत करते हैं।
+*   **रिपो**: https://github.com/phravins/devcli
+
+*Go, Bubble Tea, और Lip Gloss के साथ ❤️ से बनाया गया।*
+`
+}
+
 func getDocsContentChinese() string {
 	return `
 # DevCLI - 终极开发者生存工具包
 
-DevCLI 不仅仅是一个工具；它是对开发者体验的彻底重新思考。它将项目管理、编码、调试和 AI 辅助统一到一个单一、连贯的终端界面中。告别碎片化的工作流程和上下文切换。
+DevCLI 不仅仅是一个工具；它是对开发者体验的彻底重新思考。它将项目管理、编码、调试和 AI 辅助统一到一个单一的、连贯的终端界面中。告别碎片化的工作流程和上下文切换。
 
-> **理念**: "保持流畅。" 您需要的一切都在一键之遥。
+> **理念**: "保持心流。" 你所需要的一切都在指尖。
 
 ---
 
 ## 🚀 完整功能细分
 
-### 1. 项目管理与脚手架
-*   **统一仪表板 (` + Backtick + `dev` + Backtick + `)**:
-    *   自动检测项目类型（Go, Python, React, Rust, Node 等）。
-    *   显示 git 状态、活动端口、技术栈和最后修改时间。
+### 1. 项目管理和脚手架
+*   **统一仪表板 (` + Backtick + `dev` + Backtick + `)**: 
+    *   自动检测项目类型 (Go, Python, React, Rust, Node 等)。
+    *   显示 git 状态、活跃端口、技术栈和最后修改时间。
     *   快速操作：打开、运行、编辑、删除。
-*   **即时脚手架 (` + Backtick + `dev new` + Backtick + `)**:
-    *   **模板**: 强大、生产就绪的模板，适用于：
-        *   **Go**: CHI, Gin, Fiber, Cobra CLI.
-        *   **Python**: Flask, FastAPI, Django.
-        *   **Frontend**: React (Vite), Vue, Svelte.
-        *   **Rust**: Actix-web, Axum.
+*   **即时脚手架 (` + Backtick + `dev new` + Backtick + `)**: 
+    *   **模板**: 健壮的、生产就绪的模板：
+        *   **Go**: CHI, Gin, Fiber, Cobra CLI。
+        *   **Python**: Flask, FastAPI, Django。
+        *   **Frontend**: React (Vite), Vue, Svelte。
+        *   **Rust**: Actix-web, Axum。
     *   **智能初始化**: 自动生成 ` + Backtick + `.gitignore` + Backtick + `, ` + Backtick + `Dockerfile` + Backtick + `, ` + Backtick + `Makefile` + Backtick + ` 和 CI/CD 管道。
 
-### 2. 开发强大工具
-*   **任务运行器 (` + Backtick + `dev run` + Backtick + `)**:
+### 2. 开发增强工具
+*   **任务运行器 (` + Backtick + `dev run` + Backtick + `)**: 
     *   智能解析 ` + Backtick + `package.json` + Backtick + `, ` + Backtick + `Makefile` + Backtick + `, ` + Backtick + `Justfile` + Backtick + `, ` + Backtick + `go.mod` + Backtick + `。
-    *   运行脚本（构建、测试、lint、部署），无需记住特定工具的语法。
-*   **开发服务器启动器 (` + Backtick + `dev server` + Backtick + `)**:
-    *   自动检测框架（Next.js, Flask, Laravel 等）和启动命令。
+    *   无需记住特定工具的语法即可运行脚本 (build, test, lint, deploy)。
+*   **开发服务器启动器 (` + Backtick + `dev server` + Backtick + `)**: 
+    *   自动检测框架 (Next.js, Flask, Laravel 等) 和启动命令。
     *   自动管理端口以避免冲突。
     *   将实时日志直接流式传输到仪表板。
-*   **虚拟环境管理器 (` + Backtick + `dev venv` + Backtick + `)**:
+*   **虚拟环境管理器 (` + Backtick + `dev venv` + Backtick + `)**: 
     *   集中查看系统中所有的 Python ` + Backtick + `venvs` + Backtick + ` 和 Node ` + Backtick + `node_modules` + Backtick + `。
     *   一键激活/停用。
     *   深度清理：查找并删除废弃的环境以回收 GB 级的磁盘空间。
 
-### 3. 集成编辑与文件管理
-*   **Nano 风格编辑器**:
+### 3. 集成编辑和文件管理
+*   **Nano 风格编辑器**: 
     *   嵌入在 DevCLI 中的快速、轻量级编辑器。
-    *   支持 50+ 种语言的语法高亮显示。
-    *   转到行、搜索/替换和撤消/重做。
-*   **智能文件管理器 (` + Backtick + `dev file` + Backtick + `)**:
+    *   支持 50+ 种语言的语法高亮。
+    *   跳转到行、搜索/替换和撤销/重做。
+*   **智能文件管理器 (` + Backtick + `dev file` + Backtick + `)**: 
     *   模糊搜索文件和目录。
-    *   CRUD 操作（创建、读取、更新、删除）。
+    *   CRUD 操作 (创建、读取、更新、删除)。
     *   批量操作和文件预览。
 
 ### 4. AI 与智能 (大脑)
-*   **AI 聊天助手 (` + Backtick + `dev chat` + Backtick + `)**:
-    *   **多模型支持**: 在本地 (Ollama/Llama3) 和云 (OpenAI GPT-4, Claude 3.5, Gemini 1.5) 之间即时切换。
-    *   **上下文感知**:
+*   **AI 聊天助手 (` + Backtick + `dev chat` + Backtick + `)**: 
+    *   **多模型支持**: 在本地 (Ollama/Llama3) 和云端 (OpenAI GPT-4, Claude 3.5, Gemini 1.5) 之间即时切换。
+    *   **上下文感知**: 
         *   使用 ` + Backtick + `@filename` + Backtick + ` 引用文件。
         *   使用 ` + Backtick + `@dirname` + Backtick + ` 引用目录。
         *   无缝粘贴剪贴板内容/图像。
-    *   **模式**: 编码、调试、创意写作、一般聊天。
-*   **代码时光机 (` + Backtick + `dev time` + Backtick + `)**:
+    *   **模式**: 编码、调试、创意写作、通用聊天。
+*   **代码时间机器 (` + Backtick + `dev time` + Backtick + `)**: 
     *   可视化 Git 历史探索器。
-    *   逐步浏览提交以查看代码演变。
+    *   逐步查看提交以了解代码演变。
     *   **AI 分析**: "解释此提交" 和 "在此差异中查找潜在的错误"。
-    *   责备视图，查看谁在何时编写了什么。
+    *   Blame 视图以查看谁在何时编写了什么。
 
 ---
 
@@ -812,9 +880,9 @@ ui:
 
 ---
 
-## ⌨️主要快捷键
+## ⌨️ 主快捷键
 
-| 上下文 | 按键 | 动作 |
+| 上下文 | 键 | 动作 |
 | :--- | :--- | :--- |
 | **全局** | ` + Backtick + `Ctrl+C` + Backtick + ` | 退出应用程序 |
 | | ` + Backtick + `Esc` + Backtick + ` | 返回 / 关闭视图 |
@@ -830,14 +898,14 @@ ui:
 
 ## ❓ 故障排除
 
-**问: "找不到命令: ollama"**
+**问: "未找到命令: ollama"**
 答: 确保您已从 [ollama.com](https://ollama.com) 安装 Ollama 并且服务正在运行 (` + Backtick + `ollama serve` + Backtick + `)。
 
 **问: DevCLI 启动缓慢。**
-答: 如果您有数千个项目，请尝试在 config.yaml 中配置 ` + Backtick + `scan_depth: 2` + Backtick + ` 以限制目录遍历深度。
+答: 如果您有数千个项目，请尝试在您的 config.yaml 中配置 ` + Backtick + `scan_depth: 2` + Backtick + ` 以限制目录遍历深度。
 
 **问: Git 集成失败。**
-答: DevCLI 需要 ` + Backtick + `git` + Backtick + ` 已安装并在您的系统中可用 PATH。
+答: DevCLI 需要安装 ` + Backtick + `git` + Backtick + ` 并可在您的系统 PATH 中使用。
 
 ---
 
@@ -845,9 +913,9 @@ ui:
 
 *   **GitHub**: [github.com/phravins/devcli](https://github.com/phravins/devcli)
 *   **问题**: 在 GitHub 上提交错误报告和功能请求。
-*   **贡献**: 欢迎 PR！ 参见 ` + Backtick + `CONTRIBUTING.md` + Backtick + `.
+*   **贡献**: 欢迎 PR！请参阅 ` + Backtick + `CONTRIBUTING.md` + Backtick + `。
 
-*赋能开发者更快，更干净，更智能地构建。*
+*赋能开发者更快、更清洁、更智能地构建。*
 `
 }
 
@@ -855,72 +923,72 @@ func getDocsContentJapanese() string {
 	return `
 # DevCLI - 究極の開発者サバイバルキット
 
-DevCLI は単なるツールではありません。開発者体験の完全な再考です。プロジェクト管理、コーディング、デバッグ、AI 支援を単一の統合されたターミナルインターフェースに統合します。断片化されたワークフローとコンテキストの切り替えに別れを告げましょう。
+DevCLIは単なるツールではありません。開発者の体験を完全に再考したものです。プロジェクト管理、コーディング、デバッグ、AI支援を単一の一貫した端末インターフェースに統合します。断片化されたワークフローやコンテキストの切り替えに別れを告げましょう。
 
-> **哲学**: "フローを維持する。" 必要なものはすべて、キーを押すだけですぐに利用できます。
+> **哲学**: "フローにとどまる。" 必要なものはすべてキーストローク1つ先にあります。
 
 ---
 
 ## 🚀 完全な機能内訳
 
 ### 1. プロジェクト管理とスキャフォールディング
-*   **統合ダッシュボード (` + "`" + `dev` + "`" + `)**: 
-    *   プロジェクトタイプ（Go, Python, React, Rust, Node など）を自動検出します。
-    *   Git ステータス、アクティブポート、技術スタック、最終更新時間を表示します。
-    *   クイックアクション：開く、実行、編集、削除。
-*   **インスタント・スキャフォールディング (` + "`" + `dev new` + "`" + `)**: 
-    *   **テンプレート**: 以下のための堅牢で本番環境対応のテンプレート：
-        *   **Go**: CHI, Gin, Fiber, Cobra CLI.
-        *   **Python**: Flask, FastAPI, Django.
-        *   **Frontend**: React (Vite), Vue, Svelte.
-        *   **Rust**: Actix-web, Axum.
-    *   **スマート初期化**: ` + "`" + `.gitignore` + "`" + `, ` + "`" + `Dockerfile` + "`" + `, ` + "`" + `Makefile` + "`" + `, CI/CD パイプラインを自動生成します。
+*   **統合ダッシュボード (` + Backtick + `dev` + Backtick + `)**: 
+    *   プロジェクトタイプ (Go, Python, React, Rust, Nodeなど) を自動検出します。
+    *   gitステータス、アクティブポート、テックスタック、最終変更時刻を表示します。
+    *   クイックアクション: 開く、実行、編集、削除。
+*   **インスタントスキャフォールディング (` + Backtick + `dev new` + Backtick + `)**: 
+    *   **テンプレート**: 堅牢で本番環境に対応したテンプレート:
+        *   **Go**: CHI, Gin, Fiber, Cobra CLI。
+        *   **Python**: Flask, FastAPI, Django。
+        *   **Frontend**: React (Vite), Vue, Svelte。
+        *   **Rust**: Actix-web, Axum。
+    *   **スマートイニシャライズ**: ` + Backtick + `.gitignore` + Backtick + `, ` + Backtick + `Dockerfile` + Backtick + `, ` + Backtick + `Makefile` + Backtick + `、およびCI/CDパイプラインを自動的に生成します。
 
 ### 2. 開発パワーツール
-*   **タスクランナー (` + "`" + `dev run` + "`" + `)**: 
-    *   ` + "`" + `package.json` + "`" + `, ` + "`" + `Makefile` + "`" + `, ` + "`" + `Justfile` + "`" + `, ` + "`" + `go.mod` + "`" + ` をインテリジェントに解析します。
-    *   特定のツール構文を覚える必要なく、スクリプト（ビルド、テスト、リント、デプロイ）を実行します。
-*   **開発サーバーランチャー (` + "`" + `dev server` + "`" + `)**: 
-    *   フレームワーク（Next.js, Flask, Laravel など）と開始コマンドを自動検出します。
-    *   競合を避けるためにポートを自動管理します。
+*   **タスクランナー (` + Backtick + `dev run` + Backtick + `)**: 
+    *   ` + Backtick + `package.json` + Backtick + `, ` + Backtick + `Makefile` + Backtick + `, ` + Backtick + `Justfile` + Backtick + `, ` + Backtick + `go.mod` + Backtick + ` をインテリジェントに解析します。
+    *   特定のツールの構文を覚えることなくスクリプト (build, test, lint, deploy) を実行します。
+*   **開発サーバーランチャー (` + Backtick + `dev server` + Backtick + `)**: 
+    *   フレームワーク (Next.js, Flask, Laravelなど) と起動コマンドを自動検出します。
+    *   ポートを自動管理して競合を回避します。
     *   ライブログをダッシュボードに直接ストリーミングします。
-*   **仮想環境マネージャー (` + "`" + `dev venv` + "`" + `)**: 
-    *   システム上のすべての Python ` + "`" + `venvs` + "`" + ` と Node ` + "`" + `node_modules` + "`" + ` の一元管理ビュー。
+*   **仮想環境マネージャー (` + Backtick + `dev venv` + Backtick + `)**: 
+    *   システム上のすべてのPython ` + Backtick + `venvs` + Backtick + ` と Node ` + Backtick + `node_modules` + Backtick + ` を一元管理します。
     *   ワンクリックで有効化/無効化。
-    *   ディープクリーン：放棄された環境を見つけて削除し、GB 単位のディスク容量を再利用します。
+    *   ディープクリーン: 放棄された環境を見つけて削除し、GB単位のディスクスペースを再利用します。
 
 ### 3. 統合編集とファイル管理
-*   **Nano スタイルエディタ**: 
-    *   DevCLI に組み込まれた高速で軽量なエディタ。
+*   **Nanoスタイルエディター**: 
+    *   DevCLIに組み込まれた高速で軽量なエディター。
     *   50以上の言語のシンタックスハイライト。
-    *   行への移動、検索/置換、元に戻す/やり直し。
-*   **スマートファイルマネージャー (` + "`" + `dev file` + "`" + `)**: 
+    *   行へ移動、検索/置換、元に戻す/やり直し。
+*   **スマートファイルマネージャー (` + Backtick + `dev file` + Backtick + `)**: 
     *   ファイルとディレクトリのあいまい検索。
-    *   CRUD 操作（作成、読み取り、更新、削除）。
+    *   CRUD操作 (作成、読み取り、更新、削除)。
     *   一括アクションとファイルプレビュー。
 
-### 4. AI とインテリジェンス (頭脳)
-*   **AI チャットアシスタント (` + "`" + `dev chat` + "`" + `)**: 
+### 4. AIとインテリジェンス (脳)
+*   **AIチャットアシスタント (` + Backtick + `dev chat` + Backtick + `)**: 
     *   **マルチモデルサポート**: ローカル (Ollama/Llama3) とクラウド (OpenAI GPT-4, Claude 3.5, Gemini 1.5) を即座に切り替えます。
     *   **コンテキスト認識**: 
-        *   ` + "`" + `@filename` + "`" + ` でファイルを参照。
-        *   ` + "`" + `@dirname` + "`" + ` でディレクトリを参照。
-        *   クリップボードのコンテンツ/画像をシームレスに貼り付け。
+        *   ` + Backtick + `@filename` + Backtick + ` でファイルを参照。
+        *   ` + Backtick + `@dirname` + Backtick + ` でディレクトリを参照。
+        *   クリップボードの内容/画像をシームレスに貼り付け。
     *   **モード**: コーディング、デバッグ、クリエイティブライティング、一般チャット。
-*   **コードタイムマシン (` + "`" + `dev time` + "`" + `)**: 
-    *   ビジュアル Git 履歴エクスプローラー。
-    *   コミットをステップスルーしてコードの進化を確認。
-    *   **AI 分析**: "このコミットを説明" および "この差分で潜在的なバグを見つける"。
-    *   誰がいつ何を書いたかを確認するための Blame ビュー。
+*   **コードタイムマシン (` + Backtick + `dev time` + Backtick + `)**: 
+    *   視覚的なGit履歴エクスプローラー。
+    *   コミットをステップ実行してコードの進化を確認。
+    *   **AI分析**: "このコミットを説明して" や "この差分で潜在的なバグを見つけて"。
+    *   誰がいつ何を書いたかを確認するためのBlameビュー。
 
 ---
 
 ## ⚙️ 高度な設定
 
-` + "`" + `~/.devcli/config.yaml` + "`" + ` を編集して、エクスペリエンスをカスタマイズします。
+体験をカスタマイズするには ` + Backtick + `~/.devcli/config.yaml` + Backtick + ` を編集してください。
 
-### AI 設定
-` + "`" + "```yaml" + "`" + `
+### AI設定
+` + Backtick + "```yaml" + Backtick + `
 ai:
   default_provider: "ollama"
   providers:
@@ -933,54 +1001,54 @@ ai:
     anthropic:
       api_key: "sk-ant-..."
       model: "claude-3-opus"
-` + "`" + "```" + "`" + `
+` + Backtick + "```" + Backtick + `
 
-### UI カスタマイズ
-` + "`" + "```yaml" + "`" + `
+### UIカスタマイズ
+` + Backtick + "```yaml" + Backtick + `
 ui:
   theme: "dracula" # オプション: dracula, nord, monokai, system
   editor:
     line_numbers: true
     mouse_support: true
-` + "`" + "```" + "`" + `
+` + Backtick + "```" + Backtick + `
 
 ---
 
-## ⌨️ マスターキーバインディング
+## ⌨️ マスターキーバインド
 
 | コンテキスト | キー | アクション |
 | :--- | :--- | :--- |
-| **グローバル** | ` + "`" + `Ctrl+C` + "`" + ` | アプリケーションを終了 |
-| | ` + "`" + `Esc` + "`" + ` | 戻る / ビューを閉じる |
-| | ` + "`" + `?` + "`" + ` | ヘルプオーバーレイを切り替え |
-| **ナビゲーション** | ` + "`" + `↑/↓` + "`" + ` | リストをナビゲート |
-| | ` + "`" + `Enter` + "`" + ` | 選択 / 実行 |
-| | ` + "`" + `Tab` + "`" + ` | フォーカスを切り替え |
-| **エディタ** | ` + "`" + `Ctrl+S` + "`" + ` | ファイルを保存 |
-| | ` + "`" + `Ctrl+F` + "`" + ` | テキストを検索 |
-| **ドキュメント** | ` + "`" + `L` + "`" + ` | 言語を切り替え |
+| **グローバル** | ` + Backtick + `Ctrl+C` + Backtick + ` | アプリケーション終了 |
+| | ` + Backtick + `Esc` + Backtick + ` | 戻る / ビューを閉じる |
+| | ` + Backtick + `?` + Backtick + ` | ヘルプオーバーレイ切り替え |
+| **ナビゲーション** | ` + Backtick + `↑/↓` + Backtick + ` | リスト移動 |
+| | ` + Backtick + `Enter` + Backtick + ` | 選択 / 実行 |
+| | ` + Backtick + `Tab` + Backtick + ` | フォーカス切り替え |
+| **エディター** | ` + Backtick + `Ctrl+S` + Backtick + ` | ファイル保存 |
+| | ` + Backtick + `Ctrl+F` + Backtick + ` | テキスト検索 |
+| **ドキュメント** | ` + Backtick + `L` + Backtick + ` | 言語切り替え |
 
 ---
 
 ## ❓ トラブルシューティング
 
-**Q: "コマンドが見つかりません: ollama"**
-A: [ollama.com](https://ollama.com) から Ollama をインストールし、サービスが実行されていること (` + "`" + `ollama serve` + "`" + `) を確認してください。
+**Q: "Command not found: ollama"**
+A: [ollama.com](https://ollama.com) からOllamaをインストールし、サービスが実行されていることを確認してください (` + Backtick + `ollama serve` + Backtick + `)。
 
-**Q: DevCLI の起動が遅い。**
-A: 数千のプロジェクトがある場合は、config.yaml で ` + "`" + `scan_depth: 2` + "`" + ` を設定して、ディレクトリトラバーサルの深さを制限してみてください。
+**Q: DevCLIの起動が遅い。**
+A: 数千のプロジェクトがある場合は、config.yamlで ` + Backtick + `scan_depth: 2` + Backtick + ` を設定してディレクトリ探索の深さを制限してみてください。
 
-**Q: Git 統合が失敗する。**
-A: DevCLI を使用するには、` + "`" + `git` + "`" + ` がインストールされ、システム PATH で利用可能である必要があります。
+**Q: DevCLIを使用するには、gitがインストールされている必要がありますか?**
+A: DevCLIを使用するには、` + Backtick + `git` + Backtick + ` がインストールされ、システムPATHで使用可能である必要があります。
 
 ---
 
 ## 🤝 コミュニティとサポート
 
 *   **GitHub**: [github.com/phravins/devcli](https://github.com/phravins/devcli)
-*   **問題**: GitHub でバグレポートや機能リクエストを送信してください。
-*   **貢献**: PR 歓迎！ ` + "`" + `CONTRIBUTING.md` + "`" + ` を参照してください。
+*   **問題**: GitHubでバグレポートや機能リクエストを送信してください。
+*   **貢献**: PRは大歓迎です！ ` + Backtick + `CONTRIBUTING.md` + Backtick + ` を参照してください。
 
-*開発者がより速く、よりクリーンに、よりスマートに構築できるようにします。*
+*開発者がより速く、よりクリーンに、よりスマートに構築できるように支援します。*
 `
 }
