@@ -733,6 +733,82 @@ HOW TO USE
 4. Scroll through the output to read the response.
                                                         
 Press Esc to close this help`
+
+	TimeMachineHelp = `
+         CODE TIME MACHINE - Help & Usage Guide             
+
+
+OVERVIEW
+Travel through your code's history with Git blame visualization, commit 
+tracking, and automated bug risk detection.
+
+KEYBOARD SHORTCUTS
+Key         Description
+         
+?           Show this help
+Esc/q       Go back to main menu
+←/→         Navigate timeline (previous/next commit)
+Up/Down     Scroll tracking history / commit details
+j           Jump to specific commit
+h           Toggle help
+
+
+HOW TO USE
+
+1. TRACKING HISTORY (TOP BOX)
+   • Line-by-line author information
+   • Color-coded by contributor
+   • Shows commit hash for each line
+   • Scroll with Up/Down keys
+   • Highlights changed lines
+
+2. COMMIT DETAILS (BOTTOM BOX)
+   • Full commit message
+   • Author and date information
+   • File change statistics
+   • Risk indicators (⚠ for risky commits)
+   • Diff summary
+
+3. TIMELINE NAVIGATION
+   • ← Previous commit in file history
+   • → Next commit in file history
+   • j  Jump to specific commit by hash/index
+   • Timeline shows current position
+
+4. BUG RISK DETECTION
+   Automatically flags commits with higher bug probability:
+   • ⚠ Late-night commits (11PM-5AM) - Fatigue errors
+   • ⚠ Large refactors (>200 lines) - Complex changes
+   • ⚠ Quick fixes (<2 hours apart) - Broken original
+   • ⚠ WIP/TODO markers - Incomplete work
+   • ⚠ Friday evening commits - End-of-week rush
+   • ⚠ Multiple files (>5) - Integration bugs
+   • ⚠ "fix"/"hotfix"/"patch" - Indicates previous bug
+
+
+USE CASES
+• Find when/who introduced a specific line or bug
+• Understand code evolution and decision history
+• Review team contributions and patterns
+• Identify risky commits during code review
+• Track down regression sources
+• Analyze commit quality and timing
+
+
+REQUIREMENTS
+• Git repository
+• File must be tracked by Git
+• Commit history available
+
+
+TIPS
+• Use blame view to see line-by-line authorship
+• Check commit details for full context
+• Watch for ⚠ risk indicators
+• Navigate timeline to see changes over time
+• Jump to specific commits with 'j'
+
+Press Esc to close this help`
 )
 
 func RenderHelp(content string, width, height int) string {

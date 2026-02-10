@@ -38,6 +38,11 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	detailVp := viewport.New(80, 15)
 	helpVp := viewport.New(80, 30)
 	helpVp.MouseWheelEnabled = true
+	helpVp.Style = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#0F9E99")).
+		Padding(1, 2)
+	helpVp.SetContent(TimeMachineHelp)
 
 	model := &TimeMachineModel{
 		timeline:       timeline,
@@ -81,7 +86,7 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Resize and update help viewport when showing
 				m.helpViewport.Width = m.width - 8
 				m.helpViewport.Height = m.height - 4
-				m.helpViewport.SetContent(m.getHelpContent())
+				m.helpViewport.GotoTop()
 			}
 			return m, nil
 
@@ -426,83 +431,9 @@ func (m *TimeMachineModel) renderFooter() string {
 	return footerStyle.Render(shortcuts)
 }
 
-// getHelpContent returns the help text content
-func (m *TimeMachineModel) getHelpContent() string {
-	return `
-===== CODE TIME MACHINE - HELP =====
-
-WHAT IS IT:
-  Code Time Machine lets you travel through your code's history to see
-  how it evolved over time. You can view line-by-line changes, identify
-  who made each change, and spot potentially risky commits.
-
-HOW TO USE:
-
-  1. TRACKING HISTORY BOX (Top):
-     - Shows line-by-line code with author and date information
-     - Each line is color-coded by author for easy identification
-     - Lines with '!' indicator show commits with higher bug risk
-     - Use arrow keys to navigate through different commits
-
-  2. COMMIT DETAILS BOX (Bottom):
-     - Shows detailed information about the current commit
-     - Displays: commit hash, author, date, message, and file stats
-     - Risk analysis for potentially problematic commits
-
-  3. TIMELINE (Middle):
-     - Visual progress bar showing your position in commit history
-     - Displays current commit number and date
-
-KEYBOARD SHORTCUTS:
-
-  Navigation:
-    Left Arrow / H    Go to previous commit (newer)
-    Right Arrow / L   Go to next commit (older)
-    Home              Jump to newest commit (current)
-    End               Jump to oldest commit (initial)
-
-  Scrolling (in this help screen):
-    Up / Down         Scroll help content
-    Mouse Wheel       Scroll with mouse
-
-  Actions:
-    ?                 Toggle this help screen
-    Q / Esc           Return to bonus features menu
-    Ctrl+C            Exit the application
-
-BUG RISK INDICATORS:
-  !  High Risk   - Large refactors, late-night commits, WIP messages
-  !  Medium Risk - Significant changes, quick fixes
-     No mark     - Low risk, normal commits
-
-TIPS:
-  - Use the timeline to quickly see how far back in history you are
-  - Different author names appear in different colors
-  - The tracking history box shows the code as it was at that commit
-  - Press ? again to close this help and return to the main view
-  - Scroll up/down with arrow keys or mouse wheel in this help screen
-
-========================================
-`
-}
-
 // renderHelp shows the help screen
 func (m *TimeMachineModel) renderHelp() string {
-	helpBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Padding(1)
-
-	footer := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#888888")).
-		Padding(0, 1).
-		Render("↑/↓ Scroll │ ? Close Help │ Q/Esc Back")
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		helpBox.Render(m.helpViewport.View()),
-		footer,
-	)
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, m.helpViewport.View())
 }
 
 // generateAuthorColors creates consistent colors for authors
