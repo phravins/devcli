@@ -183,8 +183,8 @@ func (m *TimeMachineModel) setupViewports() {
 	// Fixed height for top UI elements (Header + Timeline + Padding)
 	topUIHeight := 6
 
-	// Fixed height for bottom Detail Box - make it bigger
-	detailHeight := 12 // Increased from 7 to show more commit info
+	// Fixed height for bottom Detail Box - keep it small
+	detailHeight := 6 // Reduced from 12 to make it more compact
 
 	// Blame View (Tracking History) takes the rest
 	// Total height - TopUI - DetailHeight - Margins (more generous)
