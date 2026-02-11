@@ -342,20 +342,20 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 
 	var details []string
 
-	// Commit hash
+	// Commit hash with author and date on same line
 	hashStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFD700")).
 		Bold(true)
 
-	details = append(details, hashStyle.Render("Commit: ")+current.ShortHash)
-	details = append(details, "")
-
-	// Author
 	authorStyle := lipgloss.NewStyle().Foreground(m.authorColors[current.Author])
-	details = append(details, "Author: "+authorStyle.Render(current.Author))
 
-	// Date
-	details = append(details, "Date:   "+current.Date.Format("Mon Jan 02, 2006 15:04"))
+	// Compact first line: Commit: hash
+	details = append(details, hashStyle.Render("Commit: ")+current.ShortHash)
+
+	// Second line: Author and Date together
+	authorDateLine := "Author: " + authorStyle.Render(current.Author) +
+		"    Date: " + current.Date.Format("Mon Jan 02, 2006 15:04")
+	details = append(details, authorDateLine)
 	details = append(details, "")
 
 	// Message
@@ -367,19 +367,16 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 	for _, line := range strings.Split(current.Message, "\n") {
 		details = append(details, "  "+line)
 	}
-	details = append(details, "")
 
-	// Stats
+	// Stats on same line
 	statsStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4"))
-	files := fmt.Sprintf("Files changed: %d", len(current.FilesChanged))
-	changes := fmt.Sprintf("+%d -%d lines", current.LinesAdded, current.LinesRemoved)
-	details = append(details, statsStyle.Render(files))
-	details = append(details, statsStyle.Render(changes))
+	statsLine := fmt.Sprintf("Files changed: %d    +%d -%d lines",
+		len(current.FilesChanged), current.LinesAdded, current.LinesRemoved)
+	details = append(details, statsStyle.Render(statsLine))
 
 	// Bug risk if applicable
 	for _, suspect := range m.bugSuspects {
 		if suspect.Commit.Hash == current.Hash {
-			details = append(details, "")
 			riskStyle := lipgloss.NewStyle().
 				Foreground(lipgloss.Color(timemachine.GetRiskColor(suspect.Risk))).
 				Bold(true)
