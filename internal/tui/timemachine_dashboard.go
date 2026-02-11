@@ -188,8 +188,8 @@ func (m *TimeMachineModel) setupViewports() {
 	// Fixed height for top UI elements (Header + Timeline + Padding)
 	topUIHeight := 6
 
-	// Fixed height for bottom Detail Box - keep it small
-	detailHeight := 6 // Reduced from 12 to make it more compact
+	// Fixed height for bottom Detail Box - keep it very small
+	detailHeight := 3 // Reduced to 3 for minimal compact box
 
 	// Blame View (Tracking History) takes the rest
 	// Total height - TopUI - DetailHeight - Margins (more generous)
@@ -204,8 +204,8 @@ func (m *TimeMachineModel) setupViewports() {
 		availableWidth = 60
 	}
 
-	// Detail box should be wide enough but not too wide
-	detailWidth := availableWidth // Make detail box same width as blame box
+	// Detail box should be narrower - use 60% of available width
+	detailWidth := int(float64(availableWidth) * 0.6) // Make detail box narrower
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
 	m.detailViewport = viewport.New(detailWidth, detailHeight)
@@ -406,13 +406,13 @@ func (m *TimeMachineModel) renderMainContent() string {
 
 // renderDetailBox returns the commit details box
 func (m *TimeMachineModel) renderDetailBox() string {
-	// Commit Details Box with proper sizing and padding
+	// Commit Details Box - minimal padding for compact size
 	detailBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
-		Padding(0, 1).
-		Width(m.detailViewport.Width + 4).   // Add padding to width
-		Height(m.detailViewport.Height + 2). // Add padding to height
+		Padding(0, 0).                       // No padding for compact size
+		Width(m.detailViewport.Width + 2).   // Minimal border width
+		Height(m.detailViewport.Height + 2). // Minimal border height
 		Render(m.detailViewport.View())
 
 	return detailBox
