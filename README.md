@@ -330,6 +330,7 @@ Documentation:
     * Spanish (Español) - Complete translation
     * French (Français) - Complete translation
     * German (Deutsch) - Complete translation
+    * Hindi (हिंदी) - Complete translation
     * Chinese (中文) - Complete translation
     * Japanese (日本語) - Complete translation
   - Language switching with 'L' key (cycles through all languages)
@@ -562,6 +563,8 @@ Contributing
 Contributions are welcome. Please ensure code follows Go conventions and
 includes appropriate tests. Use gofmt for code formatting.
 
+Please review our [Code of Conduct](#code-of-conduct) before contributing.
+
 License
 -------
 
@@ -571,4 +574,8 @@ Support
 -------
 
 For issues, questions, or feature requests, please use the GitHub issue
-tracker at https://github.com/phravins/devcli/issues
+
+Code of Conduct
+---------------
+
+Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
