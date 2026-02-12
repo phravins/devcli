@@ -154,35 +154,21 @@ func (m *TimeMachineModel) View() string {
 		return m.renderHelp()
 	}
 
-	// Build the content stack
-	header := m.renderHeader()
-	timeline := m.renderTimeline()
+	// Build the main content box
+	boxContent := m.renderBoxContent()
 
-	// Tracking History Box (top box with blame view)
-	trackingBox := m.renderMainContent()
+	// Wrap in a bordered box
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#4ECDC4")).
+		Padding(1, 2).
+		Width(m.width - 10).
+		Height(m.height - 6)
 
-	// Commit Details Box (bottom box)
-	detailBox := m.renderDetailBox()
+	box := boxStyle.Render(boxContent)
 
-	// Footer (shortcuts)
-	footer := m.renderFooter()
-
-	// Stack vertically: header, timeline, tracking box, detail box, footer
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		timeline,
-		"", // Spacer
-		trackingBox,
-		"", // Spacer between boxes
-		detailBox,
-		"", // Spacer
-		footer,
-	)
-
-	// Add margins and center the content
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top,
-		lipgloss.NewStyle().PaddingTop(2).PaddingLeft(2).PaddingRight(2).Render(content))
+	// Center the box on screen
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
 }
 func (m *TimeMachineModel) setupViewports() {
 	// Fixed height for top UI elements (Header + Timeline + Padding)
@@ -235,6 +221,28 @@ func (m *TimeMachineModel) renderHeader() string {
 		lipgloss.Left,
 		title,
 		file,
+	)
+}
+
+// renderBoxContent combines all content sections into a single layout
+func (m *TimeMachineModel) renderBoxContent() string {
+	header := m.renderHeader()
+	timeline := m.renderTimeline()
+	blameView := m.blameViewport.View()
+	commitDetails := m.renderCommitDetailsCompact()
+	footer := m.renderFooter()
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		header,
+		"",
+		timeline,
+		"",
+		blameView,
+		"",
+		commitDetails,
+		"",
+		footer,
 	)
 }
 func (m *TimeMachineModel) renderTimeline() string {
@@ -388,6 +396,29 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 	}
 
 	return strings.Join(details, "\n")
+}
+
+// renderCommitDetailsCompact creates a compact one-line commit summary
+func (m *TimeMachineModel) renderCommitDetailsCompact() string {
+	current := m.timeline.GetCurrentCommit()
+	if current == nil {
+		return ""
+	}
+
+	hashStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD700")).Bold(true)
+	authorStyle := lipgloss.NewStyle().Foreground(m.authorColors[current.Author])
+	msgStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA"))
+
+	// Get first line of message
+	msgLines := strings.Split(current.Message, "\n")
+	firstLineMsg := msgLines[0]
+	if len(firstLineMsg) > 60 {
+		firstLineMsg = firstLineMsg[:57] + "..."
+	}
+
+	return hashStyle.Render("● "+current.ShortHash) + " " +
+		authorStyle.Render(current.Author) + " " +
+		msgStyle.Render(firstLineMsg)
 }
 
 // renderMainContent returns the tracking history box (blame view)
