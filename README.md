@@ -16,6 +16,23 @@ The application is built using Go and the Bubble Tea framework, providing a
 fast and responsive terminal user interface that works across all major
 operating systems.
 
+
+## Table of Contents
+
+*   [DevCLI](#devcli)
+*   [System Requirements](#system-requirements)
+*   [Dependencies](#dependencies)
+*   [Installation](#installation)
+*   [Core Features](#core-features)
+*   [Usage](#usage)
+*   [Configuration](#configuration)
+*   [Keyboard Shortcuts](#keyboard-shortcuts)
+*   [Architecture](#architecture)
+*   [Contributing](#contributing)
+*   [License](#license)
+*   [Support](#support)
+*   [Code of Conduct](#code-of-conduct)
+
 ## DevCLI
 
 DevCLI serves as a central hub for common development tasks. Instead of grouping scattered scripts or remembering complex CLIs, DevCLI provides a unified, interactive workspace containing a suite of powerful internal features:
