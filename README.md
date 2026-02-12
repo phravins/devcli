@@ -62,3 +62,5 @@ For issues, questions, or feature requests, please use the GitHub issue tracker 
 
 Please read the full [Disclaimer](DISCLAIMER.md) before using this software.
 
+Happy Coding!
+-------------
