@@ -189,7 +189,7 @@ func (m *TimeMachineModel) setupViewports() {
 	topUIHeight := 6
 
 	// Fixed height for bottom Detail Box - keep it very small
-	detailHeight := 3 // Reduced to 3 for minimal compact box
+	detailHeight := 1 // Reduced to 1 for very minimal box
 
 	// Blame View (Tracking History) takes the rest
 	// Total height - TopUI - DetailHeight - Margins (more generous)
@@ -204,8 +204,8 @@ func (m *TimeMachineModel) setupViewports() {
 		availableWidth = 60
 	}
 
-	// Detail box should be narrower - use 60% of available width
-	detailWidth := int(float64(availableWidth) * 0.6) // Make detail box narrower
+	// Detail box should be narrower - use 25% of available width
+	detailWidth := int(float64(availableWidth) * 0.25) // Make detail box very small and compact
 
 	m.blameViewport = viewport.New(availableWidth, blameHeight)
 	m.detailViewport = viewport.New(detailWidth, detailHeight)
