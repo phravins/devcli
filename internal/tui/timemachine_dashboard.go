@@ -189,7 +189,7 @@ func (m *TimeMachineModel) setupViewports() {
 	topUIHeight := 6
 
 	// Fixed height for bottom Detail Box - keep it very small
-	detailHeight := 1 // Reduced to 1 for very minimal box
+	detailHeight := 0 // Set to 0 to minimize empty space
 
 	// Blame View (Tracking History) takes the rest
 	// Total height - TopUI - DetailHeight - Margins (more generous)
@@ -410,9 +410,8 @@ func (m *TimeMachineModel) renderDetailBox() string {
 	detailBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
-		Padding(0, 0).                       // No padding for compact size
-		Width(m.detailViewport.Width + 2).   // Minimal border width
-		Height(m.detailViewport.Height + 2). // Minimal border height
+		Padding(0, 0).                     // No padding for compact size
+		Width(m.detailViewport.Width + 2). // Minimal border width
 		Render(m.detailViewport.View())
 
 	return detailBox
