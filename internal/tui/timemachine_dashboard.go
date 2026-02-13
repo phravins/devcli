@@ -300,7 +300,8 @@ func (m *TimeMachineModel) renderBlameView() string {
 	authorStyle := lipgloss.NewStyle().Width(15)
 	dateStyle := lipgloss.NewStyle().Width(13).Foreground(lipgloss.Color("#888888"))
 	codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))
-	overhead := 43
+
+	overhead := 46 // Increased overhead for right border (was 43)
 	availableCodeWidth := m.blameViewport.Width - overhead
 	if availableCodeWidth < 20 {
 		availableCodeWidth = 20
@@ -334,7 +335,8 @@ func (m *TimeMachineModel) renderBlameView() string {
 		code := codeStyle.Render(cStr)
 
 		// Join horizontally to ensure width alignment is preserved
-		fullLine := lipgloss.JoinHorizontal(lipgloss.Bottom, lNum, sep, risk, author, " ", date, sep, code)
+		// Added right separator
+		fullLine := lipgloss.JoinHorizontal(lipgloss.Bottom, lNum, sep, risk, author, " ", date, sep, code, sep)
 		lines = append(lines, fullLine)
 	}
 
@@ -505,15 +507,16 @@ func hashToColor(s string) lipgloss.Color {
 	return lipgloss.Color(fmt.Sprintf("#%02X%02X%02X", r, g, b))
 }
 
-// truncate shortens a string to max length using literal dots
+// truncate shortens a string to max length using runes (safe for emojis/unicode)
 func truncate(s string, max int) string {
-	if len(s) <= max {
+	runes := []rune(s)
+	if len(runes) <= max {
 		return s
 	}
 	if max < 3 {
-		return s[:max]
+		return string(runes[:max])
 	}
-	return s[:max-3] + "..."
+	return string(runes[:max-3]) + "..."
 }
 
 // RunTimeMachine starts the Code Time Machine TUI
