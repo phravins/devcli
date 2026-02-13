@@ -145,8 +145,17 @@ func initialModel(filename string) model {
 	}
 
 	return model{
-		state:           startState,
-		choices:         []string{"TUI Py (Python)", "TUI Java", "TUI C++", "TUI C", "TUI C#", "TUI Rust", "TUI Zig", "TUI G (Web Compiler)"},
+		state: startState,
+		choices: []string{
+			"   Python (Py) ",
+			"   Java (Jv) ",
+			"   C++ (Cpp) ",
+			"   C (Clang) ",
+			"   C# (Cs) ",
+			"   Rust (Rs) ",
+			"   Zig (Zg) ",
+			" 󰜰  Web Compiler (G) ",
+		},
 		cursor:          0,
 		filename:        filename,
 		language:        detectLanguage(filename),
@@ -456,7 +465,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Set Language Mode based on selection
 					newLang := ""
 					switch {
-					case strings.Contains(choice, "Py"):
+					case strings.Contains(choice, "Python"):
 						newLang = "python"
 					case strings.Contains(choice, "Java"):
 						newLang = "java"
@@ -464,10 +473,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						newLang = "cpp"
 					case strings.Contains(choice, "C#"):
 						newLang = "csharp"
-					case strings.Contains(choice, "C"):
-						if !strings.Contains(choice, "C++") && !strings.Contains(choice, "C#") {
-							newLang = "c"
-						}
+					case strings.Contains(choice, "C ("):
+						newLang = "c"
 					case strings.Contains(choice, "Rust"):
 						newLang = "rust"
 					case strings.Contains(choice, "Zig"):
@@ -850,33 +857,33 @@ var (
 	// Selection Menu Styles
 	selectionTitleStyle = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(lipgloss.Color("#FFFFFF")).
-				Background(lipgloss.Color("#EC4899")). // Pink-500
-				Padding(1, 3).
+				Foreground(lipgloss.Color("#FAFAFA")).
+				Background(lipgloss.Color("#7D56F4")). // Dracula Purple
+				Padding(1, 4).
 				MarginBottom(1).
 				Align(lipgloss.Center)
 
 	selectionBoxStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("#EC4899")).
+				BorderForeground(lipgloss.Color("#7D56F4")). // Purple Border
 				Padding(1, 4).
 				Margin(1, 0)
 
 	selectedItemStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FFFFFF")).
-				Background(lipgloss.Color("#EC4899")).
+				Foreground(lipgloss.Color("#282A36")). // Dracula Background (Dark)
+				Background(lipgloss.Color("#50FA7B")). // Dracula Green
 				Bold(true).
 				Padding(0, 2).
-				MarginLeft(1)
+				MarginLeft(2)
 
 	unselectedItemStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#A1A1AA")). // Zinc-400
-				PaddingLeft(3)
+				Foreground(lipgloss.Color("#6272A4")). // Dracula Comment (Greyish Blue)
+				PaddingLeft(4)
 
 	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#71717A")). // Zinc-500
+			Foreground(lipgloss.Color("#FF79C6")). // Dracula Pink
 			Italic(true).
-			MarginTop(1)
+			MarginTop(2)
 )
 
 func (m model) View() string {
