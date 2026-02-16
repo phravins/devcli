@@ -252,11 +252,40 @@ func (m *TimeMachineModel) renderTimeline() string {
 
 	progress := m.timeline.GetProgress()
 	current := m.timeline.GetCurrentCommit()
-	barWidth := m.width - 20 - 4
+
+	// Position info
+	position := fmt.Sprintf("Commit %d/%d", m.timeline.CurrentIndex+1, len(m.timeline.Commits))
+
+	// Date
+	dateStr := ""
+	if current != nil {
+		dateStr = current.Date.Format("Jan 02, 2006")
+	}
+
+	// Calculate available width for the bar
+	// Container width is m.width - 10 (padding/border accounted for in View)
+	// We use m.width - 14 to provide a small safety buffer and account for layout quirks
+	containerWidth := m.width - 14
+
+	// Fixed elements width:
+	// "  ● " (4 chars from start)
+	// " ●  " (4 chars after bar)
+	// "  "   (2 chars spacing before date)
+	// position (variable)
+	// dateStr (variable)
+	usedWidth := 4 + 4 + len(position) + 2 + len(dateStr)
+
+	barWidth := containerWidth - usedWidth
 	if barWidth < 10 {
 		barWidth = 10
 	}
+
 	filledWidth := int(float64(barWidth) * progress)
+
+	// Ensure filledWidth doesn't exceed barWidth (can happen if progress > 1.0 somehow, mostly sanity check)
+	if filledWidth > barWidth {
+		filledWidth = barWidth
+	}
 
 	filled := strings.Repeat("═", filledWidth)
 	empty := strings.Repeat("─", barWidth-filledWidth)
@@ -267,15 +296,6 @@ func (m *TimeMachineModel) renderTimeline() string {
 		lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#353535")).
 			Render(empty)
-
-	// Position info
-	position := fmt.Sprintf("Commit %d/%d", m.timeline.CurrentIndex+1, len(m.timeline.Commits))
-
-	// Date
-	dateStr := ""
-	if current != nil {
-		dateStr = current.Date.Format("Jan 02, 2006")
-	}
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Left,
