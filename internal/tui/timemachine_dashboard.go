@@ -162,7 +162,7 @@ func (m *TimeMachineModel) View() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(1, 2).
-		Width(m.width - 10).
+		Width(m.width - 14).
 		Height(m.height - 6)
 
 	box := boxStyle.Render(boxContent)
@@ -185,7 +185,7 @@ func (m *TimeMachineModel) setupViewports() {
 	}
 
 	// Width with better margins: 8 chars total (4 on each side)
-	availableWidth := m.width - 12 // Increased from 10 to 12 for wider margins
+	availableWidth := m.width - 20 // Increased from 16 to 20 for even wider margins to fix overflow
 	if availableWidth < 60 {
 		availableWidth = 60
 	}
@@ -263,9 +263,9 @@ func (m *TimeMachineModel) renderTimeline() string {
 	}
 
 	// Calculate available width for the bar
-	// Container width is m.width - 10 (padding/border accounted for in View)
-	// We use m.width - 14 to provide a small safety buffer and account for layout quirks
-	containerWidth := m.width - 14
+	// Container width is m.width - 14 (padding/border accounted for in View)
+	// We use m.width - 18 to provide a small safety buffer and account for layout quirks
+	containerWidth := m.width - 18
 
 	// Fixed elements width:
 	// "  ● " (4 chars from start)
