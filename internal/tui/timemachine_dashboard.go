@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 	"github.com/phravins/devcli/internal/timemachine"
 )
 
@@ -215,7 +216,17 @@ func (m *TimeMachineModel) renderHeader() string {
 		Padding(0, 1)
 
 	title := titleStyle.Render("Code Time Machine")
-	file := fileStyle.Render(m.timeline.FilePath)
+
+	// Truncate file path if too long
+	availWidth := m.width - 20
+	if availWidth < 20 {
+		availWidth = 20
+	}
+	fPath := m.timeline.FilePath
+	if runewidth.StringWidth(fPath) > availWidth {
+		fPath = truncate(fPath, availWidth)
+	}
+	file := fileStyle.Render(fPath)
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -348,8 +359,8 @@ func (m *TimeMachineModel) renderBlameView() string {
 		date := dateStyle.Render(dStr)
 
 		// Code
-		cStr := line.Content
-		if len(cStr) > availableCodeWidth {
+		cStr := strings.ReplaceAll(line.Content, "\t", "  ")
+		if runewidth.StringWidth(cStr) > availableCodeWidth {
 			cStr = truncate(cStr, availableCodeWidth)
 		}
 		code := codeStyle.Render(cStr)
@@ -434,8 +445,13 @@ func (m *TimeMachineModel) renderCommitDetailsCompact() string {
 	// Get first line of message
 	msgLines := strings.Split(current.Message, "\n")
 	firstLineMsg := msgLines[0]
-	if len(firstLineMsg) > 60 {
-		firstLineMsg = firstLineMsg[:57] + "..."
+	// Use slightly less than width-14-hash-author to be safe, or just fixed limit
+	// hash (approx 10) + author (approx 15) + padding.
+	// Let's use a safe fixed limit or calculated one.
+	// Fixed limit of 60 chars is usually fine unless screen is small.
+	// But let's use truncate.
+	if runewidth.StringWidth(firstLineMsg) > 60 {
+		firstLineMsg = truncate(firstLineMsg, 60)
 	}
 
 	return hashStyle.Render("● "+current.ShortHash) + " " +
@@ -527,16 +543,9 @@ func hashToColor(s string) lipgloss.Color {
 	return lipgloss.Color(fmt.Sprintf("#%02X%02X%02X", r, g, b))
 }
 
-// truncate shortens a string to max length using runes (safe for emojis/unicode)
+// truncate shortens a string to max valid width using go-runewidth
 func truncate(s string, max int) string {
-	runes := []rune(s)
-	if len(runes) <= max {
-		return s
-	}
-	if max < 3 {
-		return string(runes[:max])
-	}
-	return string(runes[:max-3]) + "..."
+	return runewidth.Truncate(s, max, "...")
 }
 
 // RunTimeMachine starts the Code Time Machine TUI
