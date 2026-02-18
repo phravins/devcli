@@ -52,7 +52,7 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 		blameViewport:  blameVp,
 		detailViewport: detailVp,
 		helpViewport:   helpVp,
-		width:          160,
+		width:          80,
 		height:         40,
 		ready:          true, // Mark as ready immediately
 	}
@@ -121,7 +121,7 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
+		m.width = msg.Width - 2 // Reduce width by 2 to prevent Windows terminal auto-wrap issues
 		m.height = msg.Height
 		m.resizeViewports()
 		m.updateViewports()
