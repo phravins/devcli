@@ -169,7 +169,7 @@ func (m *TimeMachineModel) View() string {
 	box := boxStyle.Render(boxContent)
 
 	// Center the box on screen
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, box)
 }
 func (m *TimeMachineModel) setupViewports() {
 	// Fixed height for top UI elements (Header + Timeline + Padding)
@@ -340,7 +340,8 @@ func (m *TimeMachineModel) renderBlameView() string {
 
 	for _, line := range m.timeline.BlameData {
 		// Line Number
-		lNum := numStyle.Render(fmt.Sprintf("%d", line.LineNumber))
+		lNum := fmt.Sprintf("%5d", line.LineNumber)
+		lNum = numStyle.Render(lNum)
 
 		// Separator
 		sep := sepStyle.Render(" │ ")
@@ -351,11 +352,15 @@ func (m *TimeMachineModel) renderBlameView() string {
 			rStr = "!  "
 		}
 		risk := riskStyle.Render(rStr)
+
+		// Author - Manual padding to 15 chars
 		aName := truncate(line.Author, 15)
+		aName = runewidth.FillRight(aName, 15)
 		author := authorStyle.Foreground(m.authorColors[line.Author]).Render(aName)
 
-		// Date
+		// Date - Manual padding
 		dStr := line.Timestamp.Format("Jan 02 15:04")
+		dStr = runewidth.FillRight(dStr, 13) // width of date format
 		date := dateStyle.Render(dStr)
 
 		// Code
@@ -363,18 +368,26 @@ func (m *TimeMachineModel) renderBlameView() string {
 		if runewidth.StringWidth(cStr) > availableCodeWidth {
 			cStr = truncate(cStr, availableCodeWidth)
 		}
+		// Manual padding for code using runewidth.FillRight to ensure it fills the space
+		cStr = runewidth.FillRight(cStr, availableCodeWidth)
+		code := codeStyle.Render(cStr)
 
-		// Use Width() to force padding so the right border aligns perfectly
-		code := codeStyle.Width(availableCodeWidth).Render(cStr)
+		// Join horizontally by direct concatenation + separators
+		// Note: We used to use JoinHorizontal, but manual string building handles
+		// the width filling better when we've already pre-padded everything.
 
-		// Join horizontally
-		// Note: We don't use JoinHorizontal for the whole line because we want precise control
-		// But lipgloss.JoinHorizontal is fine if individual parts are sized correctly.
-		// Let's use string concatenation for predictable spacing if styles correspond to widths.
+		// The calculated widths are:
+		// lNum: 5
+		// sep: 3 (" │ ")
+		// risk: 3
+		// author: 15
+		// space: 1 (" ")
+		// date: 13
+		// sep: 3 (" │ ")
+		// code: availableCodeWidth
+		// sep: 3 (" │ ")
 
-		// However, lipgloss.JoinHorizontal is safer for colors.
-		// The key is that `code` now includes padding to `availableCodeWidth`.
-
+		// Total line width logic:
 		fullLine := lipgloss.JoinHorizontal(lipgloss.Bottom, lNum, sep, risk, author, " ", date, sep, code, sep)
 		lines = append(lines, fullLine)
 	}
