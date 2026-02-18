@@ -121,7 +121,7 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		m.width = msg.Width - 2 // Reduce width by 2 to prevent Windows terminal auto-wrap issues
+		m.width = msg.Width - 6 // Reduce width by 6 to be extra safe on Windows terminals
 		m.height = msg.Height
 		m.resizeViewports()
 		m.updateViewports()
@@ -363,10 +363,18 @@ func (m *TimeMachineModel) renderBlameView() string {
 		if runewidth.StringWidth(cStr) > availableCodeWidth {
 			cStr = truncate(cStr, availableCodeWidth)
 		}
-		code := codeStyle.Render(cStr)
 
-		// Join horizontally to ensure width alignment is preserved
-		// Added right separator
+		// Use Width() to force padding so the right border aligns perfectly
+		code := codeStyle.Width(availableCodeWidth).Render(cStr)
+
+		// Join horizontally
+		// Note: We don't use JoinHorizontal for the whole line because we want precise control
+		// But lipgloss.JoinHorizontal is fine if individual parts are sized correctly.
+		// Let's use string concatenation for predictable spacing if styles correspond to widths.
+
+		// However, lipgloss.JoinHorizontal is safer for colors.
+		// The key is that `code` now includes padding to `availableCodeWidth`.
+
 		fullLine := lipgloss.JoinHorizontal(lipgloss.Bottom, lNum, sep, risk, author, " ", date, sep, code, sep)
 		lines = append(lines, fullLine)
 	}
