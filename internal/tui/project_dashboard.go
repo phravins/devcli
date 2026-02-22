@@ -521,7 +521,12 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					if i.title == "Bonus Features" {
 						m.state = StateBonus
-						m.bonusModel = NewBonusDashboardModel(m.manager.Workspace)
+						// Always re-capture CWD so globally-installed devcli works from any directory
+						cwd, err := os.Getwd()
+						if err != nil || cwd == "" {
+							cwd = m.manager.Workspace // fallback
+						}
+						m.bonusModel = NewBonusDashboardModel(cwd)
 						// Initialize with current dimensions
 						h, v := AppBorderStyle.GetFrameSize()
 						innerW := m.width - h - 2
