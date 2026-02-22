@@ -55,6 +55,13 @@ const (
 )
 
 func NewSmartFileModel(workspace string) SmartFileModel {
+	// Resolve to actual CWD if workspace is empty
+	if workspace == "" {
+		if cwd, err := os.Getwd(); err == nil {
+			workspace = cwd
+		}
+	}
+
 	items := make([]list.Item, len(smartfile.Templates))
 	for i, tpl := range smartfile.Templates {
 		items[i] = item{
