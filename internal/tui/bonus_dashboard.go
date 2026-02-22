@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"os"
+
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -36,6 +38,12 @@ const (
 )
 
 func NewBonusDashboardModel(workspace string) BonusDashboardModel {
+	// Always resolve to actual CWD if workspace is empty (e.g. globally installed binary)
+	if workspace == "" {
+		if cwd, err := os.Getwd(); err == nil {
+			workspace = cwd
+		}
+	}
 	items := []list.Item{
 		item{title: "Task Runner", desc: "One-click build, test, format, and lint"},
 		item{title: "Smart File Creator", desc: "Generate config files (.env, Dockerfile, etc.)"},
