@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -48,6 +49,13 @@ type taskCompleteMsg struct {
 }
 
 func NewTaskRunnerModel(workspace string) TaskRunnerModel {
+	// Resolve to actual CWD if workspace is empty
+	if workspace == "" {
+		if cwd, err := os.Getwd(); err == nil {
+			workspace = cwd
+		}
+	}
+
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
 	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
