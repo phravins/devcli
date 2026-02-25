@@ -1,12 +1,14 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/phravins/devcli/internal/timemachine"
 )
 
 type BonusDashboardModel struct {
@@ -24,6 +26,11 @@ type BonusDashboardModel struct {
 	timeMachineModel interface{} // Will hold *TimeMachineModel
 	timeMachinePath  string
 	helpView         viewport.Model
+
+	// File picker for Code Time Machine
+	filePickerList  list.Model
+	filePickerReady bool
+	filePickerCwd   string
 }
 
 const (
@@ -33,6 +40,7 @@ const (
 	StateBonusSnippets
 	StateBonusProjectDash
 	StateBonusAIAssistant
+	StateBonusTimeMachinePicker // NEW: file picker screen
 	StateBonusTimeMachine
 	StateBonusHelp // Help Screen
 )
@@ -74,6 +82,29 @@ func (m BonusDashboardModel) Init() tea.Cmd {
 	return nil
 }
 
+// buildFilePicker creates list.Model with all git-tracked files in cwd.
+func buildFilePicker(cwd string, w, h int) (list.Model, bool) {
+	files, err := timemachine.GetTrackedFiles(cwd)
+	if err != nil || len(files) == 0 {
+		return list.Model{}, false
+	}
+
+	listItems := make([]list.Item, 0, len(files))
+	for _, f := range files {
+		listItems = append(listItems, item{title: f, desc: ""})
+	}
+
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = false
+
+	l := list.New(listItems, delegate, w-4, h-10)
+	l.Title = "📂 Select a file to explore its history"
+	l.SetShowHelp(true)
+	l.SetShowStatusBar(true)
+	l.SetFilteringEnabled(true)
+	return l, true
+}
+
 func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -83,6 +114,11 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		m.state = StateBonusMenu
 		return m, nil
 	case SubFeatureBackMsg:
+		// Coming back from Time Machine — go back to the file picker, not the menu
+		if m.state == StateBonusTimeMachine && m.filePickerReady {
+			m.state = StateBonusTimeMachinePicker
+			return m, nil
+		}
 		m.state = StateBonusMenu
 		return m, nil
 	}
@@ -136,6 +172,39 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		}
 		return m, nil
 
+	case StateBonusTimeMachinePicker:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "esc", "q":
+				// Back to bonus menu
+				m.state = StateBonusMenu
+				return m, nil
+			case "enter":
+				if sel, ok := m.filePickerList.SelectedItem().(item); ok {
+					filePath := sel.title
+					cwd := m.filePickerCwd
+					if tm, err := NewTimeMachineModel(cwd, filePath); err == nil {
+						m.timeMachineModel = tm
+						m.state = StateBonusTimeMachine
+						return m, tm.Init()
+					} else {
+						// Stay in picker; show error in title
+						m.filePickerList.Title = fmt.Sprintf("❌ No history for %s — pick another", filePath)
+						return m, nil
+					}
+				}
+			}
+		case tea.WindowSizeMsg:
+			m.width = msg.Width
+			m.height = msg.Height
+			m.filePickerList.SetWidth(msg.Width - 4)
+			m.filePickerList.SetHeight(msg.Height - 10)
+		}
+		// Forward everything else (typing filter, scrolling) to the file picker list
+		m.filePickerList, cmd = m.filePickerList.Update(msg)
+		return m, cmd
+
 	case StateBonusHelp:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -186,22 +255,31 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 						m.state = StateBonusAIAssistant
 						return m, m.aiAssistantModel.Init()
 					case "Code Time Machine":
-						// Initialize Time Machine with a default file (README.md) from current repo
+						// Show file picker for all git-tracked files
 						cwd := m.taskRunnerModel.workspace
 						if cwd == "" {
-							cwd = "."
+							if c, err := os.Getwd(); err == nil {
+								cwd = c
+							} else {
+								cwd = "."
+							}
 						}
-
-						// Try to create Time Machine model with README.md
-						filePath := "README.md"
-						if tm, err := NewTimeMachineModel(cwd, filePath); err == nil {
-							m.timeMachineModel = tm
-							m.state = StateBonusTimeMachine
-							return m, tm.Init()
+						w := m.width
+						if w == 0 {
+							w = 80
 						}
-						// If failed, stay in menu
+						h := m.height
+						if h == 0 {
+							h = 40
+						}
+						if picker, ok := buildFilePicker(cwd, w, h); ok {
+							m.filePickerList = picker
+							m.filePickerReady = true
+							m.filePickerCwd = cwd
+							m.state = StateBonusTimeMachinePicker
+						}
+						// If not a git repo or no files — stay in menu
 						return m, nil
-
 					}
 				}
 			}
@@ -260,6 +338,12 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		if m.state == StateBonusHelp {
 			m.helpView.SetContent(RenderHelp(BonusFeaturesHelp, m.width-2, m.height))
 		}
+
+		// Resize file picker too
+		if m.filePickerReady {
+			m.filePickerList.SetWidth(msg.Width - 4)
+			m.filePickerList.SetHeight(msg.Height - 10)
+		}
 	}
 
 	return m, nil
@@ -277,6 +361,28 @@ func (m BonusDashboardModel) View() string {
 		return m.projectDashModel.View()
 	case StateBonusAIAssistant:
 		return m.aiAssistantModel.View()
+
+	case StateBonusTimeMachinePicker:
+		header := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#FF6B6B")).
+			Background(lipgloss.Color("#1A1A2E")).
+			Width(m.width).
+			Padding(0, 2).
+			Render("🕰  Code Time Machine  —  Choose a file")
+
+		footer := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#555555")).
+			Background(lipgloss.Color("#0D0D1A")).
+			Width(m.width).
+			Render("  ↑/↓ Navigate  │  / Filter  │  Enter: Open  │  Q/Esc: Back")
+
+		return lipgloss.JoinVertical(lipgloss.Left,
+			header,
+			m.filePickerList.View(),
+			footer,
+		)
+
 	case StateBonusTimeMachine:
 		if m.timeMachineModel != nil {
 			if tm, ok := m.timeMachineModel.(*TimeMachineModel); ok {
