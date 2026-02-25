@@ -766,7 +766,7 @@ HOW TO USE
    • Full commit message
    • Author and date information
    • File change statistics
-   • Risk indicators (⚠ for risky commits)
+   • Risk indicators ([!] for risky commits)
    • Diff summary
 
 3. TIMELINE NAVIGATION
@@ -777,13 +777,13 @@ HOW TO USE
 
 4. BUG RISK DETECTION
    Automatically flags commits with higher bug probability:
-   • ⚠ Late-night commits (11PM-5AM) - Fatigue errors
-   • ⚠ Large refactors (>200 lines) - Complex changes
-   • ⚠ Quick fixes (<2 hours apart) - Broken original
-   • ⚠ WIP/TODO markers - Incomplete work
-   • ⚠ Friday evening commits - End-of-week rush
-   • ⚠ Multiple files (>5) - Integration bugs
-   • ⚠ "fix"/"hotfix"/"patch" - Indicates previous bug
+   • [!] Late-night commits (11PM-5AM) - Fatigue errors
+   • [!] Large refactors (>200 lines) - Complex changes
+   • [!] Quick fixes (<2 hours apart) - Broken original
+   • [!] WIP/TODO markers - Incomplete work
+   • [!] Friday evening commits - End-of-week rush
+   • [!] Multiple files (>5) - Integration bugs
+   • [!] "fix"/"hotfix"/"patch" - Indicates previous bug
 
 
 USE CASES
@@ -804,7 +804,7 @@ REQUIREMENTS
 TIPS
 • Use blame view to see line-by-line authorship
 • Check commit details for full context
-• Watch for ⚠ risk indicators
+• Watch for [!] risk indicators
 • Navigate timeline to see changes over time
 • Jump to specific commits with 'j'
 
