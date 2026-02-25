@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"hash/fnv"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -10,6 +11,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
 	"github.com/phravins/devcli/internal/timemachine"
+	"golang.org/x/term"
 )
 
 type TimeMachineModel struct {
@@ -35,9 +37,16 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	suspects := timemachine.AnalyzeBugRisks(timeline.Commits)
 
 	colors := generateAuthorColors(timeline.GetAuthors())
-	blameVp := viewport.New(80, 20)
-	detailVp := viewport.New(80, 15)
-	helpVp := viewport.New(80, 30)
+
+	// Detect real terminal window size at startup.
+	// golang.org/x/term reads the actual console window dimensions,
+	// not just the buffer width, which is what bubbletea sometimes reports on Windows CMD.
+	initW, initH := 80, 40
+	if w, h, err2 := term.GetSize(int(os.Stdout.Fd())); err2 == nil && w > 0 {
+		initW, initH = w, h
+	}
+
+	helpVp := viewport.New(initW, initH)
 	helpVp.MouseWheelEnabled = true
 	helpVp.Style = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -49,22 +58,22 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 		timeline:       timeline,
 		bugSuspects:    suspects,
 		authorColors:   colors,
-		blameViewport:  blameVp,
-		detailViewport: detailVp,
+		blameViewport:  viewport.New(initW, initH),
+		detailViewport: viewport.New(initW, 5),
 		helpViewport:   helpVp,
-		width:          80,
-		height:         40,
+		width:          initW,
+		height:         initH,
 		ready:          true,
 	}
 
+	model.setupViewports()
 	model.updateViewports()
-
 	return model, nil
 }
 
-// Init initializes the model
+// Init initializes the model and immediately requests the current terminal size.
 func (m *TimeMachineModel) Init() tea.Cmd {
-	return nil
+	return tea.WindowSize()
 }
 
 // Update handles messages and updates the model
