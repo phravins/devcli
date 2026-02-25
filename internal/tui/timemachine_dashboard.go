@@ -54,10 +54,9 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 		helpViewport:   helpVp,
 		width:          80,
 		height:         40,
-		ready:          true, // Mark as ready immediately
+		ready:          true,
 	}
 
-	// Set initial content
 	model.updateViewports()
 
 	return model, nil
@@ -84,36 +83,31 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "?":
 			m.showHelp = !m.showHelp
 			if m.showHelp {
-				// Resize and update help viewport when showing
 				m.helpViewport.Width = m.width - 8
-				m.helpViewport.Height = m.height - 4
+				m.helpViewport.Height = m.height - 6
 				m.helpViewport.GotoTop()
 			}
 			return m, nil
 
 		case "left", "h":
-			// Go to newer commit
 			if err := m.timeline.Previous(); err == nil {
 				m.updateViewports()
 			}
 			return m, nil
 
 		case "right", "l":
-			// Go to older commit
 			if err := m.timeline.Next(); err == nil {
 				m.updateViewports()
 			}
 			return m, nil
 
 		case "home":
-			// Go to newest (current) commit
 			if err := m.timeline.MoveToIndex(0); err == nil {
 				m.updateViewports()
 			}
 			return m, nil
 
 		case "end":
-			// Go to oldest commit
 			if err := m.timeline.MoveToIndex(m.timeline.GetCommitCount() - 1); err == nil {
 				m.updateViewports()
 			}
@@ -121,14 +115,13 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		m.width = msg.Width - 6 // Reduce width by 6 to be extra safe on Windows terminals
+		m.width = msg.Width
 		m.height = msg.Height
 		m.resizeViewports()
 		m.updateViewports()
-		// Also resize help viewport
 		if m.showHelp {
 			m.helpViewport.Width = m.width - 8
-			m.helpViewport.Height = m.height - 4
+			m.helpViewport.Height = m.height - 6
 		}
 		return m, nil
 	}
@@ -136,16 +129,15 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Update viewports
 	var cmd tea.Cmd
 	if m.showHelp {
-		// Update help viewport when help is shown
 		m.helpViewport, cmd = m.helpViewport.Update(msg)
 	} else {
-		// Update blame viewport when help is not shown
 		m.blameViewport, cmd = m.blameViewport.Update(msg)
 	}
 	return m, cmd
 }
 
-// View renders the UI
+// View renders the UI using a flat layout that fills the full terminal width.
+// No lipgloss.Place, no outer box — each section is rendered at terminal width.
 func (m *TimeMachineModel) View() string {
 	if !m.ready {
 		return "Initializing Code Time Machine..."
@@ -155,169 +147,162 @@ func (m *TimeMachineModel) View() string {
 		return m.renderHelp()
 	}
 
-	// Build the main content box
-	boxContent := m.renderBoxContent()
+	w := m.width
+	if w <= 0 {
+		w = 80
+	}
 
-	// Wrap in a bordered box
-	boxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Padding(1, 2).
-		Width(m.width - 14).
-		Height(m.height - 6)
+	// Header bar (2 lines)
+	header := m.renderHeader(w)
 
-	box := boxStyle.Render(boxContent)
+	// Teal divider
+	divider := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#4ECDC4")).
+		Render(strings.Repeat("─", w))
 
-	// Center the box on screen
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, box)
+	// Timeline bar (1 line)
+	timeline := m.renderTimeline(w)
+
+	// Dark divider
+	divider2 := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#333333")).
+		Render(strings.Repeat("─", w))
+
+	// Blame viewport (fills remaining height)
+	blameView := m.blameViewport.View()
+
+	// Commit info bar (1 line)
+	commitBar := m.renderCommitDetailsCompact(w)
+
+	// Dark divider
+	divider3 := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#333333")).
+		Render(strings.Repeat("─", w))
+
+	// Footer (1 line)
+	footer := m.renderFooter(w)
+
+	return lipgloss.JoinVertical(lipgloss.Left,
+		header,
+		divider,
+		timeline,
+		divider2,
+		blameView,
+		divider3,
+		commitBar,
+		footer,
+	)
 }
+
 func (m *TimeMachineModel) setupViewports() {
-	// Fixed height for top UI elements (Header + Timeline + Padding)
-	topUIHeight := 6
+	// Flat layout line counts:
+	//   header:    2
+	//   divider:   1
+	//   timeline:  1
+	//   divider:   1
+	//   blameVP:   variable
+	//   divider:   1
+	//   commitBar: 1
+	//   footer:    1
+	//   TOTAL fixed = 9
+	fixedLines := 9
 
-	// Fixed height for bottom Detail Box - keep it very small
-	detailHeight := 0 // Set to 0 to minimize empty space
-
-	// Blame View (Tracking History) takes the rest
-	// Total height - TopUI - DetailHeight - Margins (more generous)
-	blameHeight := m.height - topUIHeight - detailHeight - 8 // Increased margin from 4 to 8
-	if blameHeight < 10 {
-		blameHeight = 10
+	blameHeight := m.height - fixedLines
+	if blameHeight < 6 {
+		blameHeight = 6
 	}
 
-	// Width with better margins: 8 chars total (4 on each side)
-	availableWidth := m.width - 20 // Increased from 16 to 20 for even wider margins to fix overflow
-	if availableWidth < 60 {
-		availableWidth = 60
+	viewportWidth := m.width
+	if viewportWidth < 40 {
+		viewportWidth = 40
 	}
 
-	// Detail box should be narrower - use 25% of available width
-	detailWidth := int(float64(availableWidth) * 0.25) // Make detail box very small and compact
-
-	m.blameViewport = viewport.New(availableWidth, blameHeight)
-	m.detailViewport = viewport.New(detailWidth, detailHeight)
+	m.blameViewport = viewport.New(viewportWidth, blameHeight)
+	m.detailViewport = viewport.New(viewportWidth, 5)
 }
+
 func (m *TimeMachineModel) resizeViewports() {
-	// Re-run setup logic with new dimensions
 	m.setupViewports()
 }
+
 func (m *TimeMachineModel) updateViewports() {
 	m.blameViewport.SetContent(m.renderBlameView())
 	m.detailViewport.SetContent(m.renderCommitDetails())
 }
-func (m *TimeMachineModel) renderHeader() string {
+
+// renderHeader renders the 2-line header bar at full terminal width.
+func (m *TimeMachineModel) renderHeader(w int) string {
+	bgStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("#1A1A2E")).
+		Width(w)
+
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#FF6B6B")).
+		Background(lipgloss.Color("#1A1A2E")).
 		Padding(0, 1)
 
 	fileStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6BCF7F")).
+		Background(lipgloss.Color("#1A1A2E")).
 		Padding(0, 1)
 
-	title := titleStyle.Render("Code Time Machine")
+	title := bgStyle.Render(titleStyle.Render("Code Time Machine"))
 
-	// Truncate file path if too long
-	availWidth := m.width - 20
-	if availWidth < 20 {
-		availWidth = 20
+	maxFileWidth := w - 4
+	if maxFileWidth < 10 {
+		maxFileWidth = 10
 	}
 	fPath := m.timeline.FilePath
-	if runewidth.StringWidth(fPath) > availWidth {
-		fPath = truncate(fPath, availWidth)
+	if runewidth.StringWidth(fPath) > maxFileWidth {
+		fPath = truncate(fPath, maxFileWidth)
 	}
-	file := fileStyle.Render(fPath)
+	fileLine := bgStyle.Render(fileStyle.Render(fPath))
 
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		title,
-		file,
-	)
+	return lipgloss.JoinVertical(lipgloss.Left, title, fileLine)
 }
 
-// renderBoxContent combines all content sections into a single layout
-func (m *TimeMachineModel) renderBoxContent() string {
-	header := m.renderHeader()
-	timeline := m.renderTimeline()
-	blameView := m.blameViewport.View()
-	commitDetails := m.renderCommitDetailsCompact()
-	footer := m.renderFooter()
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		"",
-		timeline,
-		"",
-		blameView,
-		"",
-		commitDetails,
-		"",
-		footer,
-	)
-}
-func (m *TimeMachineModel) renderTimeline() string {
+// renderTimeline renders a 1-line timeline progress bar at full terminal width.
+func (m *TimeMachineModel) renderTimeline(w int) string {
 	if len(m.timeline.Commits) == 0 {
-		return ""
+		return strings.Repeat(" ", w)
 	}
 
 	progress := m.timeline.GetProgress()
 	current := m.timeline.GetCurrentCommit()
 
-	// Position info
 	position := fmt.Sprintf("Commit %d/%d", m.timeline.CurrentIndex+1, len(m.timeline.Commits))
-
-	// Date
 	dateStr := ""
 	if current != nil {
 		dateStr = current.Date.Format("Jan 02, 2006")
 	}
 
-	// Calculate available width for the bar
-	// Container width is m.width - 14 (padding/border accounted for in View)
-	// We use m.width - 18 to provide a small safety buffer and account for layout quirks
-	containerWidth := m.width - 18
-
-	// Fixed elements width:
-	// "  ● " (4 chars from start)
-	// " ●  " (4 chars after bar)
-	// "  "   (2 chars spacing before date)
-	// position (variable)
-	// dateStr (variable)
-	usedWidth := 4 + 4 + len(position) + 2 + len(dateStr)
-
-	barWidth := containerWidth - usedWidth
-	if barWidth < 10 {
-		barWidth = 10
+	prefix := " ● "
+	suffix := " ● "
+	rightText := position + "  " + dateStr
+	barWidth := w - len(prefix) - len(suffix) - len(rightText)
+	if barWidth < 5 {
+		barWidth = 5
 	}
 
 	filledWidth := int(float64(barWidth) * progress)
-
-	// Ensure filledWidth doesn't exceed barWidth (can happen if progress > 1.0 somehow, mostly sanity check)
 	if filledWidth > barWidth {
 		filledWidth = barWidth
 	}
 
-	filled := strings.Repeat("═", filledWidth)
-	empty := strings.Repeat("─", barWidth-filledWidth)
+	filled := strings.Repeat("█", filledWidth)
+	empty := strings.Repeat("░", barWidth-filledWidth)
 
-	timelineBar := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#4ECDC4")).
-		Render(filled) +
-		lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#353535")).
-			Render(empty)
+	bar := lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4")).Render(filled) +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#333333")).Render(empty)
 
-	return lipgloss.JoinHorizontal(
-		lipgloss.Left,
-		"  ● ",
-		timelineBar,
-		" ●  ",
-		position,
-		"  ",
-		dateStr,
-	)
+	prefixS := lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4")).Bold(true).Render(prefix)
+	suffixS := lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4")).Bold(true).Render(suffix)
+	rightS := lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA")).Render(rightText)
+
+	return prefixS + bar + suffixS + rightS
 }
+
 func (m *TimeMachineModel) renderBlameView() string {
 	var lines []string
 
@@ -332,62 +317,40 @@ func (m *TimeMachineModel) renderBlameView() string {
 	dateStyle := lipgloss.NewStyle().Width(13).Foreground(lipgloss.Color("#888888"))
 	codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))
 
-	overhead := 46 // Increased overhead for right border (was 43)
+	// Fixed columns: linenum(5) + " | "(3) + risk(3) + author(15) + " "(1) + date(13) + " | "(3) + trailing " | "(3) = 46
+	overhead := 46
 	availableCodeWidth := m.blameViewport.Width - overhead
-	if availableCodeWidth < 20 {
-		availableCodeWidth = 20
+	if availableCodeWidth < 10 {
+		availableCodeWidth = 10
 	}
 
 	for _, line := range m.timeline.BlameData {
-		// Line Number
 		lNum := fmt.Sprintf("%5d", line.LineNumber)
 		lNum = numStyle.Render(lNum)
 
-		// Separator
 		sep := sepStyle.Render(" │ ")
 
-		// Risk
 		rStr := "   "
 		if suspiciousCommits[line.CommitHash] {
 			rStr = "!  "
 		}
 		risk := riskStyle.Render(rStr)
 
-		// Author - Manual padding to 15 chars
 		aName := truncate(line.Author, 15)
 		aName = runewidth.FillRight(aName, 15)
 		author := authorStyle.Foreground(m.authorColors[line.Author]).Render(aName)
 
-		// Date - Manual padding
 		dStr := line.Timestamp.Format("Jan 02 15:04")
-		dStr = runewidth.FillRight(dStr, 13) // width of date format
+		dStr = runewidth.FillRight(dStr, 13)
 		date := dateStyle.Render(dStr)
 
-		// Code
 		cStr := strings.ReplaceAll(line.Content, "\t", "  ")
 		if runewidth.StringWidth(cStr) > availableCodeWidth {
 			cStr = truncate(cStr, availableCodeWidth)
 		}
-		// Manual padding for code using runewidth.FillRight to ensure it fills the space
 		cStr = runewidth.FillRight(cStr, availableCodeWidth)
 		code := codeStyle.Render(cStr)
 
-		// Join horizontally by direct concatenation + separators
-		// Note: We used to use JoinHorizontal, but manual string building handles
-		// the width filling better when we've already pre-padded everything.
-
-		// The calculated widths are:
-		// lNum: 5
-		// sep: 3 (" │ ")
-		// risk: 3
-		// author: 15
-		// space: 1 (" ")
-		// date: 13
-		// sep: 3 (" │ ")
-		// code: availableCodeWidth
-		// sep: 3 (" │ ")
-
-		// Total line width logic:
 		fullLine := lipgloss.JoinHorizontal(lipgloss.Bottom, lNum, sep, risk, author, " ", date, sep, code, sep)
 		lines = append(lines, fullLine)
 	}
@@ -404,23 +367,19 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 
 	var details []string
 
-	// Commit hash with author and date on same line
 	hashStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFD700")).
 		Bold(true)
 
 	authorStyle := lipgloss.NewStyle().Foreground(m.authorColors[current.Author])
 
-	// Compact first line: Commit: hash
 	details = append(details, hashStyle.Render("Commit: ")+current.ShortHash)
 
-	// Second line: Author and Date together
 	authorDateLine := "Author: " + authorStyle.Render(current.Author) +
 		"    Date: " + current.Date.Format("Mon Jan 02, 2006 15:04")
 	details = append(details, authorDateLine)
 	details = append(details, "")
 
-	// Message
 	messageStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Bold(true)
@@ -430,13 +389,11 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 		details = append(details, "  "+line)
 	}
 
-	// Stats on same line
 	statsStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4"))
 	statsLine := fmt.Sprintf("Files changed: %d    +%d -%d lines",
 		len(current.FilesChanged), current.LinesAdded, current.LinesRemoved)
 	details = append(details, statsStyle.Render(statsLine))
 
-	// Bug risk if applicable
 	for _, suspect := range m.bugSuspects {
 		if suspect.Commit.Hash == current.Hash {
 			riskStyle := lipgloss.NewStyle().
@@ -452,43 +409,47 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 	return strings.Join(details, "\n")
 }
 
-// renderCommitDetailsCompact creates a compact one-line commit summary
-func (m *TimeMachineModel) renderCommitDetailsCompact() string {
+// renderCommitDetailsCompact creates a compact one-line commit summary at full terminal width.
+func (m *TimeMachineModel) renderCommitDetailsCompact(w int) string {
 	current := m.timeline.GetCurrentCommit()
 	if current == nil {
-		return ""
+		return strings.Repeat(" ", w)
 	}
 
 	hashStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD700")).Bold(true)
 	authorStyle := lipgloss.NewStyle().Foreground(m.authorColors[current.Author])
 	msgStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA"))
+	statsStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4"))
 
-	// Get first line of message
 	msgLines := strings.Split(current.Message, "\n")
 	firstLineMsg := msgLines[0]
-	// Use slightly less than width-14-hash-author to be safe, or just fixed limit
-	// hash (approx 10) + author (approx 15) + padding.
-	// Let's use a safe fixed limit or calculated one.
-	// Fixed limit of 60 chars is usually fine unless screen is small.
-	// But let's use truncate.
-	if runewidth.StringWidth(firstLineMsg) > 60 {
-		firstLineMsg = truncate(firstLineMsg, 60)
+	// hash ~8 + author ~15 + date ~22 + stats ~10 + separators ~6 = ~61 reserved
+	maxMsg := w - 61
+	if maxMsg < 10 {
+		maxMsg = 10
+	}
+	if runewidth.StringWidth(firstLineMsg) > maxMsg {
+		firstLineMsg = truncate(firstLineMsg, maxMsg)
 	}
 
-	return hashStyle.Render("● "+current.ShortHash) + " " +
-		authorStyle.Render(current.Author) + " " +
-		msgStyle.Render(firstLineMsg)
+	statsStr := fmt.Sprintf("+%d -%d", current.LinesAdded, current.LinesRemoved)
+	dateStr := current.Date.Format("Jan 02, 2006 15:04")
+
+	return hashStyle.Render("● "+current.ShortHash) + "  " +
+		authorStyle.Render(current.Author) + "  " +
+		msgStyle.Render(firstLineMsg) + "  " +
+		statsStyle.Render(statsStr) + "  " +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render(dateStr)
 }
 
 // renderMainContent returns the tracking history box (blame view)
 func (m *TimeMachineModel) renderMainContent() string {
-	// Tracking History Box with proper sizing and padding
 	blameBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(0, 1).
-		Width(m.blameViewport.Width + 4).   // Add padding to width
-		Height(m.blameViewport.Height + 2). // Add padding to height
+		Width(m.blameViewport.Width + 4).
+		Height(m.blameViewport.Height + 2).
 		Render(m.blameViewport.View())
 
 	return blameBox
@@ -496,24 +457,24 @@ func (m *TimeMachineModel) renderMainContent() string {
 
 // renderDetailBox returns the commit details box
 func (m *TimeMachineModel) renderDetailBox() string {
-	// Commit Details Box - minimal padding for compact size
 	detailBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#FF6B6B")).
-		Padding(0, 0).                     // No padding for compact size
-		Width(m.detailViewport.Width + 2). // Minimal border width
+		Padding(0, 0).
+		Width(m.detailViewport.Width + 2).
 		Render(m.detailViewport.View())
 
 	return detailBox
 }
 
-// renderFooter creates the footer with shortcuts
-func (m *TimeMachineModel) renderFooter() string {
+// renderFooter creates the footer with shortcuts at full terminal width.
+func (m *TimeMachineModel) renderFooter(w int) string {
 	footerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#888888")).
-		Padding(1, 0)
+		Foreground(lipgloss.Color("#555555")).
+		Background(lipgloss.Color("#0D0D1A")).
+		Width(w)
 
-	shortcuts := "←/→ Navigate │ Home/End Jump │ ? Help │ Q/Esc Back │ Ctrl+C Quit"
+	shortcuts := " ←/→ Navigate │ Home/End Jump │ ? Help │ Q/Esc Back │ Ctrl+C Quit"
 	return footerStyle.Render(shortcuts)
 }
 
@@ -526,7 +487,6 @@ func (m *TimeMachineModel) renderHelp() string {
 func generateAuthorColors(authors []string) map[string]lipgloss.Color {
 	colors := map[string]lipgloss.Color{}
 
-	// Predefined color palette
 	palette := []string{
 		"#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A",
 		"#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E2",
@@ -537,7 +497,6 @@ func generateAuthorColors(authors []string) map[string]lipgloss.Color {
 		if i < len(palette) {
 			colors[author] = lipgloss.Color(palette[i])
 		} else {
-			// Generate color from hash
 			colors[author] = hashToColor(author)
 		}
 	}
@@ -551,12 +510,10 @@ func hashToColor(s string) lipgloss.Color {
 	h.Write([]byte(s))
 	hash := h.Sum32()
 
-	// Generate RGB values
 	r := (hash & 0xFF0000) >> 16
 	g := (hash & 0x00FF00) >> 8
 	b := hash & 0x0000FF
 
-	// Ensure colors are bright enough
 	r = (r % 156) + 100
 	g = (g % 156) + 100
 	b = (b % 156) + 100
