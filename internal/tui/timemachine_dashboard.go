@@ -410,7 +410,7 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 				Bold(true)
 
 			riskLevel := timemachine.GetRiskLevel(suspect.Risk)
-			details = append(details, riskStyle.Render(fmt.Sprintf("⚠ Risk: %s (%.0f%%)", riskLevel, suspect.Risk*100)))
+			details = append(details, riskStyle.Render(fmt.Sprintf("[RISK] %s (%.0f%%)", riskLevel, suspect.Risk*100)))
 			details = append(details, "Reason: "+suspect.Reason)
 		}
 	}
