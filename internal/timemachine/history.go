@@ -191,6 +191,27 @@ func GetDiffBetween(repoPath, hash1, hash2, filePath string) (string, error) {
 	return string(output), nil
 }
 
+// GetTrackedFiles returns all files tracked by git in the given repo path.
+func GetTrackedFiles(repoPath string) ([]string, error) {
+	cmd := exec.Command("git", "ls-files")
+	cmd.Dir = repoPath
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git ls-files failed: %w", err)
+	}
+
+	var files []string
+	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != "" {
+			files = append(files, line)
+		}
+	}
+	return files, scanner.Err()
+}
+
 // IsGitRepository checks if a directory is a Git repository
 func IsGitRepository(path string) bool {
 	cmd := exec.Command("git", "rev-parse", "--git-dir")
