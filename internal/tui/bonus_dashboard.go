@@ -98,7 +98,7 @@ func buildFilePicker(cwd string, w, h int) (list.Model, bool) {
 	delegate.ShowDescription = false
 
 	l := list.New(listItems, delegate, w-4, h-10)
-	l.Title = "📂 Select a file to explore its history"
+	l.Title = "Select a file to explore its history"
 	l.SetShowHelp(true)
 	l.SetShowStatusBar(true)
 	l.SetFilteringEnabled(true)
@@ -369,7 +369,7 @@ func (m BonusDashboardModel) View() string {
 			Background(lipgloss.Color("#1A1A2E")).
 			Width(m.width).
 			Padding(0, 2).
-			Render("🕰  Code Time Machine  —  Choose a file")
+			Render("Code Time Machine  -  Choose a file")
 
 		footer := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#555555")).
