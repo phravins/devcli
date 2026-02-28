@@ -1,7 +1,9 @@
 package tui
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -595,42 +597,79 @@ func checkLanguageVersionsCmd() tea.Cmd {
 
 func checkDevCLIUpdatesCmd() tea.Cmd {
 	return func() tea.Msg {
-		// 0. Check if git repo
-		if _, err := exec.Command("git", "rev-parse", "--is-inside-work-tree").Output(); err != nil {
-			return updateCheckMsg{err: fmt.Errorf("not a git repository. Please initialize git to use this feature")}
-		}
-
-		// 1. Fetch
-		fetch := exec.Command("git", "fetch")
-		if output, err := fetch.CombinedOutput(); err != nil {
-			// Check for common errors
-			outStr := string(output)
-			if strings.Contains(outStr, "fatal: no remote") {
-				return updateCheckMsg{err: fmt.Errorf("no git remote configured")}
+		// Try local git first if we are inside the devcli repository
+		if _, err := exec.Command("git", "rev-parse", "--is-inside-work-tree").Output(); err == nil {
+			// 1. Fetch
+			fetch := exec.Command("git", "fetch")
+			if output, err := fetch.CombinedOutput(); err != nil {
+				// Check for common errors
+				outStr := string(output)
+				if strings.Contains(outStr, "fatal: no remote") {
+					return updateCheckMsg{err: fmt.Errorf("no git remote configured")}
+				}
+				return updateCheckMsg{err: fmt.Errorf("git fetch failed: %s", outStr)}
 			}
-			return updateCheckMsg{err: fmt.Errorf("git fetch failed: %s", outStr)}
-		}
-		branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-		branchOut, err := branchCmd.Output()
-		if err != nil {
-			return updateCheckMsg{err: fmt.Errorf("git rev-parse failed: %w", err)}
-		}
-		branch := strings.TrimSpace(string(branchOut))
+			branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+			branchOut, err := branchCmd.Output()
+			if err != nil {
+				return updateCheckMsg{err: fmt.Errorf("git rev-parse failed: %w", err)}
+			}
+			branch := strings.TrimSpace(string(branchOut))
 
-		// Log
-		logCmd := exec.Command("git", "log", fmt.Sprintf("HEAD..origin/%s", branch), "--oneline")
-		out, err := logCmd.Output()
-		if err != nil {
-			// Maybe no upstream configured?
-			return updateCheckMsg{err: fmt.Errorf("check failed (no upstream for branch '%s'?)", branch)}
+			// Log
+			logCmd := exec.Command("git", "log", fmt.Sprintf("HEAD..origin/%s", branch), "--oneline")
+			out, err := logCmd.Output()
+			if err != nil {
+				// Maybe no upstream configured?
+				return updateCheckMsg{err: fmt.Errorf("check failed (no upstream for branch '%s'?)", branch)}
+			}
+
+			logStr := strings.TrimSpace(string(out))
+			if logStr == "" {
+				return updateCheckMsg{hasUpdates: false}
+			}
+
+			return updateCheckMsg{hasUpdates: true, log: logStr}
 		}
 
-		logStr := strings.TrimSpace(string(out))
-		if logStr == "" {
+		// Fallback: Check via GitHub API as we are installed globally
+		resp, err := http.Get("https://api.github.com/repos/phravins/devcli/commits?per_page=5")
+		if err != nil {
+			return updateCheckMsg{err: fmt.Errorf("failed to check github updates: %v", err)}
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return updateCheckMsg{err: fmt.Errorf("github api returned status %d", resp.StatusCode)}
+		}
+
+		var commits []struct {
+			Sha    string `json:"sha"`
+			Commit struct {
+				Message string `json:"message"`
+			} `json:"commit"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&commits); err != nil {
+			return updateCheckMsg{err: fmt.Errorf("failed to parse github response: %v", err)}
+		}
+
+		if len(commits) == 0 {
 			return updateCheckMsg{hasUpdates: false}
 		}
 
-		return updateCheckMsg{hasUpdates: true, log: logStr}
+		var logStr strings.Builder
+		for _, c := range commits {
+			sha := c.Sha
+			if len(sha) > 7 {
+				sha = sha[:7]
+			}
+			msg := strings.Split(c.Commit.Message, "\n")[0]
+			logStr.WriteString(fmt.Sprintf("%s %s\n", sha, msg))
+		}
+
+		logStr.WriteString("\n(Note: DevCLI will be updated to the latest version. These are the recent changes)")
+
+		return updateCheckMsg{hasUpdates: true, log: logStr.String()}
 	}
 }
 
@@ -650,51 +689,62 @@ func summarizeUpdatesCmd(p ai.Provider, log string) tea.Cmd {
 
 func installDevCLIUpdatesCmd() tea.Cmd {
 	return func() tea.Msg {
-		// Get current branch
-		branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-		branchOut, err := branchCmd.Output()
-		if err != nil {
-			return installMsg{err: fmt.Errorf("failed to get current branch: %w", err)}
-		}
-		branch := strings.TrimSpace(string(branchOut))
-
-		// Check if there are uncommitted changes
-		statusCmd := exec.Command("git", "status", "--porcelain")
-		statusOut, err := statusCmd.Output()
-		hasChanges := err == nil && len(statusOut) > 0
-
-		// Stash changes if any exist
-		if hasChanges {
-			stash := exec.Command("git", "stash", "push", "-m", "DevCLI auto-update backup")
-			if output, err := stash.CombinedOutput(); err != nil {
-				return installMsg{err: fmt.Errorf("git stash failed: %s", string(output))}
+		// Try local git first if we are inside the repository
+		if _, err := exec.Command("git", "rev-parse", "--is-inside-work-tree").Output(); err == nil {
+			// Get current branch
+			branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+			branchOut, err := branchCmd.Output()
+			if err != nil {
+				return installMsg{err: fmt.Errorf("failed to get current branch: %w", err)}
 			}
-		}
+			branch := strings.TrimSpace(string(branchOut))
 
-		// git pull with explicit remote and branch
-		pull := exec.Command("git", "pull", "origin", branch)
-		if output, err := pull.CombinedOutput(); err != nil {
-			// If pull fails, restore stashed changes
+			// Check if there are uncommitted changes
+			statusCmd := exec.Command("git", "status", "--porcelain")
+			statusOut, err := statusCmd.Output()
+			hasChanges := err == nil && len(statusOut) > 0
+
+			// Stash changes if any exist
 			if hasChanges {
-				exec.Command("git", "stash", "pop").Run()
+				stash := exec.Command("git", "stash", "push", "-m", "DevCLI auto-update backup")
+				if output, err := stash.CombinedOutput(); err != nil {
+					return installMsg{err: fmt.Errorf("git stash failed: %s", string(output))}
+				}
 			}
-			return installMsg{err: fmt.Errorf("git pull failed: %s", string(output))}
+
+			// git pull with explicit remote and branch
+			pull := exec.Command("git", "pull", "origin", branch)
+			if output, err := pull.CombinedOutput(); err != nil {
+				// If pull fails, restore stashed changes
+				if hasChanges {
+					exec.Command("git", "stash", "pop").Run()
+				}
+				return installMsg{err: fmt.Errorf("git pull failed: %s", string(output))}
+			}
+
+			// Restore stashed changes after successful pull
+			if hasChanges {
+				pop := exec.Command("git", "stash", "pop")
+				if output, err := pop.CombinedOutput(); err != nil {
+					// Don't fail the update if stash pop has conflicts, just warn
+					return installMsg{err: fmt.Errorf("update succeeded but stash restore had conflicts: %s\nYour changes are in 'git stash list'", string(output))}
+				}
+			}
+
+			// go build
+			// Assuming we run this from the project root or we can find it
+			build := exec.Command("go", "build", "-o", "devcli.exe", ".")
+			if output, err := build.CombinedOutput(); err != nil {
+				return installMsg{err: fmt.Errorf("go build failed: %s", string(output))}
+			}
+
+			return installMsg{err: nil}
 		}
 
-		// Restore stashed changes after successful pull
-		if hasChanges {
-			pop := exec.Command("git", "stash", "pop")
-			if output, err := pop.CombinedOutput(); err != nil {
-				// Don't fail the update if stash pop has conflicts, just warn
-				return installMsg{err: fmt.Errorf("update succeeded but stash restore had conflicts: %s\nYour changes are in 'git stash list'", string(output))}
-			}
-		}
-
-		// go build
-		// Assuming we run this from the project root or we can find it
-		build := exec.Command("go", "build", "-o", "devcli.exe", ".")
-		if output, err := build.CombinedOutput(); err != nil {
-			return installMsg{err: fmt.Errorf("go build failed: %s", string(output))}
+		// Fallback: update globally via go install
+		cmd := exec.Command("go", "install", "github.com/phravins/devcli@latest")
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return installMsg{err: fmt.Errorf("go install failed: %s", string(output))}
 		}
 
 		return installMsg{err: nil}
