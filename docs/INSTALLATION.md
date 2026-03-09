@@ -47,13 +47,13 @@ This will automatically detect your OS/Arch, set up the binary, and configure yo
 
 ### METHOD 3: Single Command Installation (If Go is already installed)
 
-Install DevCLI directly using the `go install` command:
+Install DevCLI directly using the `go run` command:
 
 ```bash
-go install github.com/phravins/devcli@latest
+go run github.com/phravins/devcli@latest install
 ```
 
-This will download, build, and install the DevCLI binary to your `$GOPATH/bin` directory. Ensure that `$GOPATH/bin` is in your system PATH.
+This will download the latest version, run the interactive installer, install the DevCLI binary to your `~/.devcli/bin` directory, and automatically configure your system PATH.
 
 ### METHOD 4: Building from Source
 
