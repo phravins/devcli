@@ -87,12 +87,12 @@ echo [INFO] Installing DevCLI...
 :: Check if running from within the source code
 if exist "go.mod" (
     echo [INFO] Found 'go.mod'. Installing from local source...
-    echo [EXEC] go install .
-    go install .
+    echo [EXEC] go run main.go install
+    go run main.go install
 ) else (
     echo [INFO] Installing latest version from GitHub...
-    echo [EXEC] go install github.com/phravins/devcli@latest
-    go install github.com/phravins/devcli@latest
+    echo [EXEC] go run github.com/phravins/devcli@latest install
+    go run github.com/phravins/devcli@latest install
 )
 
 if %errorLevel% neq 0 (
@@ -102,9 +102,9 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
-:: Add GOPATH\bin to PATH for current session
-if exist "%USERPROFILE%\go\bin" (
-    set "PATH=%PATH%;%USERPROFILE%\go\bin"
+:: Add DevCLI bin to PATH for current session
+if exist "%USERPROFILE%\.devcli\bin" (
+    set "PATH=%PATH%;%USERPROFILE%\.devcli\bin"
 )
 
 echo.
@@ -115,31 +115,31 @@ if %errorLevel% neq 0 (
     echo [INFO] Installing to PATH...
 )
 
-:: Permanently add GOPATH\bin to user PATH using setx
+:: Permanently add DevCLI bin to user PATH using setx
 echo [INFO] Adding DevCLI to your PATH permanently...
 for /f "tokens=2*" %%a in ('reg query "HKCU\Environment" /v PATH 2^>nul') do set "USER_PATH=%%b"
 
-:: Check if GOPATH\bin is already in PATH
-echo %USER_PATH% | findstr /C:"%USERPROFILE%\go\bin" >nul
+:: Check if DevCLI bin is already in PATH
+echo %USER_PATH% | findstr /C:"%USERPROFILE%\.devcli\bin" >nul
 if %errorLevel% neq 0 (
     :: Not in PATH, add it
     if defined USER_PATH (
-        setx PATH "%USER_PATH%;%USERPROFILE%\go\bin" >nul
+        setx PATH "%USER_PATH%;%USERPROFILE%\.devcli\bin" >nul
     ) else (
-        setx PATH "%USERPROFILE%\go\bin" >nul
+        setx PATH "%USERPROFILE%\.devcli\bin" >nul
     )
     if %errorLevel% equ 0 (
-        echo [SUCCESS] Added %USERPROFILE%\go\bin to your PATH.
+        echo [SUCCESS] Added %USERPROFILE%\.devcli\bin to your PATH.
     ) else (
         echo [WARN] Could not automatically add to PATH.
-        echo [WARN] Please manually add %USERPROFILE%\go\bin to your PATH.
+        echo [WARN] Please manually add %USERPROFILE%\.devcli\bin to your PATH.
     )
 ) else (
-    echo [INFO] %USERPROFILE%\go\bin is already in your PATH.
+    echo [INFO] %USERPROFILE%\.devcli\bin is already in your PATH.
 )
 
 :: Update PATH for current session
-set "PATH=%PATH%;%USERPROFILE%\go\bin"
+set "PATH=%PATH%;%USERPROFILE%\.devcli\bin"
 
 :: Verify DevCLI
 echo.
@@ -164,7 +164,7 @@ if %errorLevel% equ 0 (
     echo [INFO]   2. Open a new terminal window
     echo [INFO]   3. Run 'devcli --version' to verify installation
     echo.
-    echo [INFO] If you still have issues, ensure %USERPROFILE%\go\bin is in your PATH.
+    echo [INFO] If you still have issues, ensure %USERPROFILE%\.devcli\bin is in your PATH.
 )
 
 echo.
