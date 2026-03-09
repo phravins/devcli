@@ -87,10 +87,10 @@ echo "[INFO] Installing DevCLI..."
 
 if [ -f "go.mod" ]; then
     echo "[INFO] Found 'go.mod'. Installing from local source..."
-    go install .
+    go run main.go install
 else
     echo "[INFO] Installing latest version from GitHub..."
-    go install github.com/phravins/devcli@latest
+    go run github.com/phravins/devcli@latest install
 fi
 
 if [ $? -ne 0 ]; then
@@ -99,9 +99,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Ensure GOPATH/bin is in PATH
-GOPATH=$(go env GOPATH)
-GOBIN="$GOPATH/bin"
+# Ensure ~/.devcli/bin is in PATH
+GOBIN="$HOME/.devcli/bin"
 
 echo ""
 echo "[INFO] Verifying DevCLI installation..."
@@ -141,7 +140,7 @@ if [[ ":$PATH:" != *":$GOBIN:"* ]]; then
     
     if [ -n "$SHELL_RC" ]; then
         # Check if already in RC file
-        if grep -q "GOPATH/bin" "$SHELL_RC" 2>/dev/null || grep -q "$GOBIN" "$SHELL_RC" 2>/dev/null; then
+        if grep -q ".devcli/bin" "$SHELL_RC" 2>/dev/null || grep -q "$GOBIN" "$SHELL_RC" 2>/dev/null; then
             echo "[INFO] PATH export already exists in $SHELL_RC"
         else
             # Add PATH export to RC file
