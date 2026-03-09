@@ -139,7 +139,7 @@ func init() {
 				}
 			`, binDir)
 
-				out, err := exec.Command("powershell", "-Command", script).CombinedOutput()
+				out, err := exec.Command("powershell", "-NonInteractive", "-NoProfile", "-Command", script).CombinedOutput()
 				if err != nil {
 					fmt.Printf("Warning: Automated PATH update failed: %v\n", err)
 					fmt.Printf("Please add this folder to your PATH manually: %s\n", binDir)
