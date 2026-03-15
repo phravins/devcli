@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevCLI Premium Compiler</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+    <div id="app">
+        <!-- Sidebar / Navigation -->
+        <nav class="glass-sidebar">
+            <div class="logo">
+                <i data-lucide="terminal" class="icon-accent"></i>
+                <span>DevCLI</span>
+            </div>
+            <div class="nav-links">
+                <button class="nav-btn active" title="Editor"><i data-lucide="code-2"></i></button>
+                <button class="nav-btn" title="Files"><i data-lucide="folder-open"></i></button>
+                <button class="nav-btn" title="Cloud Storage" id="drive-btn"><i data-lucide="cloud"></i></button>
+                <button class="nav-btn" title="Settings"><i data-lucide="settings"></i></button>
+            </div>
+            <div class="user-profile">
+                <button class="auth-trigger" id="login-trigger">
+                    <i data-lucide="user-circle"></i>
+                    <span class="user-status">Guest</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-workspace">
+            <!-- Header -->
+            <header class="glass-header">
+                <div class="file-info">
+                    <i data-lucide="file-code" class="icon-muted"></i>
+                    <input type="text" id="filename" class="minimal-input" value="main.py" placeholder="Untitled.py">
+                </div>
+                <div class="actions">
+                    <div id="save-status" class="status-indicator">All changes saved</div>
+                    <button class="btn btn-secondary" onclick="saveCode()"><i data-lucide="save"></i> Save</button>
+                    <button class="btn btn-primary" onclick="runCode()"><i data-lucide="play"></i> Run</button>
+                </div>
+            </header>
+
+            <!-- Editor / Output Split -->
+            <div class="split-container" id="split-view">
+                <div class="editor-pane">
+                    <div class="pane-header">
+                        <span class="label">EDITOR</span>
+                        <div class="language-badge">Python</div>
+                    </div>
+                    <div class="editor-wrapper">
+                        <textarea id="code" spellcheck="false" placeholder="Write your code here...">def main():
+    print("Welcome to DevCLI!")
+    print("Functional, beautiful, and cloud-ready.")
+
+if __name__ == "__main__":
+    main()</textarea>
+                    </div>
+                </div>
+
+                <div class="resizer" id="resizer"></div>
+
+                <div class="bottom-pane">
+                    <div class="pane-header tabs">
+                        <button class="tab-btn active" data-tab="output">Output</button>
+                        <button class="tab-btn" data-tab="terminal">Terminal</button>
+                        <div class="spacer"></div>
+                        <button class="icon-btn" title="Clear" onclick="clearOutput()"><i data-lucide="trash-2"></i></button>
+                    </div>
+                    <div id="output-view" class="tab-content active">
+                        <pre id="output-log" class="monospaced">Ready...</pre>
+                    </div>
+                    <div id="terminal-view" class="tab-content">
+                        <div id="terminal-log" class="monospaced">Welcome to DevCLI Terminal. $ </div>
+                        <div class="terminal-input-row">
+                            <span class="prompt">$</span>
+                            <input type="text" id="term-input" class="monospaced-input" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="modal-overlay hidden">
+            <div class="modal-content glass">
+                <button class="close-modal" id="close-auth"><i data-lucide="x"></i></button>
+                <div class="modal-tabs">
+                    <button class="modal-tab active" data-mode="login">Login</button>
+                    <button class="modal-tab" data-mode="signup">Register</button>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required placeholder="••••••••">
+                    </div>
+                    <div class="form-footer">
+                        <a href="#" id="forgot-password">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signup-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                </form>
+
+                <div class="divider"><span>OR</span></div>
+
+                <button class="btn btn-google" id="google-auth-btn">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" width="20">
+                    Continue with Google
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Initialize icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
