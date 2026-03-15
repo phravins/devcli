@@ -192,12 +192,6 @@ func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDriveSave(w http.ResponseWriter, r *http.Request) {
-	email, ok := getSessionUser(r)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	var req struct {
 		Filename string `json:"filename"`
 		Content  string `json:"content"`
@@ -208,8 +202,17 @@ func handleDriveSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Mock Drive Integration
-	fmt.Printf("\n[MOCK DRIVE] Saving file '%s' for user %s to Google Drive...\n", req.Filename, email)
+	msg := fmt.Sprintf("Uploading file '%s' (%d bytes) to Google Drive...", req.Filename, len(req.Content))
+	fmt.Printf("\n[MOCK DRIVE] %s\n", msg)
 	
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Saved to Google Drive (Mock)")
+	if logChan != nil {
+		logChan <- msg
+		logChan <- "Drive Status: SUCCESS (File ID: mock_id_123)"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Saved to Google Drive!",
+		"fileId":  "mock_id_123",
+	})
 }
