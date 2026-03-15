@@ -25,10 +25,12 @@ var (
 	currentDir    string     // The working directory for terminal commands
 	activeCmd     *exec.Cmd  // Currently running command (for cancellation)
 	activeMu      sync.Mutex // Protects access to activeCmd from multiple threads
+	logChan       chan string // Channel to send logs to the TUI
 )
 
 // StartServer launches the web-based Python compiler on the specified port
-func StartServer(port string) error {
+func StartServer(port string, logs chan string) error {
+	logChan = logs
 	if serverStarted {
 		if serverPort == port {
 			return nil // Server already running on the correct port, nothing to do
@@ -89,6 +91,25 @@ func StartServer(port string) error {
 
 	// Storage Routes
 	mux.HandleFunc("/drive/save", handleDriveSave)
+
+	// Logging Sync Route
+	mux.HandleFunc("/logs", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Error reading body", http.StatusInternalServerError)
+			return
+		}
+		msg := string(body)
+		fmt.Printf("\n[WEB-COMPILER LOG] %s\n", msg)
+		if logChan != nil {
+			logChan <- msg
+		}
+		w.WriteHeader(http.StatusOK)
+	})
 
 	// Handle Ctrl+C from the web terminal
 	mux.HandleFunc("/cancel", func(w http.ResponseWriter, r *http.Request) {
