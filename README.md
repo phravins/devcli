@@ -34,10 +34,11 @@ operating systems.
 
 DevCLI now includes a premium, web-based IDE for Python and other languages.
 
-*   **Premium UI**: A sleek, glassmorphic interface with modern aesthetics.
+*   **Premium UI**: A sleek, glassmorphic interface built with SCSS for modern aesthetics.
 *   **Authentication**: Secure account-based access to your workspace.
-*   **Smart Storage**: Automatic local synchronization and cloud storage placeholders.
+*   **Smart Storage**: Automatic local synchronization and customizable save paths for both local and Google Drive storage.
 *   **Integrated Terminal**: Run shell commands directly in the browser.
+*   **Real-time TUI Logs**: Web activity is instantly synchronized back to the main TUI terminal for better visibility.
 
 ## Documentation
 
