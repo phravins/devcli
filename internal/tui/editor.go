@@ -45,6 +45,7 @@ func RunEditor(filename string) {
 }
 
 type blinkMsg struct{}
+type webLogMsg string
 
 func blinkCmd() tea.Cmd {
 	return tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
@@ -101,6 +102,8 @@ type model struct {
 	activeView      int // 0=Editor, 1=Output
 	outputMaximized bool
 	lastLanguage    string // Track for buffer clearing
+	webLogs         []string
+	logChan         chan string
 }
 
 func initialModel(filename string) model {
@@ -457,8 +460,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if strings.Contains(choice, "Web Compiler") {
 					m.state = stateWebServer
 					m.status = "Web Server Running..."
-					go web.StartServer("8080")
+					m.webLogs = []string{"[TUI] Initializing web server..."}
+					m.logChan = make(chan string, 10)
+					go web.StartServer("8080", m.logChan)
 					utils.OpenBrowser("http://127.0.0.1:8080")
+					return m, m.listenLogs()
 				} else {
 					m.state = stateEditor
 					m.status = "Ready"
@@ -753,6 +759,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.updateLayout()
 		return m, nil
+
+	case webLogMsg:
+		m.webLogs = append(m.webLogs, string(msg))
+		if len(m.webLogs) > 10 {
+			m.webLogs = m.webLogs[1:11] // Keep last 10
+		}
+		return m, m.listenLogs()
 	}
 
 	return m, tea.Batch(cmds...)
@@ -922,10 +935,15 @@ func (m model) View() string {
 	}
 
 	if m.state == stateWebServer {
-		return fmt.Sprintf("\n=== TUI G (Web Compiler) ===\n\n" +
-			"Server running at http://localhost:8080\n" +
-			"The browser should have opened automatically.\n\n" +
-			"Press Esc or Ctrl+C to stop server and exit.\n")
+		var logs strings.Builder
+		for _, log := range m.webLogs {
+			logs.WriteString(fmt.Sprintf("  %s\n", log))
+		}
+		return fmt.Sprintf("\n=== TUI G (Web Compiler) ===\n\n"+
+			"Server running at http://localhost:8080\n"+
+			"The browser should have opened automatically.\n\n"+
+			"Recent Activity (Logs):\n%s\n"+
+			"Press Esc or Ctrl+C to stop server and exit.\n", logs.String())
 	}
 
 	if m.state == stateSavePrompt {
@@ -1337,5 +1355,10 @@ func getBoilerplate(lang string) string {
 		return "using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine(\"Hello from C#!\");\n    }\n}\n"
 	default:
 		return ""
+	}
+}
+func (m *model) listenLogs() tea.Cmd {
+	return func() tea.Msg {
+		return webLogMsg(<-m.logChan)
 	}
 }
