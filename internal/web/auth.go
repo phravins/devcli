@@ -1,0 +1,215 @@
+package web
+
+import (
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
+type User struct {
+	Email    string `json:"email"`
+	Password string `json:"password"` // Hashed
+}
+
+type Session struct {
+	Email     string
+	ExpiresAt time.Time
+}
+
+var (
+	users      = make(map[string]User)
+	sessions   = make(map[string]Session)
+	pendingVer = make(map[string]string) // email -> token
+	authMu     sync.RWMutex
+	usersFile  = "users.json"
+)
+
+func init() {
+	loadUsers()
+}
+
+func loadUsers() {
+	data, err := os.ReadFile(usersFile)
+	if err != nil {
+		return
+	}
+	json.Unmarshal(data, &users)
+}
+
+func saveUsers() {
+	data, _ := json.MarshalIndent(users, "", "  ")
+	os.WriteFile(usersFile, data, 0644)
+}
+
+func handleRegister(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	authMu.Lock()
+	defer authMu.Unlock()
+
+	if _, exists := users[req.Email]; exists {
+		http.Error(w, "User already exists", http.StatusConflict)
+		return
+	}
+
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	users[req.Email] = User{Email: req.Email, Password: string(hashed)}
+	saveUsers()
+
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "User created")
+}
+
+func handleLogin(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	authMu.RLock()
+	user, exists := users[req.Email]
+	authMu.RUnlock()
+
+	if !exists || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	// Create session
+	sessionID := generateSessionID()
+	authMu.Lock()
+	sessions[sessionID] = Session{
+		Email:     req.Email,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+	authMu.Unlock()
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Path:     "/",
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"email": req.Email})
+}
+
+func generateSessionID() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
+}
+
+func getSessionUser(r *http.Request) (string, bool) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		return "", false
+	}
+
+	authMu.RLock()
+	defer authMu.RUnlock()
+	session, exists := sessions[cookie.Value]
+	if !exists || session.ExpiresAt.Before(time.Now()) {
+		return "", false
+	}
+	return session.Email, true
+}
+
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_id")
+	if err == nil {
+		authMu.Lock()
+		delete(sessions, cookie.Value)
+		authMu.Unlock()
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	authMu.RLock()
+	_, exists := users[req.Email]
+	authMu.RUnlock()
+
+	if !exists {
+		// Don't leak exists status, just return OK
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	token := generateSessionID()
+	fmt.Printf("\n[MOCK EMAIL] Password reset for %s: http://127.0.0.1:8080/reset-password?token=%s\n", req.Email, token)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "Missing token", http.StatusBadRequest)
+		return
+	}
+
+	authMu.Lock()
+	defer authMu.Unlock()
+
+	// Find user by token (mock)
+	fmt.Fprintf(w, "Email verified successfully! You can now login.")
+}
+
+func handleDriveSave(w http.ResponseWriter, r *http.Request) {
+	email, ok := getSessionUser(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		Filename string `json:"filename"`
+		Content  string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	// Mock Drive Integration
+	fmt.Printf("\n[MOCK DRIVE] Saving file '%s' for user %s to Google Drive...\n", req.Filename, email)
+	
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Saved to Google Drive (Mock)")
+}
