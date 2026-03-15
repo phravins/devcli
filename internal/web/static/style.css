@@ -37,6 +37,7 @@ body {
     width: var(--sidebar-width);
     background: var(--bg-glass-heavy);
     backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -45,7 +46,7 @@ body {
     z-index: 100;
 }
 
-.logo {
+.glass-sidebar .logo {
     margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
@@ -53,21 +54,21 @@ body {
     gap: 0.5rem;
 }
 
-.logo span {
+.glass-sidebar .logo span {
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 1px;
     color: var(--accent);
 }
 
-.nav-links {
+.glass-sidebar .nav-links {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
 
-.nav-btn {
+.glass-sidebar .nav-btn {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -77,17 +78,17 @@ body {
     border-radius: 12px;
 }
 
-.nav-btn:hover, .nav-btn.active {
+.glass-sidebar .nav-btn:hover, .glass-sidebar .nav-btn.active {
     color: var(--accent);
     background: rgba(15, 158, 153, 0.1);
     transform: scale(1.1);
 }
 
-.user-profile {
+.glass-sidebar .user-profile {
     margin-top: auto;
 }
 
-.auth-trigger {
+.glass-sidebar .auth-trigger {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -98,7 +99,7 @@ body {
     gap: 0.25rem;
 }
 
-.user-status {
+.glass-sidebar .auth-trigger .user-status {
     font-size: 0.6rem;
     font-weight: 600;
 }
@@ -125,13 +126,13 @@ body {
     justify-content: space-between;
 }
 
-.file-info {
+.glass-header .file-info {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
-.minimal-input {
+.glass-header .file-info .minimal-input {
     background: none;
     border: none;
     color: var(--text-primary);
@@ -142,13 +143,13 @@ body {
     width: 250px;
 }
 
-.actions {
+.glass-header .actions {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
-.status-indicator {
+.glass-header .actions .status-indicator {
     font-size: 0.8rem;
     color: var(--text-muted);
     margin-right: 1rem;
@@ -188,6 +189,18 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.btn-google {
+    background: white;
+    color: #1F2937;
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-block {
+    width: 100%;
+    justify-content: center;
+}
+
 /* Split View */
 .split-container {
     flex: 1;
@@ -207,13 +220,8 @@ body {
     overflow: hidden;
 }
 
-.editor-pane {
-    flex: 3;
-}
-
-.bottom-pane {
-    flex: 2;
-}
+.editor-pane { flex: 3; }
+.bottom-pane { flex: 2; }
 
 .pane-header {
     height: 40px;
@@ -224,14 +232,14 @@ body {
     justify-content: space-between;
 }
 
-.label {
+.pane-header .label {
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 1px;
     color: var(--text-muted);
 }
 
-.language-badge {
+.pane-header .language-badge {
     font-size: 0.65rem;
     background: rgba(15, 158, 153, 0.1);
     color: var(--accent);
@@ -247,7 +255,7 @@ body {
     padding: 1rem;
 }
 
-textarea {
+.editor-wrapper textarea {
     width: 100%;
     height: 100%;
     background: none;
@@ -285,11 +293,12 @@ textarea {
 
 /* Tabs */
 .tabs {
+    display: flex;
     gap: 1.5rem;
     justify-content: flex-start;
 }
 
-.tab-btn {
+.tabs .tab-btn {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -301,11 +310,11 @@ textarea {
     position: relative;
 }
 
-.tab-btn.active {
+.tabs .tab-btn.active {
     color: var(--text-primary);
 }
 
-.tab-btn.active::after {
+.tabs .tab-btn.active::after {
     content: "";
     position: absolute;
     bottom: -1px;
@@ -340,13 +349,13 @@ textarea {
     margin-top: 0.5rem;
 }
 
-.prompt {
+.terminal-input-row .prompt {
     color: var(--accent);
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
 }
 
-.monospaced-input {
+.terminal-input-row .monospaced-input {
     background: none;
     border: none;
     color: var(--text-primary);
@@ -372,20 +381,18 @@ textarea {
     transition: all 0.3s ease;
 }
 
-.modal-content {
-    width: 400px;
+.modal-overlay .modal-content {
+    width: 450px;
     padding: 2.5rem;
     border-radius: 24px;
     position: relative;
     border: 1px solid var(--border);
-}
-
-.glass {
     background: var(--bg-glass-heavy);
+    backdrop-filter: blur(16px);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
-.close-modal {
+.modal-overlay .modal-content .close-modal {
     position: absolute;
     top: 1.5rem;
     right: 1.5rem;
@@ -401,7 +408,7 @@ textarea {
     margin-bottom: 2rem;
 }
 
-.modal-tab {
+.modal-tabs .modal-tab {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -412,30 +419,31 @@ textarea {
     border-bottom: 2px solid transparent;
 }
 
-.modal-tab.active {
+.modal-tabs .modal-tab.active {
     color: var(--text-primary);
     border-bottom-color: var(--accent);
 }
 
-.auth-form {
+.auth-form, .settings-form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
 
-.form-group {
+.auth-form .form-group, .settings-form .form-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.form-group label {
+.auth-form .form-group label, .settings-form .form-group label {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-secondary);
 }
 
-.form-group input {
+.auth-form .form-group input, .auth-form .form-group select, 
+.settings-form .form-group input, .settings-form .form-group select {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -445,19 +453,15 @@ textarea {
     outline: none;
 }
 
-.form-group input:focus {
+.auth-form .form-group input:focus, .auth-form .form-group select:focus, 
+.settings-form .form-group input:focus, .settings-form .form-group select:focus {
     border-color: var(--accent);
 }
 
-.form-footer a {
+.auth-form .form-footer a, .settings-form .form-footer a {
     font-size: 0.8rem;
     color: var(--accent);
     text-decoration: none;
-}
-
-.btn-block {
-    width: 100%;
-    justify-content: center;
 }
 
 .divider {
@@ -476,20 +480,9 @@ textarea {
     background: var(--border);
 }
 
-.divider span {
-    padding: 0 1rem;
-}
+.divider span { padding: 0 1rem; }
 
-.btn-google {
-    background: white;
-    color: #1F2937;
-    width: 100%;
-    justify-content: center;
-}
-
-.hidden {
-    display: none;
-}
+.hidden { display: none; }
 
 .toast {
     position: fixed;
@@ -497,15 +490,42 @@ textarea {
     right: 2rem;
     padding: 1rem 2rem;
     background: var(--bg-glass-heavy);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
     color: var(--text-primary);
     border-radius: 12px;
-    border: 1px solid var(--border);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     z-index: 2000;
     animation: slideIn 0.3s ease;
 }
 
+.toast.error { border-left: 4px solid var(--error); }
+.toast.success { border-left: 4px solid var(--success); }
+
 @keyframes slideIn {
     from { transform: translateY(100%); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+/* Save Location Tabs */
+.location-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.location-tabs .tab-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.location-tabs .tab-btn.active {
+    background: rgba(15, 158, 153, 0.1);
+    color: var(--accent);
+    border-color: var(--accent);
 }
