@@ -30,9 +30,14 @@ operating systems.
 *   [Code of Conduct](CODE_OF_CONDUCT.md)
 *   [Disclaimer](DISCLAIMER.md)
 
-## DevCLI
+## Premium Web Compiler
 
-DevCLI serves as a central hub for common development tasks. Instead of grouping scattered scripts or remembering complex CLIs, DevCLI provides a unified, interactive workspace containing a suite of powerful internal features.
+DevCLI now includes a premium, web-based IDE for Python and other languages.
+
+*   **Premium UI**: A sleek, glassmorphic interface with modern aesthetics.
+*   **Authentication**: Secure account-based access to your workspace.
+*   **Smart Storage**: Automatic local synchronization and cloud storage placeholders.
+*   **Integrated Terminal**: Run shell commands directly in the browser.
 
 ## Documentation
 
