@@ -6,90 +6,133 @@ document.addEventListener('DOMContentLoaded', () => {
     const termLog = document.getElementById('terminal-log');
     const saveStatus = document.getElementById('save-status');
 
-    // --- State Management ---
-    let currentUser = null;
-    let isAutoSaveEnabled = true;
+    // --- Settings Modal ---
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsTrigger = document.getElementById('settings-trigger');
+    const closeSettings = document.getElementById('close-settings');
+    const settingsForm = document.getElementById('settings-form');
 
-    // --- Tab Switching ---
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
+    settingsTrigger.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+    closeSettings.addEventListener('click', () => settingsModal.classList.add('hidden'));
 
-    tabBtns.forEach(btn => {
+    settingsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const theme = document.getElementById('theme-select').value;
+        const defaultPath = document.getElementById('default-save-path').value;
+        
+        localStorage.setItem('devcli_theme', theme);
+        localStorage.setItem('devcli_default_path', defaultPath);
+        
+        showToast("Settings saved!", "success");
+        settingsModal.classList.add('hidden');
+        
+        sendLogToTUI(`User updated settings: Theme=${theme}, Path=${defaultPath}`);
+    });
+
+    // --- Save Modal & Logic ---
+    const saveModal = document.getElementById('save-modal');
+    const closeSave = document.getElementById('close-save');
+    const confirmSaveBtn = document.getElementById('confirm-save-btn');
+    const customSavePathInput = document.getElementById('custom-save-path');
+    const locationBtnTabs = document.querySelectorAll('.location-tabs .tab-btn');
+    let saveLocation = 'local';
+
+    window.saveCode = () => {
+        const currentFilename = filenameInput.value;
+        const defaultPath = localStorage.getItem('devcli_default_path') || "";
+        customSavePathInput.value = currentFilename || defaultPath;
+        saveModal.classList.remove('hidden');
+    };
+
+    closeSave.addEventListener('click', () => saveModal.classList.add('hidden'));
+
+    locationBtnTabs.forEach(btn => {
         btn.addEventListener('click', () => {
-            const tabId = btn.getAttribute('data-tab');
-            
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-
+            locationBtnTabs.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById(`${tabId}-view`).classList.add('active');
-
-            if (tabId === 'terminal') {
-                termInput.focus();
+            saveLocation = btn.getAttribute('data-location');
+            
+            if (saveLocation === 'local') {
+                document.getElementById('local-save-options').classList.remove('hidden');
+                document.getElementById('drive-save-options').classList.add('hidden');
+            } else {
+                document.getElementById('local-save-options').classList.add('hidden');
+                document.getElementById('drive-save-options').classList.remove('hidden');
             }
         });
     });
 
-    // --- Resizer Logic ---
-    const resizer = document.getElementById('resizer');
-    const editorPane = document.querySelector('.editor-pane');
-    const bottomPane = document.querySelector('.bottom-pane');
-    let isResizing = false;
+    confirmSaveBtn.addEventListener('click', async () => {
+        const code = codeEditor.value;
+        const path = customSavePathInput.value;
 
-    resizer.addEventListener('mousedown', (e) => {
-        isResizing = true;
-        document.body.style.cursor = 'row-resize';
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isResizing) return;
-        const containerHeight = document.querySelector('.split-container').offsetHeight;
-        const topHeight = e.clientY - document.querySelector('.split-container').offsetTop;
-        const topFlex = topHeight / containerHeight * 5; // Simplified flex calc
-        
-        if (topFlex > 0.5 && topFlex < 4.5) {
-            editorPane.style.flex = topFlex;
-            bottomPane.style.flex = 5 - topFlex;
+        if (saveLocation === 'local') {
+            if (!path) {
+                showToast("Path required!", "error");
+                return;
+            }
+            try {
+                const response = await fetch('/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: path, content: code })
+                });
+                
+                if (response.ok) {
+                    showToast("Saved locally to " + path, "success");
+                    filenameInput.value = path;
+                    saveToLocal();
+                    saveModal.classList.add('hidden');
+                    sendLogToTUI(`File saved locally: ${path}`);
+                } else {
+                    const txt = await response.text();
+                    showToast("Error: " + txt, "error");
+                }
+            } catch (e) {
+                showToast("Network Error: " + e.message, "error");
+            }
+        } else {
+            // Drive Save
+            try {
+                const response = await fetch('/drive/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: path || "untitled.py", content: code })
+                });
+                if (response.ok) {
+                    showToast("Saved to Google Drive!", "success");
+                    saveModal.classList.add('hidden');
+                    sendLogToTUI(`File saved to Google Drive: ${path || "untitled.py"}`);
+                } else {
+                    showToast("Drive Save Failed. Please connect account.", "error");
+                }
+            } catch (e) {
+                showToast("Drive error: " + e.message, "error");
+            }
         }
     });
 
-    document.addEventListener('mouseup', () => {
-        isResizing = false;
-        document.body.style.cursor = 'default';
-    });
+    // --- Logging Sync to TUI ---
+    const sendLogToTUI = async (msg) => {
+        try {
+            await fetch('/logs', {
+                method: 'POST',
+                body: msg
+            });
+        } catch (e) {
+            console.error("Failed to sync log to TUI:", e);
+        }
+    };
 
-    // --- Auth Modal ---
-    const authModal = document.getElementById('auth-modal');
-    const loginTrigger = document.getElementById('login-trigger');
-    const closeAuth = document.getElementById('close-auth');
-    const modalTabs = document.querySelectorAll('.modal-tab');
-    const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
-
-    loginTrigger.addEventListener('click', () => authModal.classList.remove('hidden'));
-    closeAuth.addEventListener('click', () => authModal.classList.add('hidden'));
-
-    modalTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            modalTabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const mode = tab.getAttribute('data-mode');
-            if (mode === 'login') {
-                loginForm.classList.remove('hidden');
-                signupForm.classList.add('hidden');
-            } else {
-                loginForm.classList.add('hidden');
-                signupForm.classList.remove('hidden');
-            }
-        });
-    });
-
-    // --- Local Storage Sync ---
+    // --- Local Storage Sync Init ---
     const loadFromLocal = () => {
         const savedCode = localStorage.getItem('devcli_autosave_code');
         const savedFile = localStorage.getItem('devcli_autosave_filename');
         if (savedCode) codeEditor.value = savedCode;
         if (savedFile) filenameInput.value = savedFile;
+
+        const savedPath = localStorage.getItem('devcli_default_path');
+        if (savedPath) document.getElementById('default-save-path').value = savedPath;
     };
 
     const saveToLocal = () => {
@@ -107,10 +150,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const code = codeEditor.value;
         const log = outputLog;
         
-        // Switch to output tab
         document.querySelector('[data-tab="output"]').click();
         log.textContent = "Executing...";
         log.style.color = 'var(--text-secondary)';
+
+        sendLogToTUI(`Started execution of ${filenameInput.value || 'unsaved script'}`);
 
         try {
             const response = await fetch('/run', {
@@ -122,40 +166,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.error) {
                 log.style.color = 'var(--error)';
                 log.textContent = (result.output || "") + "\nError: " + result.error;
+                sendLogToTUI(`Execution failed: ${result.error}`);
             } else {
                 log.style.color = 'var(--success)';
                 log.textContent = result.output;
+                sendLogToTUI(`Execution completed successfully`);
             }
         } catch (e) {
             log.style.color = 'var(--error)';
             log.textContent = "Execution Failed: " + e.message;
-        }
-    };
-
-    window.saveCode = async () => {
-        const code = codeEditor.value;
-        const filename = filenameInput.value;
-        
-        if (!filename) {
-            showToast("Filename required!", "error");
-            return;
-        }
-
-        try {
-            const response = await fetch('/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename, content: code })
-            });
-            
-            if (response.ok) {
-                showToast("Saved successfully to " + filename, "success");
-            } else {
-                const txt = await response.text();
-                showToast("Error: " + txt, "error");
-            }
-        } catch (e) {
-            showToast("Network Error: " + e.message, "error");
+            sendLogToTUI(`Network error during execution: ${e.message}`);
         }
     };
 
@@ -182,9 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 termLog.textContent += result.output + "\n";
                 
-                // Scroll to bottom
                 const container = document.getElementById('terminal-view');
                 container.scrollTop = container.scrollHeight;
+                
+                sendLogToTUI(`Shell command run via web: ${cmd}`);
             } catch (e) {
                 termLog.textContent += "Error executing command.\n";
             }
@@ -203,23 +224,18 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.classList.add('hidden'), 3000);
     };
 
-    // --- Auth Handlers (Placeholders) ---
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        showToast("Login logic pending backend...", "info");
-    });
-
-    signupForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        showToast("Registration logic pending backend...", "info");
-    });
-
     document.getElementById('google-auth-btn').addEventListener('click', () => {
         showToast("Connecting to Google...", "info");
         window.location.href = '/auth/google';
     });
 
-    document.getElementById('drive-btn').addEventListener('click', () => {
-        showToast("Google Drive integration coming soon.", "info");
+    document.getElementById('drive-sidebar-btn').addEventListener('click', () => {
+        saveLocation = 'drive';
+        saveModal.classList.remove('hidden');
+        document.querySelectorAll('.location-tabs .tab-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-location') === 'drive');
+        });
+        document.getElementById('local-save-options').classList.add('hidden');
+        document.getElementById('drive-save-options').classList.remove('hidden');
     });
 });
