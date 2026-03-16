@@ -70,6 +70,11 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 	users[req.Email] = User{Email: req.Email, Password: string(hashed)}
 	saveUsers()
 
+	msg := "New user registered: " + req.Email
+	if logChan != nil {
+		logChan <- msg
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "User created")
 }
@@ -109,6 +114,11 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	})
+
+	msg := "User logged in: " + req.Email
+	if logChan != nil {
+		logChan <- msg
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"email": req.Email})
