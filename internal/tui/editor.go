@@ -763,7 +763,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case webLogMsg:
 		m.webLogs = append(m.webLogs, string(msg))
 		if len(m.webLogs) > 10 {
-			m.webLogs = m.webLogs[1:11] // Keep last 10
+			m.webLogs = m.webLogs[len(m.webLogs)-10:]
 		}
 		return m, m.listenLogs()
 	}
