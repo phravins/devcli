@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/phravins/devcli/pkg/utils"
 )
@@ -103,7 +104,7 @@ func StartServer(port string, logs chan string) error {
 			http.Error(w, "Error reading body", http.StatusInternalServerError)
 			return
 		}
-		msg := string(body)
+		msg := fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), string(body))
 		fmt.Printf("\n[WEB-COMPILER LOG] %s\n", msg)
 		if logChan != nil {
 			logChan <- msg
@@ -148,16 +149,29 @@ func StartServer(port string, logs chan string) error {
 		if dir != "." && dir != "/" {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				http.Error(w, "Failed to create directory: "+err.Error(), http.StatusInternalServerError)
+				msg := "Failed to create directory: " + err.Error()
+				if logChan != nil {
+					logChan <- msg
+				}
+				http.Error(w, msg, http.StatusInternalServerError)
 				return
 			}
 		}
 
 		err := os.WriteFile(filename, []byte(payload.Content), 0644)
 		if err != nil {
+			msg := "Error saving file: " + err.Error()
+			if logChan != nil {
+				logChan <- msg
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		msg := "File saved successfully: " + filename
+		if logChan != nil {
+			logChan <- msg
+		}
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -174,6 +188,14 @@ func StartServer(port string, logs chan string) error {
 		}
 
 		output, err := runPython(string(body))
+
+		if logChan != nil {
+			if err != nil {
+				logChan <- "Python Execution Error: " + err.Error()
+			} else {
+				logChan <- "Python Execution Success"
+			}
+		}
 
 		response := map[string]string{
 			"output": output,
