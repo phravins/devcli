@@ -22,14 +22,16 @@
 
 ### METHOD 1: Automated Installation (Windows)
 
-For a complete "no-hassle" installation that sets up Go and DevCLI automatically:
+For a complete "no-hassle" installation that sets up Go and DevCLI automatically, open PowerShell and run:
 
+```powershell
+irm https://raw.githubusercontent.com/phravins/devcli/main/install.ps1 | iex
+```
+
+Alternatively, you can manually use the setup script:
 1.  Download the [setup_devcli.bat](../setup_devcli.bat) script.
 2.  Right-click the file and select **"Run as administrator"**.
-3.  The script will:
-    -   Check if Go is installed (and automatically download/install it if missing).
-    -   Install the latest version of DevCLI.
-    -   Configure your system PATH.
+3.  The script will check for Go, install the latest DevCLI, and configure your PATH.
 
 ### METHOD 2: Automated Installation (Linux/macOS)
 
