@@ -3,7 +3,7 @@
 
 $ErrorActionPreference = "Stop"
 
-function Show-RocketAnimation {
+function Show-ProgressAnimation {
     param(
         [Parameter(Mandatory=$true)]
         [System.Management.Automation.Job]$Job,
@@ -11,7 +11,7 @@ function Show-RocketAnimation {
         [string]$Message
     )
 
-    $rocket = [char]::ConvertFromUtf32(128640)
+    $arrow = ">"
     $barLength = 30
     [Console]::CursorVisible = $false
     
@@ -34,12 +34,12 @@ function Show-RocketAnimation {
         
         $percentStr = "$progress%".PadLeft(4)
         
-        Write-Host "`r[$trail$rocket$empty] $percentStr - $Message" -NoNewline -ForegroundColor White
+        Write-Host "`r[$trail$arrow$empty] $percentStr - $Message" -NoNewline -ForegroundColor White
         Start-Sleep -Milliseconds 150
     }
     
     $trail = "=" * $barLength
-    Write-Host "`r[$trail$rocket] 100% - $Message" -NoNewline -ForegroundColor White
+    Write-Host "`r[$trail$arrow] 100% - $Message" -NoNewline -ForegroundColor White
     Start-Sleep -Milliseconds 300
     [Console]::CursorVisible = $true
     # Clear line
@@ -47,7 +47,7 @@ function Show-RocketAnimation {
 }
 
 function Install-DevCLI {
-    $rocket = [char]::ConvertFromUtf32(128640)
+    $arrow = ">"
     Write-Host ""
     Write-Host "    ____            ________    ____" -ForegroundColor Cyan
     Write-Host "   / __ \___ _   __/ ____/ /   /  _/" -ForegroundColor Cyan
@@ -76,7 +76,7 @@ function Install-DevCLI {
             Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
         } -ArgumentList $goMsiUrl, $msiPath
         
-        Show-RocketAnimation -Job $downloadJob -Message "Downloading Go MSI..."
+        Show-ProgressAnimation -Job $downloadJob -Message "Downloading Go MSI..."
         Receive-Job -Job $downloadJob | Out-Null
         
         Write-Host "[INFO] Installing Go (A UAC prompt may appear to grant administrative permissions)..." -ForegroundColor Cyan
@@ -101,7 +101,7 @@ function Install-DevCLI {
     }
 
     Write-Host ""
-    Write-Host "$rocket Preparing to install DevCLI..." -ForegroundColor Cyan
+    Write-Host "$arrow Preparing to install DevCLI..." -ForegroundColor Cyan
 
     $installCmd = {
         $ErrorActionPreference = "Continue"
@@ -119,7 +119,7 @@ function Install-DevCLI {
 
     $devcliJob = Start-Job -ScriptBlock $installCmd
     
-    Show-RocketAnimation -Job $devcliJob -Message "Compiling and Installing DevCLI..."
+    Show-ProgressAnimation -Job $devcliJob -Message "Compiling and Installing DevCLI..."
     
     $result = Receive-Job -Job $devcliJob
     
@@ -130,7 +130,7 @@ function Install-DevCLI {
     }
 
     if (-not $failed) {
-        Write-Host "[SUCCESS] DevCLI installed successfully! $rocket" -ForegroundColor Green
+        Write-Host "[SUCCESS] DevCLI installed successfully! $arrow" -ForegroundColor Green
         
         # Check PATH configuration
         $devcliBinPath = "$env:USERPROFILE\.devcli\bin"
