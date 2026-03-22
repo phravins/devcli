@@ -12,37 +12,50 @@ function Show-RocketAnimation {
     )
 
     $rocket = [char]::ConvertFromUtf32(128640)
-    $rocketFrames = @(
-        "$rocket.     ",
-        " $rocket.    ",
-        "  $rocket.   ",
-        "   $rocket.  ",
-        "    $rocket. ",
-        "     $rocket.",
-        "    .$rocket ",
-        "   .$rocket  ",
-        "  .$rocket   ",
-        " .$rocket    "
-    )
-    $i = 0
+    $barLength = 30
     [Console]::CursorVisible = $false
+    
+    $progress = 0
+    
     while ($Job.State -eq "Running") {
-        $frame = $rocketFrames[$i % $rocketFrames.Length]
-        Write-Host "`r$Message $frame" -NoNewline -ForegroundColor Cyan
+        if ($progress -lt 99) {
+            if ($progress -lt 50) { $progress += 2 }
+            elseif ($progress -lt 80) { $progress += 1 }
+            elseif ($progress -lt 95) { if ((Get-Random -Maximum 10) -gt 6) { $progress += 1 } }
+            elseif ($progress -lt 99) { if ((Get-Random -Maximum 20) -gt 17) { $progress += 1 } }
+        }
+
+        $filledLen = [math]::Floor(($progress / 100.0) * $barLength)
+        $emptyLen = $barLength - $filledLen
+        if ($emptyLen -lt 0) { $emptyLen = 0 }
+        
+        $trail = "=" * $filledLen
+        $empty = " " * $emptyLen
+        
+        $percentStr = "$progress%".PadLeft(4)
+        
+        Write-Host "`r[$trail$rocket$empty] $percentStr - $Message" -NoNewline -ForegroundColor White
         Start-Sleep -Milliseconds 150
-        $i++
     }
+    
+    $trail = "=" * $barLength
+    Write-Host "`r[$trail$rocket] 100% - $Message" -NoNewline -ForegroundColor White
+    Start-Sleep -Milliseconds 300
     [Console]::CursorVisible = $true
     # Clear line
-    Write-Host "`r$($Message.PadRight(80))`r" -NoNewline
+    Write-Host "`r$($('').PadRight(100))`r" -NoNewline
 }
 
 function Install-DevCLI {
     $rocket = [char]::ConvertFromUtf32(128640)
     Write-Host ""
-    Write-Host "===========================================" -ForegroundColor Magenta
-    Write-Host "      $rocket DevCLI Automated Installer $rocket     " -ForegroundColor Cyan
-    Write-Host "===========================================" -ForegroundColor Magenta
+    Write-Host "    ____            ________    ____" -ForegroundColor Cyan
+    Write-Host "   / __ \___ _   __/ ____/ /   /  _/" -ForegroundColor Cyan
+    Write-Host "  / / / / _ \ | / / /   / /    / /  " -ForegroundColor Cyan
+    Write-Host " / /_/ /  __/ |/ / /___/ /____/ /   " -ForegroundColor Cyan
+    Write-Host "/_____/\___/|___/\____/_____/___/   " -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "DevCLI Windows Installer" -ForegroundColor Yellow
     Write-Host ""
 
     # 1. Check for Go Support
