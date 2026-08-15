@@ -1,10 +1,12 @@
 
 package assets
 
+
 import (
 	"embed"
 	"io/fs"
 )
+//go:embed devcli_logo.png
 var assetsFS embed.FS
 func GetLogo() ([]byte, error) {
 	return assetsFS.ReadFile("devcli_logo.png")

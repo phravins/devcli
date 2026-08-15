@@ -67,8 +67,8 @@ function Install-DevCLI {
     } catch {}
 
     if (-not $goInstalled) {
-        Write-Host "[WARN] Go is not installed. Setting up Go 1.23.4 for you..." -ForegroundColor Yellow
-        $goMsiUrl = "https://go.dev/dl/go1.23.4.windows-amd64.msi"
+        Write-Host "[WARN] Go is not installed. Setting up Go 1.24.0 for you..." -ForegroundColor Yellow
+        $goMsiUrl = "https://go.dev/dl/go1.24.0.windows-amd64.msi"
         $msiPath = "$env:TEMP\go_installer.msi"
         
         $downloadJob = Start-Job -ScriptBlock {
