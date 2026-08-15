@@ -38,7 +38,7 @@ if ! command -v go &> /dev/null; then
         exit 1
     fi
 
-    GO_VER="1.23.4"
+    GO_VER="1.24.0"
     GO_TAR="go${GO_VER}.${GOOS}-${GOARCH}.tar.gz"
     GO_URL="https://go.dev/dl/${GO_TAR}"
     

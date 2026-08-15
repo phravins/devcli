@@ -39,7 +39,7 @@ if %errorLevel% equ 0 (
     echo.
     
     :: Define Go version and URL
-    set "GO_VER=1.23.4"
+    set "GO_VER=1.24.0"
     set "GO_MSI=go%GO_VER%.windows-amd64.msi"
     set "GO_URL=https://go.dev/dl/%GO_MSI%"
     
