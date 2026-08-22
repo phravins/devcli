@@ -37,7 +37,7 @@ var EditorCmd = &cobra.Command{
 }
 
 func RunEditor(filename string) {
-	p := tea.NewProgram(Wrap(initialModel(filename)), tea.WithAltScreen(), tea.WithMouseCellMotion())
+	p := tea.NewProgram(Wrap(initialModel(filename)), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running editor: %v\n", err)
 		os.Exit(1)

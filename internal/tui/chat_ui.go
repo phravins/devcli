@@ -1,4 +1,4 @@
-﻿package tui
+package tui
 
 import (
 	"fmt"
@@ -119,6 +119,12 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// We'll let it fall through to component updates
 
 	case tea.KeyMsg:
+		str := msg.String()
+		// Filter out stray terminal ANSI response sequence artifacts (e.g. background queries or mouse tracking)
+		if strings.Contains(str, "]11;") || strings.Contains(str, "rgb:") || strings.Contains(str, "\033") || strings.Contains(str, "\x1b") {
+			return m, nil
+		}
+
 		// Help screen handler
 		if m.showHelp {
 			switch msg.String() {
@@ -293,7 +299,7 @@ func (m ChatModel) View() string {
 }
 
 func RunChat() {
-	p := tea.NewProgram(Wrap(NewChatModel()), tea.WithAltScreen(), tea.WithMouseCellMotion())
+	p := tea.NewProgram(Wrap(NewChatModel()), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running chat: %v\n", err)
 		os.Exit(1)

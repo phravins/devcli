@@ -224,7 +224,7 @@ func (m RootModel) View() string {
 }
 
 func RunRoot() {
-	p := tea.NewProgram(NewRootModel(), tea.WithAltScreen(), tea.WithMouseCellMotion())
+	p := tea.NewProgram(NewRootModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running devcli: %v\n", err)
 		os.Exit(1)

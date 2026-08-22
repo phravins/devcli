@@ -7,10 +7,59 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/phravins/devcli/internal/config"
 )
+
+var (
+	statusCacheMu   sync.Mutex
+	lastStatusCheck time.Time
+	cachedBranch    string = "No Git"
+	cachedVenv      string = "venv:none"
+	cachedAIBackend string = "Ollama"
+)
+
+func getCachedStatusInfo() (string, string, string) {
+	statusCacheMu.Lock()
+	defer statusCacheMu.Unlock()
+
+	// Refresh metrics at most once every 5 seconds to prevent process spawning lag in View()
+	if time.Since(lastStatusCheck) > 5*time.Second || lastStatusCheck.IsZero() {
+		lastStatusCheck = time.Now()
+
+		// 1. Git Branch
+		branch := "No Git"
+		if out, err := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output(); err == nil {
+			b := strings.TrimSpace(string(out))
+			if b != "" {
+				branch = "git:" + b
+			}
+		}
+		cachedBranch = branch
+
+		// 2. Virtual Environment
+		venvStr := "venv:none"
+		if v := os.Getenv("VIRTUAL_ENV"); v != "" {
+			venvStr = "venv:" + filepath.Base(v)
+		} else if _, err := os.Stat(".venv"); err == nil {
+			venvStr = "venv:.venv"
+		}
+		cachedVenv = venvStr
+
+		// 3. Configured AI Provider
+		cfg, _ := config.LoadConfig()
+		aiBackend := "Ollama"
+		if cfg != nil && cfg.AIBackend != "" {
+			aiBackend = strings.Title(cfg.AIBackend)
+		}
+		cachedAIBackend = aiBackend
+	}
+
+	return cachedBranch, cachedVenv, cachedAIBackend
+}
 
 // RenderStatusBar generates a modern responsive live status bar for DevCLI
 func RenderStatusBar(width int) string {
@@ -18,35 +67,13 @@ func RenderStatusBar(width int) string {
 		width = 80
 	}
 
-	// 1. Git Branch
-	branch := "No Git"
-	if out, err := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output(); err == nil {
-		b := strings.TrimSpace(string(out))
-		if b != "" {
-			branch = "git:" + b
-		}
-	}
+	branch, venvStr, aiBackend := getCachedStatusInfo()
 
-	// 2. Memory Usage (Allocated MB)
+	// Memory Usage (Allocated MB - fast in-memory calculation)
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	memUsed := float64(m.Alloc) / 1024 / 1024
 	memStr := fmt.Sprintf("%.1fMB", memUsed)
-
-	// 3. Virtual Environment
-	venvStr := "venv:none"
-	if v := os.Getenv("VIRTUAL_ENV"); v != "" {
-		venvStr = "venv:" + filepath.Base(v)
-	} else if _, err := os.Stat(".venv"); err == nil {
-		venvStr = "venv:.venv"
-	}
-
-	// 4. Configured AI Provider
-	cfg, _ := config.LoadConfig()
-	aiBackend := "Ollama"
-	if cfg != nil && cfg.AIBackend != "" {
-		aiBackend = strings.Title(cfg.AIBackend)
-	}
 
 	// Styles for Status Bar Pills
 	brandStyle := lipgloss.NewStyle().
@@ -81,7 +108,7 @@ func RenderStatusBar(width int) string {
 
 	barContent := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		brandStyle.Render("⚡ DevCLI v1.0"),
+		brandStyle.Render("⚡ DevCLI v1.1"),
 		branchStyle.Render(" "+branch),
 		venvStyle.Render(" "+venvStr),
 		memStyle.Render(" RAM:"+memStr),
