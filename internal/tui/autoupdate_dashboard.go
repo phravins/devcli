@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -599,15 +601,17 @@ func checkDevCLIUpdatesCmd() tea.Cmd {
 	return func() tea.Msg {
 		// Try local git first if we are inside the devcli repository
 		if _, err := exec.Command("git", "rev-parse", "--is-inside-work-tree").Output(); err == nil {
-			// 1. Fetch
-			fetch := exec.Command("git", "fetch")
+			// 1. Fetch with 10s timeout
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			fetch := exec.CommandContext(ctx, "git", "fetch")
 			if output, err := fetch.CombinedOutput(); err != nil {
-				// Check for common errors
 				outStr := string(output)
 				if strings.Contains(outStr, "fatal: no remote") {
 					return updateCheckMsg{err: fmt.Errorf("no git remote configured")}
 				}
-				return updateCheckMsg{err: fmt.Errorf("git fetch failed: %s", outStr)}
+				return updateCheckMsg{err: fmt.Errorf("git fetch failed or timed out: %s", outStr)}
 			}
 			branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 			branchOut, err := branchCmd.Output()
@@ -620,7 +624,6 @@ func checkDevCLIUpdatesCmd() tea.Cmd {
 			logCmd := exec.Command("git", "log", fmt.Sprintf("HEAD..origin/%s", branch), "--oneline")
 			out, err := logCmd.Output()
 			if err != nil {
-				// Maybe no upstream configured?
 				return updateCheckMsg{err: fmt.Errorf("check failed (no upstream for branch '%s'?)", branch)}
 			}
 
@@ -632,8 +635,9 @@ func checkDevCLIUpdatesCmd() tea.Cmd {
 			return updateCheckMsg{hasUpdates: true, log: logStr}
 		}
 
-		// Fallback: Check via GitHub API as we are installed globally
-		resp, err := http.Get("https://api.github.com/repos/phravins/devcli/commits?per_page=5")
+		// Fallback: Check via GitHub API with 10s HTTP timeout
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Get("https://api.github.com/repos/phravins/devcli/commits?per_page=5")
 		if err != nil {
 			return updateCheckMsg{err: fmt.Errorf("failed to check github updates: %v", err)}
 		}
@@ -679,11 +683,26 @@ func summarizeUpdatesCmd(p ai.Provider, log string) tea.Cmd {
 			return summaryMsg{err: fmt.Errorf("no AI provider configured")}
 		}
 
-		prompt := fmt.Sprintf("Visualize these git commit logs into a nice, human-readable release note summary. Highlight new features and fixes. Keep it concise.\n\nLogs:\n%s", log)
+		// Run AI call with an 8-second timeout so TUI never gets stuck
+		type result struct {
+			content string
+			err     error
+		}
+		resChan := make(chan result, 1)
 
-		msgs := []ai.Message{{Role: "user", Content: prompt}}
-		resp, err := p.Send(msgs)
-		return summaryMsg{content: resp, err: err}
+		go func() {
+			prompt := fmt.Sprintf("Visualize these git commit logs into a nice, human-readable release note summary. Highlight new features and fixes. Keep it concise.\n\nLogs:\n%s", log)
+			msgs := []ai.Message{{Role: "user", Content: prompt}}
+			resp, err := p.Send(msgs)
+			resChan <- result{content: resp, err: err}
+		}()
+
+		select {
+		case res := <-resChan:
+			return summaryMsg{content: res.content, err: res.err}
+		case <-time.After(8 * time.Second):
+			return summaryMsg{err: fmt.Errorf("AI summary timed out (showing raw logs below)")}
+		}
 	}
 }
 
