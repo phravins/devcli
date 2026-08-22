@@ -1,85 +1,74 @@
-# Features
+# DevCLI v1.1.0 Feature Overview
 
-## Core Features
+DevCLI provides a comprehensive suite of terminal development workspace tools:
 
-### Project Manager
-Scaffolding, templates, and history tracking.
-*   Create projects from templates (Go, Python, Node.js, React, etc.)
-*   Smart project naming
-*   History tracking
-*   Backup functionality
-*   Automated dependency installation (npm install, pip install)
+---
 
-### Virtual Environment Wizard
-Centralized management of Python `venv` and `node_modules`.
-*   Recursive scanning for environments
-*   Requirements synchronization
-*   Environment cloning and cleanup
-*   Package inspection and conflict detection
+## 1. Dual-Pane TUI Workspace & Live Status Bar
+* **Framed Dual-Pane Layout**: Navigation menu on the left pane and dynamic live workspace stats & feature details card on the right pane.
+* **Persistent Live Status Bar**: Displays active Git branch (`git:main`), memory usage in MB, active Python `venv`, and connected AI provider status.
+* **Vibrant Lip Gloss Color Themes**: High-contrast Dracula, Neon, and Nord styling with status badges and glowing active cursor pills.
 
-### Dev Server Launcher
-Auto-detecting live reload servers.
-*   Framework detection
-*   Live log streaming with coloring
-*   Full-text search in logs
-*   Auto-scroll toggle
+---
 
-### Boilerplate Generator
-Instant code snippets and architectural patterns.
-*   Ready-to-use snippets (CRUD, Auth, DB)
-*   Multi-language support
-*   Project architecture generation
-*   Template saving
+## 2. 🐳 Docker & Container Dashboard
+Native Docker container management inside the terminal:
+* **Container Inspection**: View all running and stopped Docker containers with image tags, status badges, and IDs.
+* **State Controls**: Start (`s`), stop (`s`), and restart (`r`) containers directly from the list.
+* **Live Container Logs**: Stream container stdout/stderr logs into a scrollable TUI viewport (`l` or `Enter`).
 
-### File Manager
-Keyboard-driven file explorer.
-*   Tree-style navigation
-*   Fuzzy search
-*   Standard file operations (Copy, Move, Rename, Delete)
-*   Integrated editing
+---
 
-### Built-in Code Editor
-Lightweight terminal-based editor.
-*   Syntax highlighting (Python)
-*   Direct code execution (Ctrl+R)
-*   Multi-language support
+## 3. 🌐 API & HTTP Client Playground (Postman Alternative in TUI)
+Interactive API client built into DevCLI:
+* **HTTP Method Selector**: Send `GET`, `POST`, `PUT`, `DELETE`, and `PATCH` requests.
+* **JSON Payload Editor**: Input custom headers and JSON request bodies.
+* **Status Badges & Latency Counter**: Real-time response status badges (e.g. `200 OK` in emerald green, `404` in red) and latency timer in milliseconds.
+* **Formatted JSON Viewport**: Pretty-printed JSON response formatting with scrollable viewport.
 
-### Auto-Update System
-*   Checks versions for Go, Python, Node, Java, Rust, etc.
-*   Self-updating capability
+---
 
-## Bonus Features
+## 4. 💻 Multi-Language Web IDE & Compiler Server
+Embedded HTTP server running at `http://127.0.0.1:8080`:
+* **Multi-Language Runner**: Supports online code execution for **Python**, **JavaScript (Node.js)**, **Go**, **Rust**, and **C / C++**.
+* **Browser IDE**: Glassmorphic UI with integrated browser terminal output, file saving, user auth, and mock Google Drive sync.
 
-### Task Runner
-One-click execution of build, test, and lint commands.
-*   Auto-detects tasks from `package.json`, `Makefile`, etc.
-*   Live output streaming
+---
 
-### Smart File Creator
-Instant generation of config files.
-*   Dockerfile, .env, Makefile, GitHub Actions
-*   Language-specific customization
+## 5. 🤖 AI Assistant & Conventional Git Commit Auto-Generator
+* **Multi-Provider AI Chat**: Connects to Ollama, Google Gemini, OpenAI, Anthropic Claude, or HuggingFace.
+* **`devcli ai commit` Subcommand**: Analyzes your `git diff`, queries AI to auto-generate conventional commit messages (`feat: ...`, `fix: ...`), and commits changes upon confirmation.
+* **Timeout-Protected Execution**: Fast 8-second timeout preventing UI stalls if AI providers are slow or offline.
 
-### Snippet Library
-Personal vault for reusable code blocks.
-*   JSON-based storage
-*   Search and tagging
+---
 
-### Code Time Machine
-Git-powered code evolution tracker.
-*   Interactive Git blame and history
-*   Bug risk detection (late-night commits, large refactors)
-*   Timeline navigation
-*   Split-pane layout
+## 6. 📂 Project Manager & Scaffolder
+Scaffold full project structures with instant Git initialization:
+* **Supported Stacks**: Go Fiber API, Python FastAPI/Flask, Node.js Express/React, and custom templates.
+* **Automated Setup**: Generates structured README, `.gitignore`, dependency installers (`npm install`, `pip install`), and git repository setup.
 
-### AI Assistant
-Built-in chat for coding help.
-*   Support for Ollama, OpenAI, Anthropic, Gemini
-*   Context-aware suggestions
-*   Streaming responses
-*   Offline capability (with local models)
+---
 
-### Documentation Dashboard
-In-app documentation access.
-*   Read docs offline
-*   Multi-language support (English, Spanish, French, German, Hindi, Chinese, Japanese)
+## 7. 🗂️ Terminal File Manager & Built-in Code Editor
+* **File Manager**: Keyboard-driven file browser with tree navigation, search, read/write, rename, and delete actions.
+* **Built-in Editor**: Terminal code editor with syntax highlighting, line numbers, and file saving.
+
+---
+
+## 8. 🐍 Virtual Environment Wizard
+Centralized Python `venv` and `node_modules` manager:
+* Recursive scanning for virtual environments in your workspace.
+* Verification, cloning, package freezing (`pip freeze`), and deletion.
+
+---
+
+## 9. 🕰️ Code Time Machine
+Git-powered code evolution tracker:
+* Interactive line-by-line Git blame examiner.
+* Risk analyzer highlighting late-night commits and large refactor risks.
+
+---
+
+## 10. 🔄 Auto-Update Center
+* System language version scanner for Go, Python, Node, Java, Rust, Zig, and C/C++.
+* Self-updating mechanism to pull latest commits and rebuild the DevCLI executable.

@@ -206,81 +206,149 @@ func (m DashboardModel) View() string {
 		return docStyle.Render(m.settings.View())
 	}
 
-	headerStyle := lipgloss.NewStyle().
-		Width(m.width).
-		Align(lipgloss.Center)
+	// 1. Render Top Live Status Bar
+	topBar := RenderStatusBar(m.width)
 
-	logo := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#0F9E99")). // Tropical Teal
-		Bold(true).
-		Render(`
+	// 2. Render ASCII Logo & Header Banner
+	logoStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#8BE9FD")). // Glowing Cyan
+		Bold(true)
+
+	logo := logoStyle.Render(`
   ____  _______     __   ____ _     ___ 
  |  _ \| ____\ \   / /  / ___| |   |_ _|
  | | | |  _|  \ \ / /  | |   | |    | | 
  | |_| | |___  \ V /   | |___| |___ | | 
  |____/|_____|  \_/     \____|_____|___|`)
 
-	title := lipgloss.NewStyle().
+	versionBadge := lipgloss.NewStyle().
+		Background(lipgloss.Color("#50FA7B")).
+		Foreground(lipgloss.Color("#282a36")).
 		Bold(true).
-		Foreground(lipgloss.Color("#EFE9E0")). // Soft Ivory
-		Render("Developer's CLI")              // Removed Padding(0,1) to save logical height
-
-	footer := lipgloss.NewStyle().
-		Width(m.width).
-		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("#666666")). // Grey for "smaller" feel
-		Render("Opendev Toolkit")
-
-	version := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#666666")).
-		Italic(true).
+		Padding(0, 1).
 		Render(config.Version)
 
-	centeredHeader := headerStyle.Render(logo + "\n" + title + "\n" + version)
+	headerText := lipgloss.JoinHorizontal(lipgloss.Center,
+		lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#BD93F9")).Render("DevCLI - Unified Developer Workspace "),
+		versionBadge,
+	)
+
+	headerBanner := lipgloss.Place(m.width, 6, lipgloss.Center, lipgloss.Center,
+		lipgloss.JoinVertical(lipgloss.Center, logo, headerText),
+	)
 
 	// --- COMMANDS VIEW ---
 	if m.showCommands {
-		// Use shared titleStyle for consistency/correctness (matches Project Tools)
 		commandsTitle := lipgloss.NewStyle().
 			Width(m.width).
 			Align(lipgloss.Center).
 			Render(titleStyle.Render("DEVCLI COMMANDS"))
 
-		// Construct content
+		footer := lipgloss.NewStyle().
+			Width(m.width).
+			Align(lipgloss.Center).
+			Foreground(lipgloss.Color("#666666")).
+			Render("Press [Esc] to return")
+
 		content := lipgloss.JoinVertical(lipgloss.Center,
-			"\n", // Explicit top margin to prevent title frame cutoff
+			topBar,
+			"\n",
 			commandsTitle,
-			strings.Repeat("\n", 1), // Gap below title
+			"\n",
 			m.commandView.View(),
-			strings.Repeat("\n", 1), // Gap above footer
+			"\n",
 			footer,
 		)
-
-		// Use Place to ensure it starts at (0,0) and doesn't get scrolled up
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 	}
-	contentView := lipgloss.JoinVertical(lipgloss.Left,
-		centeredHeader,
-		"\n",
-		m.list.View(),
-	)
-	availableHeight := m.height - 2
-	contentHeight := lipgloss.Height(contentView)
-	footerHeight := lipgloss.Height(footer)
 
-	gapHeight := availableHeight - contentHeight - footerHeight
-	if gapHeight < 0 {
-		gapHeight = 0
+	// 3. Dual-Pane Layout Construction
+	leftWidth := (m.width * 45) / 100
+	if leftWidth < 38 {
+		leftWidth = 38
+	}
+	rightWidth := m.width - leftWidth - 6
+	if rightWidth < 30 {
+		rightWidth = 30
 	}
 
-	spacer := strings.Repeat("\n", gapHeight)
+	m.list.SetSize(leftWidth-4, m.height-14)
 
-	// Combine: Content + Spacer + Footer
-	return docStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
-		contentView,
-		spacer,
-		footer,
-	))
+	leftBox := LeftPaneStyle.
+		Width(leftWidth).
+		Height(m.height - 12).
+		Render(m.list.View())
+
+	// Dynamic Right Pane Card
+	selectedTitle := "Quick Info"
+	selectedDesc := "Select an option from the menu to see details."
+	if i, ok := m.list.SelectedItem().(item); ok {
+		selectedTitle = i.title
+		selectedDesc = i.desc
+	}
+
+	rightContentStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#F1FA8C"))
+	infoTitleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF79C6")).Bold(true)
+
+	var rightInfo strings.Builder
+	rightInfo.WriteString(infoTitleStyle.Render("📌 "+selectedTitle) + "\n\n")
+	rightInfo.WriteString(rightContentStyle.Render(selectedDesc) + "\n\n")
+	rightInfo.WriteString("------------------------------------\n\n")
+
+	// Dynamic Help/Preview content based on selected menu item
+	switch {
+	case strings.Contains(selectedTitle, "Project"):
+		rightInfo.WriteString("• Scaffold Go, Python, Node, React & FastAPI projects\n")
+		rightInfo.WriteString("• Automatically initializes Git repositories\n")
+		rightInfo.WriteString("• Generates structured README & build configs\n")
+	case strings.Contains(selectedTitle, "AI Chat"):
+		rightInfo.WriteString("• Multi-provider AI assistant\n")
+		rightInfo.WriteString("• Supports Ollama, Gemini, OpenAI, Claude & HuggingFace\n")
+		rightInfo.WriteString("• Code explanation, debugging & refactoring\n")
+	case strings.Contains(selectedTitle, "Editor"):
+		rightInfo.WriteString("• Built-in terminal code editor with line numbers\n")
+		rightInfo.WriteString("• Syntax highlighting for multiple languages\n")
+	case strings.Contains(selectedTitle, "File Manager"):
+		rightInfo.WriteString("• Full-featured terminal file manager\n")
+		rightInfo.WriteString("• Read, write, move, rename, delete files\n")
+	case strings.Contains(selectedTitle, "Docker"):
+		rightInfo.WriteString("• View active & stopped containers\n")
+		rightInfo.WriteString("• Start, stop & restart containers\n")
+		rightInfo.WriteString("• Stream live container logs in viewport\n")
+	case strings.Contains(selectedTitle, "API"):
+		rightInfo.WriteString("• Built-in Postman alternative in TUI\n")
+		rightInfo.WriteString("• Test GET, POST, PUT, DELETE, PATCH endpoints\n")
+		rightInfo.WriteString("• Pretty JSON response formatting & latency counter\n")
+	case strings.Contains(selectedTitle, "Settings"):
+		rightInfo.WriteString("• Configure AI API keys & custom base URLs\n")
+		rightInfo.WriteString("• Customize compiler execution paths\n")
+	default:
+		rightInfo.WriteString("Press [Enter] to open the selected feature.\n")
+		rightInfo.WriteString("Press [?] for help or [q] to exit.\n")
+	}
+
+	rightBox := RightPaneStyle.
+		Width(rightWidth).
+		Height(m.height - 12).
+		Render(rightInfo.String())
+
+	dualPane := lipgloss.JoinHorizontal(lipgloss.Top, leftBox, " ", rightBox)
+
+	// 4. Bottom Keybinding Bar
+	keyBar := lipgloss.NewStyle().
+		Background(lipgloss.Color("#44475a")).
+		Foreground(lipgloss.Color("#F8F8F2")).
+		Width(m.width).
+		Align(lipgloss.Center).
+		Render("  [↑/↓] Navigate  •  [Enter] Select  •  [?] Commands  •  [q] Quit  ")
+
+	// Combine all elements into final sleek UI layout
+	return lipgloss.JoinVertical(lipgloss.Left,
+		topBar,
+		headerBanner,
+		dualPane,
+		keyBar,
+	)
 }
 
 func RunDashboard() string {

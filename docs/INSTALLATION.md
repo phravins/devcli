@@ -1,76 +1,81 @@
-# Installation & Requirements
+# DevCLI v1.1.0 Installation & System Requirements
 
 ## System Requirements
 
-**Operating System:**
-*   **Windows:** Windows 10, Windows 11 (or newer)
-*   **Linux:** Ubuntu, Debian, Fedora, Arch Linux (or any modern distribution)
-*   **macOS:** macOS 11 (Big Sur) or newer
+**Operating Systems:**
+* **Linux:** Ubuntu, Debian, Fedora, Arch Linux, openSUSE, Alpine, RHEL, Pop!_OS, Linux Mint, Void, etc. (All distributions and desktop environments supported)
+* **Windows:** Windows 10, Windows 11 (or newer)
+* **macOS:** macOS 11 (Big Sur) or newer
 
-**Hardware:**
-*   **Processor:** Dual-core processor (Intel/AMD x64 or ARM64)
-*   **RAM:** 4GB minimum (8GB+ recommended for development workloads)
-*   **Storage:** 200MB free disk space for application components
+**Hardware Requirements:**
+* **Processor:** Dual-core processor (Intel/AMD x64 or ARM64)
+* **RAM:** 4GB minimum (8GB+ recommended for development workloads)
+* **Storage:** 200MB free disk space for application components
 
-**Software:**
-*   Go 1.21 or higher (for building from source)
-*   Python 3.8 or newer (required for virtual environment features)
-*   Node.js (optional, needed for JavaScript project templates)
-*   Terminal with Unicode support (for proper rendering)
+**Software Prerequisites:**
+* Go 1.21 or higher (auto-installed in user space by Linux installer if missing)
+* Python 3.8+ (for Python venv & script runner)
+* Node.js, Rust, or GCC/G++ (optional, for multi-language Web IDE execution)
+
+---
 
 ## Installation Methods
 
-### METHOD 1: Automated Installation (Windows)
+### METHOD 1: Universal Single-Command Installation (Linux)
 
-For a complete "no-hassle" installation that sets up Go and DevCLI automatically, open PowerShell and run:
+For all Linux distributions and desktop environments (GNOME, KDE, XFCE, Cinnamon, MATE, LXQt, etc.):
 
-```powershell
-irm https://raw.githubusercontent.com/phravins/devcli/main/install.ps1 | iex
+```bash
+curl -fsSL https://raw.githubusercontent.com/phravins/devcli/main/install_linux.sh | bash
 ```
 
-Alternatively, you can manually use the setup script:
-1.  Download the [setup_devcli.bat](../setup_devcli.bat) script.
-2.  Right-click the file and select **"Run as administrator"**.
-3.  The script will check for Go, install the latest DevCLI, and configure your PATH.
-
-### METHOD 2: Automated Universal Linux Installation (All Linux Desktops)
-
-For all Linux distributions (Ubuntu, Debian, Fedora, Arch, Alpine, openSUSE, RHEL, Pop!_OS, etc.) and desktop environments (GNOME, KDE Plasma, XFCE, Cinnamon, MATE, LXQt, etc.), run:
+Or from local directory:
 
 ```bash
 chmod +x install_linux.sh
 ./install_linux.sh
 ```
 
-Or run via single-command curl:
+**What this installer does:**
+1. Detects system architecture (`amd64`, `arm64`, etc.).
+2. Checks for Go; if missing, **automatically installs Go 1.24.0 in user space (`~/.local/go`) without requiring sudo/root**.
+3. Compiles the `devcli` binary to `~/.devcli/bin/devcli`.
+4. Registers a **Linux Desktop Application Entry** (`~/.local/share/applications/devcli.desktop`) and installs icon assets to `~/.local/share/icons/` so DevCLI appears in your system Application Launcher.
+5. Configures PATH automatically in `.bashrc`, `.zshrc`, `.profile`, and `config.fish`.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/phravins/devcli/main/install_linux.sh | bash
+---
+
+### METHOD 2: Automated Installation (Windows)
+
+Open PowerShell as Administrator and run:
+
+```powershell
+irm https://raw.githubusercontent.com/phravins/devcli/main/install.ps1 | iex
 ```
 
-This installer:
-* Automatically detects your architecture (`amd64`, `arm64`, etc.).
-* Checks for Go; if missing, installs Go automatically in user space (`~/.local/go`) without needing root/sudo permissions.
-* Compiles and installs the `devcli` binary to `~/.devcli/bin/devcli`.
-* Creates a Linux Application Launcher (`.desktop` file) in `~/.local/share/applications/` so DevCLI appears in your Desktop App Launcher / Main Menu with icon support.
-* Configures PATH automatically across Bash, Zsh, Fish, and POSIX profile environments.
+Or use the setup batch file:
+1. Download `setup_devcli.bat`.
+2. Right-click and select **"Run as administrator"**.
 
-### METHOD 3: Single Command Installation (If Go is already installed)
+---
 
-Install DevCLI directly using the `go run` command:
+### METHOD 3: Go Direct Install
+
+If Go is installed on your system:
 
 ```bash
 go run github.com/phravins/devcli@latest install
 ```
 
-This will download the latest version, run the interactive installer, install the DevCLI binary to your `~/.devcli/bin` directory, and automatically configure your system PATH.
+---
 
 ### METHOD 4: Building from Source
 
-Clone the repository and build manually:
+Clone the repository and compile manually:
 
 ```bash
 git clone https://github.com/phravins/devcli.git
 cd devcli
-go build -o devcli.exe .
+go build -o devcli main.go
+./devcli install
 ```

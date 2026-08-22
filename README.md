@@ -2,71 +2,68 @@
   <img src="assets/devcli_logo.png" width="400" alt="DevCLI Logo">
   <br>
 
-  [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/) [![GitHub](https://img.shields.io/badge/GitHub-Repo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/phravins/devcli) [![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows/) [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://kernel.org/) [![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)](https://apple.com/macos/) [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+  [![Version](https://img.shields.io/badge/Version-v1.1.0-50FA7B?style=for-the-badge&logo=go&logoColor=black)](https://github.com/phravins/devcli) [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/) [![GitHub](https://img.shields.io/badge/GitHub-Repo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/phravins/devcli) [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://kernel.org/) [![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows/) [![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)](https://apple.com/macos/)
 </div>
 
-# DevCLI - Developer Command Line Interface
+# DevCLI v1.1.0 - Developer Command Line Interface
 
-DevCLI is a terminal-based development workspace that consolidates essential
-developer tools into a single unified interface. It manages projects, files,
-virtual environments, and provides AI-powered assistance without requiring
-you to leave the command line.
+**DevCLI** is a terminal-based development workspace and suite of developer tools in a single unified interface. Built using **Go** and Charm's **Bubble Tea / Lip Gloss** framework, DevCLI provides a fast, responsive, dual-pane Terminal User Interface across Linux, macOS, and Windows.
 
-The application is built using Go and the Bubble Tea framework, providing a
-fast and responsive terminal user interface that works across all major
-operating systems.
+---
 
+## ⚡ Quick Start: One-Liner Linux Installation
 
-## Table of Contents
+Install DevCLI globally on any Linux desktop environment (GNOME, KDE, XFCE, Cinnamon, etc.) with a single command:
 
-*   [DevCLI](#devcli)
-*   [Installation & Requirements](docs/INSTALLATION.md)
-*   [Core Features](docs/FEATURES.md)
-*   [Usage & Shortcuts](docs/USAGE.md)
-*   [Configuration](docs/CONFIGURATION.md)
-*   [Architecture](docs/ARCHITECTURE.md)
-*   [Contributing](CONTRIBUTING.md)
-*   [License](LICENSE)
-*   [Code of Conduct](CODE_OF_CONDUCT.md)
-*   [Disclaimer](DISCLAIMER.md)
+```bash
+curl -fsSL https://raw.githubusercontent.com/phravins/devcli/main/install_linux.sh | bash
+```
 
-## Premium Web Compiler
+> **No Go Pre-installed?** No problem! The script automatically installs Go in user space (`~/.local/go`), sets up `devcli` in `~/.devcli/bin`, creates a Desktop Application Launcher (`.desktop` entry), and registers shell PATH exports automatically.
 
-DevCLI now includes a premium, web-based IDE for Python and other languages.
+---
 
-*   **Premium UI**: A sleek, glassmorphic interface built with SCSS for modern aesthetics.
-*   **Authentication**: Secure account-based access to your workspace.
-*   **Smart Storage**: Automatic local synchronization and customizable save paths for both local and Google Drive storage.
-*   **Integrated Terminal**: Run shell commands directly in the browser.
-*   **Real-time TUI Logs**: Web activity is instantly synchronized back to the main TUI terminal for better visibility.
+## 🔥 Key Features in v1.1.0
 
-## Documentation
+* **Dual-Pane TUI Interface**: Framed navigation menu alongside a live workspace info card displaying Git status, memory consumption, virtual environments, and AI provider status.
+* **Live System & Git Status Bar**: Persistent header bar displaying active Git branch (`git:main`), memory usage in MB, active Python `venv`, and connected AI model.
+* **🐳 Docker Container Dashboard**: Inspect running & stopped Docker containers, start/stop/restart containers (`s`/`r`), and stream live container logs in a scrollable viewport (`l`).
+* **🌐 API & HTTP Client Playground**: Built-in TUI Postman alternative for testing `GET`, `POST`, `PUT`, `DELETE`, and `PATCH` endpoints with formatted JSON views and latency counters (ms).
+* **🤖 AI Assistant & Conventional Git Commit Auto-Generator**: Connects to Ollama, Gemini, OpenAI, Claude, or HuggingFace. Run `devcli ai commit` to generate conventional git commit messages directly from your `git diff`.
+* **💻 Multi-Language Web IDE & Compiler**: Embedded HTTP server (`http://127.0.0.1:8080`) supporting online compilation for **Python**, **JavaScript (Node.js)**, **Go**, **Rust**, and **C/C++**.
+* **📂 Project Scaffolder & File Manager**: Instant scaffolding for Go, Python, Node, React, and FastAPI projects with Git initialization, alongside a built-in terminal file explorer.
+* **🕰️ Code Time Machine**: Line-by-line Git blame examiner and history timeline viewer.
 
-Comprehensive documentation is available in the `docs/` directory:
+---
 
-*   [**Installation Guide**](docs/INSTALLATION.md): System requirements and installation methods.
-*   [**Features**](docs/FEATURES.md): Detailed overview of all tools properly explained.
-*   [**Usage Guide**](docs/USAGE.md): Interactive mode, subcommands, and keyboard shortcuts.
-*   [**Configuration**](docs/CONFIGURATION.md): How to configure AI providers and preferences.
-*   [**Architecture**](docs/ARCHITECTURE.md): Project structure and dependencies.
+## 📚 Table of Contents
 
-## Contributing
+* [Installation Guide](docs/INSTALLATION.md)
+* [Detailed Features Breakdown](docs/FEATURES.md)
+* [Usage & Shortcuts Guide](docs/USAGE.md)
+* [Configuration & AI Keys](docs/CONFIGURATION.md)
+* [Architecture & Code Structure](docs/ARCHITECTURE.md)
+* [Contributing](CONTRIBUTING.md)
+* [License](LICENSE)
 
-Contributions are welcome. Please ensure code follows Go conventions and includes appropriate tests. Use gofmt for code formatting.
+---
 
-Please review our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+## 🛠️ Subcommands Cheat Sheet
 
-## License
+| Command | Description |
+| :--- | :--- |
+| `devcli` | Launch the main dual-pane interactive TUI workspace |
+| `devcli install` | Deploy binary globally and setup Linux Desktop entry |
+| `devcli ai chat` | Launch terminal AI Chat assistant |
+| `devcli ai commit` | Auto-generate AI git commit message from staged changes |
+| `devcli start [name] [stack]` | Scaffold a new project (Go, Python, Node, etc.) |
+| `devcli editor [file]` | Launch terminal code editor |
+| `devcli file` | Open interactive file manager |
+| `devcli timemachine [file]` | Open Code Time Machine Git history analyzer |
+| `devcli update` | Check for updates and update DevCLI binary |
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+---
 
-## Support
+## 📄 License
 
-For issues, questions, or feature requests, please use the GitHub issue tracker at https://github.com/phravins/devcli/issues
-
-## Disclaimer
-
-Please read the full [Disclaimer](DISCLAIMER.md) before using this software.
-
-Happy Coding!
--------------
+DevCLI is licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.

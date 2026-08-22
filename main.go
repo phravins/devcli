@@ -20,7 +20,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:     "devcli",
-	Version: "1.0.0",
+	Version: "1.1.0",
 	Short:   "A comprehensive CLI for developers",
 	Long: `DevCLI is a powerful command-line interface that provides:
 - Local development tools

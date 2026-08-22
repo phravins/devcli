@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "v1.0.0"
+const Version = "v1.1.0"
 
 type Config struct {
 	AIBackend     string            `mapstructure:"ai_backend"`

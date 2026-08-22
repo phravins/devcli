@@ -1,72 +1,73 @@
-# Usage & Requirements
+# DevCLI v1.1.0 Usage & Keyboard Shortcuts
 
-## Interactive Mode
+## Launching DevCLI
 
-Launch the main dashboard:
+Launch the main interactive dual-pane TUI dashboard:
 
 ```bash
 devcli
 ```
 
-*   **Arrow Keys**: Navigate
-*   **Enter**: Select
-*   **Esc / Q**: Back / Exit
-
-## Direct Subcommands
-
-Access specific features directly:
+Or run direct subcommands:
 
 ```bash
-devcli dev          # Open project management tools
-devcli file         # Launch file manager
-devcli ai           # Start AI chat session
-devcli editor FILE  # Open file in built-in editor
+devcli ai commit             # Auto-generate AI Git commit message from staged changes
+devcli start [name] [stack]  # Scaffold a new project (Go, Python, Node, etc.)
+devcli editor [file]         # Open file in terminal code editor
+devcli file                  # Open file manager
+devcli timemachine [file]    # Launch Git Code Time Machine
+devcli install               # Configure Linux desktop launcher entry & icon
+devcli update                # Self-update DevCLI binary
 ```
 
-## Keyboard Shortcuts
+---
 
-### Global Navigation
-*   `Arrow Up/Down`: Navigate
-*   `Enter`: Confirm/Execute
-*   `Esc` or `Q`: Return/Exit
-*   `Ctrl+C`: Force quit
+## Global Navigation Shortcuts
 
-### Feature-Specific
+* `↑ / ↓` or `k / j`: Navigate lists and menus
+* `Enter`: Open selected feature or confirm action
+* `Esc` or `q`: Return to previous menu or exit
+* `?`: View commands and hotkey help
+* `Ctrl+C`: Force quit
 
-**Project Tools**:
-*   `B`: Backup project
-*   `D`: Delete history
-*   `?`: Help
+---
 
-**Virtual Environment Wizard**:
-*   `N`: New environment
-*   `S`: Scan workspace
-*   `Y`: Sync requirements.txt
-*   `C`: Clone environment
-*   `D`: Delete environment
+## Feature-Specific Shortcuts
 
-**Dev Server**:
-*   `S`: Start/Stop
-*   `F`: Toggle filters
-*   `/`: Search logs
-*   `A`: Toggle auto-scroll
-*   `C`: Clear logs
+### 🐳 Docker Dashboard
+* `s`: Start or Stop selected container
+* `r`: Restart selected container
+* `l` or `Enter`: Open live container logs viewer
+* `Esc` or `q`: Return to container list
 
-**File Manager**:
-*   `C`: Copy
-*   `M`: Move/Rename
-*   `D`: Delete
-*   `E`: Edit
-*   `N`: New file
-*   `H`: Toggle hidden files
+### 🌐 API & HTTP Client Playground
+* `↑ / ↓`: Select HTTP Method (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`)
+* `Enter`: Submit URL / Request Body
+* `r`: Resend current API request
+* `Esc` or `q`: Clear response or return to method selection
 
-**Editor**:
-*   `Ctrl+R`: Run code
-*   `Ctrl+S`: Save
-*   `Ctrl+N`: New file
-*   `Ctrl+H`: Help
-*   `Ctrl+C`: Exit editor
+### 📂 Project Scaffolder
+* `B`: Backup project
+* `D`: Delete project history record
+* `?`: Help
 
-**Docs**:
-*   `L`: Cycle languages
-*   `Arrow Keys`: Scroll
+### 🐍 Virtual Environment Wizard
+* `N`: Create new Python `venv`
+* `S`: Scan workspace for environments
+* `Y`: Sync `requirements.txt` (`pip freeze`)
+* `C`: Clone environment
+* `D`: Delete environment
+
+### 🗂️ File Manager
+* `C`: Copy file/directory
+* `M`: Move / Rename file
+* `D`: Delete file
+* `E`: Edit file in terminal editor
+* `N`: Create new file
+* `H`: Toggle hidden files (`.env`, `.git`)
+
+### ✏️ Built-in Code Editor
+* `Ctrl+S`: Save file
+* `Ctrl+R`: Run code
+* `Ctrl+N`: New file
+* `Ctrl+C`: Exit editor

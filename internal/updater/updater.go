@@ -14,7 +14,7 @@ const (
 	// GitHub repository for updates
 	githubRepo = "phravins/devcli"
 	// Current version of DevCLI
-	currentVersion = "1.0.0"
+	currentVersion = "1.1.0"
 )
 
 // UpdateInfo contains information about available updates

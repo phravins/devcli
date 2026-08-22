@@ -16,14 +16,31 @@ var (
 
 // Shared Styles
 var (
-	// Main container style - removed margin to let border handle it, or keep for spacing
-	docStyle = lipgloss.NewStyle().Margin(0, 0) // Reset to 0, strict sizing manually
+	// Main container style
+	docStyle = lipgloss.NewStyle().Margin(0, 0)
 
 	// Global App Border
 	AppBorderStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(colorPurple).
 			Padding(1, 2)
+
+	// Dual-Pane Dashboard Styles
+	LeftPaneStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(colorPurple).
+			Padding(1, 1)
+
+	RightPaneStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(colorCyan).
+			Padding(1, 2)
+
+	HeaderBadgeStyle = lipgloss.NewStyle().
+				Background(colorGreen).
+				Foreground(lipgloss.Color("#282a36")).
+				Bold(true).
+				Padding(0, 1)
 
 	// Titles
 	titleStyle = lipgloss.NewStyle().
