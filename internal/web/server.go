@@ -180,19 +180,34 @@ func StartServer(port string, logs chan string) error {
 			return
 		}
 
-		body, err := io.ReadAll(r.Body)
+		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Error reading body", http.StatusBadRequest)
 			return
 		}
 
-		output, err := runPython(string(body))
+		language := "python"
+		code := string(bodyBytes)
+
+		// Try parsing JSON payload if present
+		var reqPayload struct {
+			Language string `json:"language"`
+			Code     string `json:"code"`
+		}
+		if err := json.Unmarshal(bodyBytes, &reqPayload); err == nil && reqPayload.Code != "" {
+			code = reqPayload.Code
+			if reqPayload.Language != "" {
+				language = strings.ToLower(reqPayload.Language)
+			}
+		}
+
+		output, err := runCode(language, code)
 
 		if logChan != nil {
 			if err != nil {
-				logChan <- "Python Execution Error: " + err.Error()
+				logChan <- fmt.Sprintf("[%s Execution Error]: %v", strings.Title(language), err)
 			} else {
-				logChan <- "Python Execution Success"
+				logChan <- fmt.Sprintf("[%s Execution Success]", strings.Title(language))
 			}
 		}
 
@@ -242,10 +257,25 @@ func StartServer(port string, logs chan string) error {
 	return err
 }
 
-// runPython executes Python code and returns the output
-func runPython(code string) (string, error) {
-	// Create a temporary Python file to hold the code
-	tmpfile, err := os.CreateTemp("", "devcli-*.py")
+// runCode executes code in the requested programming language
+func runCode(lang, code string) (string, error) {
+	lang = strings.ToLower(strings.TrimSpace(lang))
+
+	var ext string
+	switch lang {
+	case "js", "javascript", "node":
+		ext = ".js"
+	case "go", "golang":
+		ext = ".go"
+	case "rust":
+		ext = ".rs"
+	case "cpp", "c++", "c":
+		ext = ".cpp"
+	default:
+		ext = ".py"
+	}
+
+	tmpfile, err := os.CreateTemp("", "devcli-*"+ext)
 	if err != nil {
 		return "", err
 	}
@@ -254,21 +284,58 @@ func runPython(code string) (string, error) {
 	if _, err := tmpfile.Write([]byte(code)); err != nil {
 		return "", err
 	}
-	if err := tmpfile.Close(); err != nil {
-		return "", err
+	tmpfile.Close()
+
+	var cmd *exec.Cmd
+	switch lang {
+	case "js", "javascript", "node":
+		cmdName := "node"
+		if _, err := exec.LookPath("node"); err != nil {
+			return "", fmt.Errorf("Node.js is not installed or not in PATH")
+		}
+		cmd = exec.Command(cmdName, tmpfile.Name())
+
+	case "go", "golang":
+		cmdName := "go"
+		if path, err := exec.LookPath("go"); err == nil {
+			cmdName = path
+		} else if _, err := os.Stat("/usr/local/go/bin/go"); err == nil {
+			cmdName = "/usr/local/go/bin/go"
+		}
+		cmd = exec.Command(cmdName, "run", tmpfile.Name())
+
+	case "rust":
+		binPath := tmpfile.Name() + ".bin"
+		defer os.Remove(binPath)
+		compileCmd := exec.Command("rustc", tmpfile.Name(), "-o", binPath)
+		if out, err := compileCmd.CombinedOutput(); err != nil {
+			return string(out), fmt.Errorf("Rust compilation error: %w", err)
+		}
+		cmd = exec.Command(binPath)
+
+	case "cpp", "c++", "c":
+		binPath := tmpfile.Name() + ".bin"
+		defer os.Remove(binPath)
+		compiler := "g++"
+		if _, err := exec.LookPath("g++"); err != nil {
+			compiler = "gcc"
+		}
+		compileCmd := exec.Command(compiler, tmpfile.Name(), "-o", binPath)
+		if out, err := compileCmd.CombinedOutput(); err != nil {
+			return string(out), fmt.Errorf("C/C++ compilation error: %w", err)
+		}
+		cmd = exec.Command(binPath)
+
+	default: // Python
+		cmdName := "python"
+		if _, err := exec.LookPath("python"); err != nil {
+			cmdName = "python3"
+		}
+		cmd = exec.Command(cmdName, "-u", tmpfile.Name())
 	}
 
-	// Determine which Python command to use
-	// Try "python" first (common on Windows), fallback to "python3" (common on Linux/Mac)
-	cmdName := "python"
-	if _, err := exec.LookPath("python"); err != nil {
-		cmdName = "python3"
-	}
+	cmd.Env = os.Environ()
 
-	cmd := exec.Command(cmdName, "-u", tmpfile.Name()) // -u = unbuffered output
-	cmd.Env = os.Environ()                             // Pass environment variables to the Python process
-
-	// Register this command so it can be cancelled with Ctrl+C
 	activeMu.Lock()
 	activeCmd = cmd
 	activeMu.Unlock()
@@ -279,10 +346,9 @@ func runPython(code string) (string, error) {
 	activeCmd = nil
 	activeMu.Unlock()
 
-	// Provide helpful feedback if the code produced no output
 	outStr := string(output)
 	if outStr == "" && err == nil {
-		outStr = fmt.Sprintf("[No output]\n(Ran: %s -u %s)", cmdName, tmpfile.Name())
+		outStr = fmt.Sprintf("[No output]\n(Ran %s code)", lang)
 	}
 
 	return outStr, err

@@ -10,6 +10,7 @@ import (
 
 	"github.com/phravins/devcli/assets"
 	"github.com/phravins/devcli/internal/ai"
+	"github.com/phravins/devcli/internal/aicommit"
 	"github.com/phravins/devcli/internal/fileops"
 	"github.com/phravins/devcli/internal/project"
 	"github.com/phravins/devcli/internal/tui"
@@ -38,6 +39,7 @@ func init() {
 	rootCmd.AddCommand(ai.AICmd)
 	rootCmd.AddCommand(tui.EditorCmd)
 	ai.AICmd.AddCommand(tui.ChatCmd)
+	ai.AICmd.AddCommand(aicommit.CommitCmd)
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "start [name] [stack]",
 		Short: "Initialize a new project",

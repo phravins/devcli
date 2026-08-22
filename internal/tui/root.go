@@ -16,6 +16,8 @@ const (
 	StateEditor
 	StateAutoUpdate
 	StateDocs
+	StateDocker
+	StateAPIClient
 )
 
 // Messages
@@ -46,6 +48,8 @@ type RootModel struct {
 	editor      model // Using the struct 'model' from editor.go
 	autoupdate  AutoUpdateModel
 	docs        DocsModel
+	docker      DockerDashboardModel
+	apiClient   APIClientModel
 
 	// Generic error
 	err error
@@ -130,6 +134,20 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			dm, cmd = m.docs.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
 			m.docs = dm.(DocsModel)
 			cmds = append(cmds, cmd, m.docs.Init())
+
+		case StateDocker:
+			m.docker = NewDockerDashboardModel()
+			var dockM tea.Model
+			dockM, cmd = m.docker.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			m.docker = dockM.(DockerDashboardModel)
+			cmds = append(cmds, cmd, m.docker.Init())
+
+		case StateAPIClient:
+			m.apiClient = NewAPIClientModel()
+			var apiM tea.Model
+			apiM, cmd = m.apiClient.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			m.apiClient = apiM.(APIClientModel)
+			cmds = append(cmds, cmd, m.apiClient.Init())
 		}
 
 	case BackMsg:
@@ -168,6 +186,14 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newM, newCmd := m.docs.Update(msg)
 		m.docs = newM.(DocsModel)
 		cmds = append(cmds, newCmd)
+	case StateDocker:
+		newM, newCmd := m.docker.Update(msg)
+		m.docker = newM.(DockerDashboardModel)
+		cmds = append(cmds, newCmd)
+	case StateAPIClient:
+		newM, newCmd := m.apiClient.Update(msg)
+		m.apiClient = newM.(APIClientModel)
+		cmds = append(cmds, newCmd)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -189,6 +215,10 @@ func (m RootModel) View() string {
 		return m.autoupdate.View()
 	case StateDocs:
 		return m.docs.View()
+	case StateDocker:
+		return m.docker.View()
+	case StateAPIClient:
+		return m.apiClient.View()
 	}
 	return "Unknown State"
 }

@@ -39,6 +39,8 @@ func NewDashboard() DashboardModel {
 		item{title: "🤖 AI Chat", desc: "Chat with AI models"},
 		item{title: "✏️ Editor", desc: "Built-in code editor"},
 		item{title: "🗂️ File Manager", desc: "Explore, Search, and Manage Files (RW/Move)"},
+		item{title: "🐳 Docker Dashboard", desc: "Manage Containers, Inspect Logs, Start/Stop"},
+		item{title: "🌐 API & HTTP Playground", desc: "Test REST API Endpoints with HTTP Client"},
 		item{title: "⚙️ Settings / Configuration", desc: "Configure AI backends and Keys"},
 		item{title: "💻 DevCLI Commands", desc: "List all available project commands"},
 		item{title: "🔄 Auto-Update", desc: "Update Languages, AI Keys, and DevCLI"},
@@ -132,6 +134,14 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if i.title == "🔄 Auto-Update" {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateAutoUpdate} }
+				}
+				if i.title == "🐳 Docker Dashboard" {
+					m.choice = i.title
+					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateDocker} }
+				}
+				if i.title == "🌐 API & HTTP Playground" {
+					m.choice = i.title
+					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateAPIClient} }
 				}
 				if i.title == "📚 Docs" {
 					m.choice = i.title
