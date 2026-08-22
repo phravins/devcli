@@ -148,7 +148,6 @@ func StartServer(port string, logs chan string) error {
 		dir := filepath.Dir(filename)
 		if dir != "." && dir != "/" {
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				http.Error(w, "Failed to create directory: "+err.Error(), http.StatusInternalServerError)
 				msg := "Failed to create directory: " + err.Error()
 				if logChan != nil {
 					logChan <- msg

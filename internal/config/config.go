@@ -64,6 +64,10 @@ func Write() error {
 	}
 
 	configPath := filepath.Join(home, ".devcli.yaml")
+	viper.SetConfigFile(configPath)
+	if _, err := os.Stat(configPath); err == nil {
+		return viper.WriteConfig()
+	}
 	return viper.WriteConfigAs(configPath)
 }
 

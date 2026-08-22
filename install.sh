@@ -61,16 +61,24 @@ if [ -f "./devcli" ]; then
 elif [ -f "./devcli-$OS_TYPE-$ARCH_TYPE" ]; then
     echo -e "${BLUE}Installing cross-compiled binary...${NC}"
     cp "./devcli-$OS_TYPE-$ARCH_TYPE" "$TARGET_PATH"
+elif [ -f "main.go" ] && command -v go &> /dev/null; then
+    echo -e "${BLUE}Building DevCLI from source...${NC}"
+    go build -o "$TARGET_PATH" main.go
 else
-    # In the future, this could download from GitHub Releases
-    # RELEASE_URL="https://github.com/phravins/devcli/releases/latest/download/devcli-$OS_TYPE-$ARCH_TYPE"
-    echo -e "${RED}Error: Binary not found in current directory.${NC}"
-    echo "Please build the project first or download the binary for your platform."
+    # Fallback to install_linux.sh if on Linux
+    if [ "$OS_TYPE" = "linux" ] && [ -f "./install_linux.sh" ]; then
+        exec ./install_linux.sh
+    fi
+    echo -e "${RED}Error: Binary not found in current directory and Go compiler is missing.${NC}"
+    echo "Please run ./install_linux.sh to install Go and DevCLI automatically."
     exit 1
 fi
 
 chmod +x "$TARGET_PATH"
 echo -e "${GREEN}Installed binary to $TARGET_PATH${NC}"
+
+# Run CLI installation for Desktop launcher & icon integration
+"$TARGET_PATH" install
 
 # Setup PATH
 SHELL_CONFIG=""

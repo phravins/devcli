@@ -33,19 +33,27 @@ Alternatively, you can manually use the setup script:
 2.  Right-click the file and select **"Run as administrator"**.
 3.  The script will check for Go, install the latest DevCLI, and configure your PATH.
 
-### METHOD 2: Automated Installation (Linux/macOS)
+### METHOD 2: Automated Universal Linux Installation (All Linux Desktops)
 
-For Linux and macOS users, use the provided install script:
-
-1.  Download the [install.sh](../install.sh) script.
-2.  Run the script in your terminal:
+For all Linux distributions (Ubuntu, Debian, Fedora, Arch, Alpine, openSUSE, RHEL, Pop!_OS, etc.) and desktop environments (GNOME, KDE Plasma, XFCE, Cinnamon, MATE, LXQt, etc.), run:
 
 ```bash
-chmod +x install.sh
-./install.sh
+chmod +x install_linux.sh
+./install_linux.sh
 ```
 
-This will automatically detect your OS/Arch, set up the binary, and configure your shell (Bash, Zsh, or Fish).
+Or run via single-command curl:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phravins/devcli/main/install_linux.sh | bash
+```
+
+This installer:
+* Automatically detects your architecture (`amd64`, `arm64`, etc.).
+* Checks for Go; if missing, installs Go automatically in user space (`~/.local/go`) without needing root/sudo permissions.
+* Compiles and installs the `devcli` binary to `~/.devcli/bin/devcli`.
+* Creates a Linux Application Launcher (`.desktop` file) in `~/.local/share/applications/` so DevCLI appears in your Desktop App Launcher / Main Menu with icon support.
+* Configures PATH automatically across Bash, Zsh, Fish, and POSIX profile environments.
 
 ### METHOD 3: Single Command Installation (If Go is already installed)
 

@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/phravins/devcli/assets"
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/fileops"
 	"github.com/phravins/devcli/internal/project"
@@ -111,17 +112,21 @@ func init() {
 				return
 			}
 
-			// Read binary
-			data, err := os.ReadFile(exePath)
-			if err != nil {
-				fmt.Printf("Error reading current binary: %v\n", err)
-				return
-			}
+			// Write to destination if not already running from destination
+			evalExe, err1 := filepath.EvalSymlinks(exePath)
+			evalDest, err2 := filepath.EvalSymlinks(destPath)
+			isSame := (err1 == nil && err2 == nil && evalExe == evalDest) || (exePath == destPath)
 
-			// Write to destination
-			if err := os.WriteFile(destPath, data, 0755); err != nil {
-				fmt.Printf("Error copying binary: %v\n", err)
-				return
+			if !isSame {
+				data, err := os.ReadFile(exePath)
+				if err != nil {
+					fmt.Printf("Error reading current binary: %v\n", err)
+					return
+				}
+				if err := os.WriteFile(destPath, data, 0755); err != nil {
+					fmt.Printf("Error copying binary: %v\n", err)
+					return
+				}
 			}
 
 			fmt.Printf("Binary deployed to: %s\n", destPath)
@@ -154,10 +159,52 @@ func init() {
 					}
 				}
 			} else {
-				// Unix/Linux/Mac
-				// Make the binary executable
-				if err := os.Chmod(destPath, 0755); err != nil {
-					fmt.Printf("Warning: Failed to make binary executable: %v\n", err)
+				// Linux Desktop Integration (Icons & Launcher)
+				if runtime.GOOS == "linux" {
+					fmt.Println("Configuring Linux Desktop integration...")
+
+					// 1. Install Icon
+					logoBytes, err := assets.GetLogo()
+					if err == nil && len(logoBytes) > 0 {
+						iconDirs := []string{
+							filepath.Join(home, ".local", "share", "icons", "hicolor", "512x512", "apps"),
+							filepath.Join(home, ".local", "share", "pixmaps"),
+						}
+						for _, iconDir := range iconDirs {
+							if err := os.MkdirAll(iconDir, 0755); err == nil {
+								iconPath := filepath.Join(iconDir, "devcli.png")
+								os.WriteFile(iconPath, logoBytes, 0644)
+							}
+						}
+						fmt.Println("Installed DevCLI icon to ~/.local/share/icons/")
+					}
+
+					// 2. Create Desktop Entry (.desktop file)
+					appsDir := filepath.Join(home, ".local", "share", "applications")
+					if err := os.MkdirAll(appsDir, 0755); err == nil {
+						desktopPath := filepath.Join(appsDir, "devcli.desktop")
+						desktopContent := fmt.Sprintf(`[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DevCLI
+GenericName=Developer CLI Workspace
+Comment=Terminal-based developer workspace, IDE, and AI assistant
+Exec=%s
+Icon=devcli
+Terminal=true
+Categories=Development;IDE;ConsoleOnly;
+Keywords=developer;cli;terminal;ide;ai;workspace;
+StartupNotify=true
+`, destPath)
+
+						if err := os.WriteFile(desktopPath, []byte(desktopContent), 0644); err == nil {
+							fmt.Println("Created Linux Desktop application entry: " + desktopPath)
+						}
+					}
+
+					// 3. Refresh desktop database & icon cache if tools exist
+					exec.Command("update-desktop-database", filepath.Join(home, ".local", "share", "applications")).Run()
+					exec.Command("gtk-update-icon-cache", filepath.Join(home, ".local", "share", "icons", "hicolor")).Run()
 				}
 
 				// Check current Shell
