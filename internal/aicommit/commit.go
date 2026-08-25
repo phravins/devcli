@@ -28,6 +28,10 @@ var CommitCmd = &cobra.Command{
 
 		// Get staged diff
 		diffBytes, err := exec.Command("git", "diff", "--cached").Output()
+		if err != nil {
+			fmt.Printf("❌ Error running git diff: %v\n", err)
+			return
+		}
 		diffStr := strings.TrimSpace(string(diffBytes))
 
 		// If no staged diff, fallback to unstaged diff

@@ -57,8 +57,7 @@ var (
 			Padding(1, 3).
 			Align(lipgloss.Center)
 
-	focusedInputBoxStyle = inputBoxStyle.Copy().
-				BorderForeground(colorPurple)
+	focusedInputBoxStyle = inputBoxStyle.BorderForeground(colorPurple)
 
 	// Success/Error boxes
 	successBoxStyle = lipgloss.NewStyle().

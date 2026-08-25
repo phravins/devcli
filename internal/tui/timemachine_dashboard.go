@@ -16,7 +16,6 @@ import (
 
 type TimeMachineModel struct {
 	timeline       *timemachine.Timeline
-	viewport       viewport.Model
 	blameViewport  viewport.Model
 	detailViewport viewport.Model
 	helpViewport   viewport.Model
@@ -24,7 +23,6 @@ type TimeMachineModel struct {
 	height         int
 	ready          bool
 	showHelp       bool
-	err            error
 	bugSuspects    []timemachine.BugSuspect
 	authorColors   map[string]lipgloss.Color
 }
@@ -449,31 +447,6 @@ func (m *TimeMachineModel) renderCommitDetailsCompact(w int) string {
 		msgStyle.Render(firstLineMsg) + "  " +
 		statsStyle.Render(statsStr) + "  " +
 		lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render(dateStr)
-}
-
-// renderMainContent returns the tracking history box (blame view)
-func (m *TimeMachineModel) renderMainContent() string {
-	blameBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#4ECDC4")).
-		Padding(0, 1).
-		Width(m.blameViewport.Width + 4).
-		Height(m.blameViewport.Height + 2).
-		Render(m.blameViewport.View())
-
-	return blameBox
-}
-
-// renderDetailBox returns the commit details box
-func (m *TimeMachineModel) renderDetailBox() string {
-	detailBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#FF6B6B")).
-		Padding(0, 0).
-		Width(m.detailViewport.Width + 2).
-		Render(m.detailViewport.View())
-
-	return detailBox
 }
 
 // renderFooter creates the footer with shortcuts at full terminal width.

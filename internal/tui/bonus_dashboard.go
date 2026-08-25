@@ -24,7 +24,6 @@ type BonusDashboardModel struct {
 	projectDashModel ProjectDashModel
 	aiAssistantModel AIAssistantModel
 	timeMachineModel interface{} // Will hold *TimeMachineModel
-	timeMachinePath  string
 	helpView         viewport.Model
 
 	// File picker for Code Time Machine

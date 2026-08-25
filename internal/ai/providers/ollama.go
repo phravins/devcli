@@ -84,16 +84,16 @@ func (p *OllamaProvider) Send(messages []ai.Message) (string, error) {
 
 	resp, err := p.httpClient.Post(p.BaseURL+"/api/chat", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", fmt.Errorf("Ollama: Connection failed. Is Ollama running at %s?", p.BaseURL)
+		return "", fmt.Errorf("ollama: connection failed (is Ollama running at %s?)", p.BaseURL)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode == http.StatusNotFound {
-			return "", fmt.Errorf("Ollama: Model '%s' not found. Have you run 'ollama pull %s'?", p.modelName, p.modelName)
+			return "", fmt.Errorf("ollama: model '%s' not found (run 'ollama pull %s')", p.modelName, p.modelName)
 		}
-		return "", fmt.Errorf("Ollama API error (%d): %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("ollama API error (%d): %s", resp.StatusCode, string(body))
 	}
 
 	var parsedResp ollamaResponse

@@ -143,7 +143,7 @@ func generateSessionID() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-func getSessionUser(r *http.Request) (string, bool) {
+func GetSessionUser(r *http.Request) (string, bool) {
 	cookie, err := r.Cookie("session_id")
 	if err != nil {
 		return "", false

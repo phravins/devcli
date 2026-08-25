@@ -207,3 +207,71 @@ func init() {
 	AuthCmd.AddCommand(statusCmd)
 	AuthCmd.AddCommand(changePasswordCmd)
 }
+
+func SetupCLI() error {
+	fmt.Println("==================================================")
+	fmt.Println("       DevCLI Production Security Account Setup   ")
+	fmt.Println("==================================================")
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter Username: ")
+	username, _ := reader.ReadString('\n')
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return fmt.Errorf("username cannot be empty")
+	}
+
+	fmt.Print("Enter Strong Password (min 8 chars, A-Z, a-z, 0-9): ")
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	fmt.Println()
+	if err != nil {
+		return fmt.Errorf("failed to read password: %w", err)
+	}
+	password := string(bytePassword)
+
+	if err := ValidatePasswordStrength(password); err != nil {
+		return fmt.Errorf("weak password: %w", err)
+	}
+
+	fmt.Print("Confirm Password: ")
+	byteConfirm, err := term.ReadPassword(int(syscall.Stdin))
+	fmt.Println()
+	if err != nil || string(byteConfirm) != password {
+		return fmt.Errorf("passwords do not match")
+	}
+
+	if err := SetupUser(username, password); err != nil {
+		return fmt.Errorf("failed to setup account: %w", err)
+	}
+
+	path, _ := GetAuthFilePath()
+	fmt.Println("==================================================")
+	fmt.Println("✅ Account created successfully!")
+	fmt.Printf("   User       : %s\n", username)
+	fmt.Printf("   Credentials: %s (Permissions: 0600)\n", path)
+	fmt.Println("==================================================")
+	return nil
+}
+
+func RequireCLILogin() error {
+	data, err := GetAuthData()
+	if err != nil || data == nil {
+		return fmt.Errorf("failed to load account credentials")
+	}
+
+	fmt.Printf("🔒 DevCLI Locked :: User '%s'\n", data.Username)
+	fmt.Print("Enter Password: ")
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	fmt.Println()
+	if err != nil {
+		return fmt.Errorf("error reading password: %w", err)
+	}
+
+	valid, err := VerifyPassword(string(bytePassword))
+	if err != nil || !valid {
+		return fmt.Errorf("authentication failed: invalid password")
+	}
+
+	fmt.Println("✅ Authentication successful!")
+	return nil
+}

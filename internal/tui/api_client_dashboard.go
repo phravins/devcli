@@ -21,16 +21,15 @@ const (
 )
 
 type APIClientModel struct {
-	state          int
-	methodIndex    int
-	methods        []string
-	urlInput       textinput.Model
-	bodyInput      textinput.Model
-	viewport       viewport.Model
-	spinner        spinner.Model
-	width, height  int
-	lastResponse   devtools.APIResponse
-	statusMsg      string
+	state         int
+	methodIndex   int
+	methods       []string
+	urlInput      textinput.Model
+	bodyInput     textinput.Model
+	viewport      viewport.Model
+	spinner       spinner.Model
+	width, height int
+	lastResponse  devtools.APIResponse
 }
 
 type apiExecMsg struct {

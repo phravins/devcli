@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/phravins/devcli/internal/auth"
@@ -87,6 +88,12 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		str := msg.String()
+		if strings.Contains(str, "]11;") || strings.Contains(str, "]10;") || strings.Contains(str, "]4;") || strings.Contains(str, "rgb:") || strings.Contains(str, "\033") || strings.Contains(str, "\x1b") {
+			return m, nil
+		}
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height

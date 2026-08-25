@@ -37,16 +37,15 @@ func (i containerItem) Description() string {
 func (i containerItem) FilterValue() string { return i.container.Names + " " + i.container.Image }
 
 type DockerDashboardModel struct {
-	state       int
-	list        list.Model
-	viewport    viewport.Model
-	spinner     spinner.Model
-	width       int
-	height      int
-	selected    devtools.Container
-	logsContent string
-	err         error
-	statusMsg   string
+	state     int
+	list      list.Model
+	viewport  viewport.Model
+	spinner   spinner.Model
+	width     int
+	height    int
+	selected  devtools.Container
+	err       error
+	statusMsg string
 }
 
 type dockerLoadedMsg struct {
@@ -94,7 +93,7 @@ func (m DockerDashboardModel) Init() tea.Cmd {
 func fetchDockerContainersCmd() tea.Cmd {
 	return func() tea.Msg {
 		if !devtools.IsDockerAvailable() {
-			return dockerLoadedMsg{err: fmt.Errorf("Docker daemon is not running or not installed")}
+			return dockerLoadedMsg{err: fmt.Errorf("docker daemon is not running or not installed")}
 		}
 		containers, err := devtools.ListContainers()
 		return dockerLoadedMsg{containers: containers, err: err}

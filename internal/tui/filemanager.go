@@ -925,17 +925,6 @@ func (m FileManagerModel) View() string {
 			var rowRendered string
 
 			if isCursor {
-				nameStyle = lipgloss.NewStyle().
-					Background(lipgloss.Color("#5A4E8C")).
-					Foreground(lipgloss.Color("#FFFFFF")).
-					Bold(true).
-					Padding(0, 1)
-
-				iconStyle = lipgloss.NewStyle().
-					Background(lipgloss.Color("#5A4E8C")).
-					Foreground(lipgloss.Color("#FFFFFF")).
-					Padding(0, 0, 0, 1)
-
 				rowContent := fmt.Sprintf("%s %s", icon, name)
 				rowRendered = lipgloss.NewStyle().
 					Background(lipgloss.Color("#5A4E8C")).

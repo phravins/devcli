@@ -36,7 +36,7 @@ func NewSettingsModel() SettingsModel {
 	inputs[0].Placeholder = "ollama / gemini / openai / claude"
 	inputs[0].Focus()
 	inputs[0].Prompt = "AI Backend: "
-	inputs[0].SetValue(cfg.AIBackend)
+	inputs[0].SetValue(config.CleanString(cfg.AIBackend))
 	inputs[0].CharLimit = 30
 	inputs[0].Width = 30
 
@@ -44,7 +44,7 @@ func NewSettingsModel() SettingsModel {
 	inputs[1] = textinput.New()
 	inputs[1].Placeholder = "gemini-1.5-flash / gpt-3.5-turbo"
 	inputs[1].Prompt = "AI Model: "
-	inputs[1].SetValue(cfg.AIModel)
+	inputs[1].SetValue(config.CleanString(cfg.AIModel))
 	inputs[1].CharLimit = 50
 	inputs[1].Width = 30
 
@@ -66,7 +66,7 @@ func NewSettingsModel() SettingsModel {
 			currentKey = cfg.GeminiAPIKey
 		}
 	}
-	inputs[2].SetValue(currentKey)
+	inputs[2].SetValue(config.CleanString(currentKey))
 	inputs[2].CharLimit = 100
 	inputs[2].Width = 30
 
@@ -74,7 +74,7 @@ func NewSettingsModel() SettingsModel {
 	inputs[3] = textinput.New()
 	inputs[3].Placeholder = "Optional (e.g. http://localhost:1234/v1)"
 	inputs[3].Prompt = "Base URL: "
-	inputs[3].SetValue(cfg.AIBaseURL)
+	inputs[3].SetValue(config.CleanString(cfg.AIBaseURL))
 	inputs[3].CharLimit = 100
 	inputs[3].Width = 50
 

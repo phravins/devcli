@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,7 +21,6 @@ type SnippetsModel struct {
 	titleInput   textinput.Model
 	descInput    textinput.Model
 	langInput    textinput.Model
-	codeInput    textarea.Model // Multi-line
 	searchInput  textinput.Model
 	saveInput    textinput.Model
 	state        int
@@ -349,7 +347,7 @@ func (m SnippetsModel) View() string {
 		return docStyle.Render(content)
 
 	case snStateView:
-		header := titleStyle.Render(fmt.Sprintf("%s", m.selectedSnip.Title))
+		header := titleStyle.Render(m.selectedSnip.Title)
 		meta := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).
 			Render(fmt.Sprintf("Language: %s | Category: %s",
 				m.selectedSnip.Language,

@@ -106,15 +106,15 @@ func (p *AnthropicProvider) Send(messages []ai.Message) (string, error) {
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return "", fmt.Errorf("Claude: Invalid API Key or access denied. Please check your configuration.")
+			return "", fmt.Errorf("claude: invalid API Key or access denied")
 		case http.StatusNotFound:
-			return "", fmt.Errorf("Claude: Model '%s' not found or you don't have access to it.", p.modelName)
+			return "", fmt.Errorf("claude: model '%s' not found or no access", p.modelName)
 		case http.StatusTooManyRequests:
-			return "", fmt.Errorf("Claude: Rate limit exceeded or insufficient quota.")
+			return "", fmt.Errorf("claude: rate limit exceeded or insufficient quota")
 		case http.StatusInternalServerError:
-			return "", fmt.Errorf("Claude: Server error. Please try again later.")
+			return "", fmt.Errorf("claude: server error")
 		default:
-			return "", fmt.Errorf("Claude API error (%d): %s", resp.StatusCode, string(body))
+			return "", fmt.Errorf("claude API error (%d): %s", resp.StatusCode, string(body))
 		}
 	}
 

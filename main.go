@@ -28,6 +28,25 @@ var rootCmd = &cobra.Command{
 - File operations
 - AI chatbot integration
 - Built-in Python IDE`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Allow auth setup and status without pre-authentication
+		if cmd.CommandPath() == "devcli auth setup" || cmd.CommandPath() == "devcli auth status" {
+			return nil
+		}
+
+		if !auth.IsSetup() {
+			fmt.Println("🔒 Welcome to DevCLI Production Security!")
+			fmt.Println("Account setup required: Please create your Username and Master Password.")
+			fmt.Println()
+			return auth.SetupCLI()
+		}
+
+		if !auth.IsSessionUnlocked() {
+			return auth.RequireCLILogin()
+		}
+
+		return nil
+	},
 }
 
 func init() {

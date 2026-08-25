@@ -259,7 +259,7 @@ func (m AuthLoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			pass := m.passwordInput.Value()
 			valid, err := auth.VerifyPassword(pass)
 			if err != nil || !valid {
-				m.err = fmt.Errorf("invalid password. Please try again.")
+				m.err = fmt.Errorf("invalid password, please try again")
 				m.passwordInput.SetValue("")
 				return m, nil
 			}

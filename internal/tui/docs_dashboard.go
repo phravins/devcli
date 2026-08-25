@@ -169,6 +169,8 @@ func getDocsContent(lang string) string {
 	switch lang {
 	case LangSpanish:
 		return getDocsContentSpanish()
+	case LangHindi:
+		return getDocsContentHindi()
 	case LangFrench:
 		return getDocsContentFrench()
 	case LangGerman:

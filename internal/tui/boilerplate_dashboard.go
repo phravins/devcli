@@ -1,4 +1,4 @@
-﻿package tui
+package tui
 
 import (
 	"fmt"
@@ -229,7 +229,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 					// 2. Fetch the snippet to get available languages
 					snip, exists := boilerplate.Snippets[i.id]
 					if !exists {
-						m.err = fmt.Errorf("Snippet logic error: ID %s not found", i.id)
+						m.err = fmt.Errorf("snippet logic error: ID %s not found", i.id)
 						return m, nil
 					}
 

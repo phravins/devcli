@@ -59,7 +59,7 @@ func NewVenvDashboardModel() VenvDashboardModel {
 	items := []list.Item{item{title: "Loading environments...", desc: "Please wait"}}
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = venvSelectedStyle
-	delegate.Styles.SelectedDesc = venvSelectedStyle.Copy().Foreground(colorGray)
+	delegate.Styles.SelectedDesc = venvSelectedStyle.Foreground(colorGray)
 
 	l := list.New(items, delegate, 0, 0)
 	l.Title = "Virtual Environment Wizard (v2.0 Recursive)"

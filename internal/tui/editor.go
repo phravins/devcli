@@ -101,7 +101,6 @@ type model struct {
 	outputView      viewport.Model
 	activeView      int // 0=Editor, 1=Output
 	outputMaximized bool
-	lastLanguage    string // Track for buffer clearing
 	webLogs         []string
 	logChan         chan string
 }
@@ -915,9 +914,11 @@ func (m model) View() string {
 
 		for i, choice := range m.choices {
 			if m.cursor == i {
-				choices.WriteString(selectedItemStyle.Render("> "+choice) + "\n\n")
+				choices.WriteString(selectedItemStyle.Render("> " + choice))
+				choices.WriteString("\n\n")
 			} else {
-				choices.WriteString(unselectedItemStyle.Render(choice) + "\n\n")
+				choices.WriteString(unselectedItemStyle.Render(choice))
+				choices.WriteString("\n\n")
 			}
 		}
 

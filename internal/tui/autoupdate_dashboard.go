@@ -700,7 +700,7 @@ func summarizeUpdatesCmd(p ai.Provider, log string) tea.Cmd {
 
 		select {
 		case res := <-resChan:
-			return summaryMsg{content: res.content, err: res.err}
+			return summaryMsg(res)
 		case <-time.After(8 * time.Second):
 			return summaryMsg{err: fmt.Errorf("AI summary timed out (showing raw logs below)")}
 		}

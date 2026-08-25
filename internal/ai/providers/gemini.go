@@ -113,15 +113,15 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 		safeURL := fmt.Sprintf("%s/%s:generateContent", p.BaseURL, p.modelName)
 		switch resp.StatusCode {
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return "", fmt.Errorf("Gemini: Invalid API Key or access denied. Please check your configuration.")
+			return "", fmt.Errorf("gemini: invalid API Key or access denied")
 		case http.StatusNotFound:
-			return "", fmt.Errorf("Gemini: Model '%s' not found or API endpoint is incorrect.", p.modelName)
+			return "", fmt.Errorf("gemini: model '%s' not found or API endpoint incorrect", p.modelName)
 		case http.StatusTooManyRequests:
-			return "", fmt.Errorf("Gemini: Rate limit exceeded or insufficient quota.")
+			return "", fmt.Errorf("gemini: rate limit exceeded or insufficient quota")
 		case http.StatusInternalServerError:
-			return "", fmt.Errorf("Gemini: Server error. Please try again later.")
+			return "", fmt.Errorf("gemini: server error")
 		default:
-			return "", fmt.Errorf("Gemini API error (%d) at %s: %s", resp.StatusCode, safeURL, string(body))
+			return "", fmt.Errorf("gemini API error (%d) at %s: %s", resp.StatusCode, safeURL, string(body))
 		}
 	}
 	var parsedResp geminiResponse

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -49,11 +50,42 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	config.AIBackend = CleanString(config.AIBackend)
+	config.AIModel = CleanString(config.AIModel)
+	config.AIAPIKey = CleanString(config.AIAPIKey)
+	config.AIBaseURL = CleanString(config.AIBaseURL)
+	config.EditorTheme = CleanString(config.EditorTheme)
+	config.UserName = CleanString(config.UserName)
+	config.HFAccessToken = CleanString(config.HFAccessToken)
+	config.GeminiAPIKey = CleanString(config.GeminiAPIKey)
+
 	return &config, nil
 }
 
+func CleanString(s string) string {
+	if s == "" {
+		return ""
+	}
+	if idx := strings.Index(s, "]11;"); idx != -1 {
+		s = s[:idx]
+	}
+	if idx := strings.Index(s, "]10;"); idx != -1 {
+		s = s[:idx]
+	}
+	if idx := strings.Index(s, "rgb:"); idx != -1 {
+		s = s[:idx]
+	}
+	var builder strings.Builder
+	for _, r := range s {
+		if r >= 32 && r != 127 && r != '\x1b' {
+			builder.WriteRune(r)
+		}
+	}
+	return strings.TrimSpace(builder.String())
+}
+
 func SaveConfig(key string, value interface{}) error {
-	viper.Set(key, value)
+	Set(key, value)
 	return Write()
 }
 
@@ -83,9 +115,13 @@ func Write() error {
 }
 
 func Set(key string, value interface{}) {
-	viper.Set(key, value)
+	if strVal, ok := value.(string); ok {
+		viper.Set(key, CleanString(strVal))
+	} else {
+		viper.Set(key, value)
+	}
 }
 
 func GetString(key string) string {
-	return viper.GetString(key)
+	return CleanString(viper.GetString(key))
 }

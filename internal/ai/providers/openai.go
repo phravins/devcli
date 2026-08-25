@@ -131,13 +131,13 @@ func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
 		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
 			switch resp.StatusCode {
 			case http.StatusUnauthorized:
-				return "", fmt.Errorf("OpenAI: Invalid API Key. Please check your configuration.")
+				return "", fmt.Errorf("openAI: invalid API key")
 			case http.StatusNotFound:
-				return "", fmt.Errorf("OpenAI: Model '%s' not found or you don't have access to it.", p.modelName)
+				return "", fmt.Errorf("openAI: model '%s' not found or no access", p.modelName)
 			case http.StatusTooManyRequests:
-				return "", fmt.Errorf("OpenAI: Rate limit exceeded or insufficient quota.")
+				return "", fmt.Errorf("openAI: rate limit exceeded or insufficient quota")
 			case http.StatusInternalServerError:
-				return "", fmt.Errorf("OpenAI: Server error. Please try again later.")
+				return "", fmt.Errorf("openAI: server error")
 			default:
 				return "", fmt.Errorf("OpenAI error (%d): %s", resp.StatusCode, errResp.Error.Message)
 			}
