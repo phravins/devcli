@@ -994,8 +994,10 @@ func (m model) View() string {
 
 	fileInfo := fileStyle.Render(fmt.Sprintf("File: %s", m.filename))
 
-	s.WriteString(header + "\n")
-	s.WriteString(fileInfo + "\n\n")
+	s.WriteString(header)
+	s.WriteString("\n")
+	s.WriteString(fileInfo)
+	s.WriteString("\n\n")
 
 	// Code Editor (Original Simple View)
 	s.WriteString(m.editor.viewport.View())
@@ -1021,8 +1023,11 @@ func (m model) View() string {
 			BorderForeground(lipgloss.Color(borderColor)).
 			Render(outView)
 
-		s.WriteString("\n" + outTitle + "\n")
-		s.WriteString(outBox + "\n")
+		s.WriteString("\n")
+		s.WriteString(outTitle)
+		s.WriteString("\n")
+		s.WriteString(outBox)
+		s.WriteString("\n")
 	}
 
 	// Status Bar
@@ -1032,7 +1037,8 @@ func (m model) View() string {
 	statusText := fmt.Sprintf(" Status: %s | Line: %d ", m.status, currentLine)
 	bar := statusStyle.Width(m.width).Render(statusText)
 
-	s.WriteString("\n" + bar)
+	s.WriteString("\n")
+	s.WriteString(bar)
 
 	return s.String()
 }

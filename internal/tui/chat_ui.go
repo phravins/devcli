@@ -218,19 +218,21 @@ func (m *ChatModel) renderMessages() {
 	for _, msg := range m.messages {
 		if msg.Role == "user" {
 			// User Message
-			// Just "You: <content>" in Light Green
 			content := fmt.Sprintf("You: %s", msg.Content)
-			sb.WriteString(userStyle(content) + "\n\n")
+			sb.WriteString(userStyle(content))
+			sb.WriteString("\n\n")
 		} else {
 			// AI Message
-			// Name: Content
 			rendered, err := mdRenderer.Render(msg.Content)
 			if err != nil {
 				rendered = msg.Content // Fallback
 			}
 
 			label := aiLabelStyle.Render(m.provider.Name())
-			sb.WriteString(label + "\n" + aiContainerStyle.Render(rendered) + "\n")
+			sb.WriteString(label)
+			sb.WriteString("\n")
+			sb.WriteString(aiContainerStyle.Render(rendered))
+			sb.WriteString("\n")
 		}
 	}
 

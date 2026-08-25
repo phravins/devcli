@@ -5,6 +5,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/phravins/devcli/internal/auth"
 )
 
 // Global States
@@ -18,6 +19,8 @@ const (
 	StateDocs
 	StateDocker
 	StateAPIClient
+	StateAuthSetup
+	StateAuthLogin
 )
 
 // Messages
@@ -50,22 +53,32 @@ type RootModel struct {
 	docs        DocsModel
 	docker      DockerDashboardModel
 	apiClient   APIClientModel
-
-	// Generic error
-	err error
+	authSetup   AuthSetupModel
+	authLogin   AuthLoginModel
 }
 
 func NewRootModel() RootModel {
+	initialState := StateDashboard
+	if !auth.IsSetup() {
+		initialState = StateAuthSetup
+	} else if !auth.IsSessionUnlocked() {
+		initialState = StateAuthLogin
+	}
+
 	return RootModel{
-		state:     StateDashboard,
+		state:     initialState,
 		dashboard: NewDashboard(),
 		project:   NewProjectDashboardModel(),
+		authSetup: NewAuthSetupModel(),
+		authLogin: NewAuthLoginModel(),
 	}
 }
 
 func (m RootModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.dashboard.Init(),
+		m.authSetup.Init(),
+		m.authLogin.Init(),
 	)
 }
 
@@ -77,7 +90,10 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		// We do NOT manually propagate here. The active model will receive it in the switch below.
+
+	case AuthSuccessMsg:
+		m.state = StateDashboard
+		return m, m.dashboard.Init()
 
 	case SwitchViewMsg:
 		m.state = msg.TargetState
@@ -90,7 +106,6 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				path = p
 			}
 			m.fileManager = NewFileManagerModel(path)
-			// Resize immediately
 			var fm tea.Model
 			fm, cmd = m.fileManager.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
 			m.fileManager = fm.(FileManagerModel)
@@ -158,6 +173,14 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.state {
+	case StateAuthSetup:
+		newM, newCmd := m.authSetup.Update(msg)
+		m.authSetup = newM.(AuthSetupModel)
+		cmds = append(cmds, newCmd)
+	case StateAuthLogin:
+		newM, newCmd := m.authLogin.Update(msg)
+		m.authLogin = newM.(AuthLoginModel)
+		cmds = append(cmds, newCmd)
 	case StateDashboard:
 		newM, newCmd := m.dashboard.Update(msg)
 		m.dashboard = newM.(DashboardModel)
@@ -201,6 +224,10 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m RootModel) View() string {
 	switch m.state {
+	case StateAuthSetup:
+		return m.authSetup.View()
+	case StateAuthLogin:
+		return m.authLogin.View()
 	case StateDashboard:
 		return m.dashboard.View()
 	case StateProject:

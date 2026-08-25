@@ -11,6 +11,7 @@ import (
 	"github.com/phravins/devcli/assets"
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/aicommit"
+	"github.com/phravins/devcli/internal/auth"
 	"github.com/phravins/devcli/internal/fileops"
 	"github.com/phravins/devcli/internal/project"
 	"github.com/phravins/devcli/internal/tui"
@@ -31,7 +32,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	// Add all subcommands
-	// Add all subcommands
+	rootCmd.AddCommand(auth.AuthCmd)
 	fileops.FileCmd.Run = func(cmd *cobra.Command, args []string) {
 		tui.RunFileManager("")
 	}

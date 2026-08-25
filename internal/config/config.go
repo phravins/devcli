@@ -63,12 +63,23 @@ func Write() error {
 		return err
 	}
 
+	devcliDir := filepath.Join(home, ".devcli")
+	_ = os.MkdirAll(devcliDir, 0700)
+	_ = os.Chmod(devcliDir, 0700)
+
 	configPath := filepath.Join(home, ".devcli.yaml")
 	viper.SetConfigFile(configPath)
+	var writeErr error
 	if _, err := os.Stat(configPath); err == nil {
-		return viper.WriteConfig()
+		writeErr = viper.WriteConfig()
+	} else {
+		writeErr = viper.WriteConfigAs(configPath)
 	}
-	return viper.WriteConfigAs(configPath)
+
+	if writeErr == nil {
+		_ = os.Chmod(configPath, 0600)
+	}
+	return writeErr
 }
 
 func Set(key string, value interface{}) {

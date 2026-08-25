@@ -205,9 +205,9 @@ func StartServer(port string, logs chan string) error {
 
 		if logChan != nil {
 			if err != nil {
-				logChan <- fmt.Sprintf("[%s Execution Error]: %v", strings.Title(language), err)
+				logChan <- fmt.Sprintf("[%s Execution Error]: %v", titleCase(language), err)
 			} else {
-				logChan <- fmt.Sprintf("[%s Execution Success]", strings.Title(language))
+				logChan <- fmt.Sprintf("[%s Execution Success]", titleCase(language))
 			}
 		}
 
@@ -240,6 +240,9 @@ func StartServer(port string, logs chan string) error {
 		response := map[string]string{
 			"output": output,
 		}
+		if err != nil {
+			response["error"] = err.Error()
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
@@ -250,7 +253,16 @@ func StartServer(port string, logs chan string) error {
 	addr := "127.0.0.1:" + port
 	fmt.Printf("Starting local premium compiler server at http://%s\n", addr)
 
-	err := http.ListenAndServe(addr, mux)
+	secureHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:;")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		mux.ServeHTTP(w, r)
+	})
+
+	err := http.ListenAndServe(addr, secureHandler)
 	if err != nil {
 		serverStarted = false
 	}
@@ -291,7 +303,7 @@ func runCode(lang, code string) (string, error) {
 	case "js", "javascript", "node":
 		cmdName := "node"
 		if _, err := exec.LookPath("node"); err != nil {
-			return "", fmt.Errorf("Node.js is not installed or not in PATH")
+			return "", fmt.Errorf("node.js is not installed or not in PATH")
 		}
 		cmd = exec.Command(cmdName, tmpfile.Name())
 
@@ -309,7 +321,7 @@ func runCode(lang, code string) (string, error) {
 		defer os.Remove(binPath)
 		compileCmd := exec.Command("rustc", tmpfile.Name(), "-o", binPath)
 		if out, err := compileCmd.CombinedOutput(); err != nil {
-			return string(out), fmt.Errorf("Rust compilation error: %w", err)
+			return string(out), fmt.Errorf("rust compilation error: %w", err)
 		}
 		cmd = exec.Command(binPath)
 
@@ -382,8 +394,7 @@ func runShell(command string) (string, error) {
 		return fmt.Sprintf("Changed directory to %s", currentDir), nil
 	}
 
-	var cmd *exec.Cmd
-	cmd = utils.GetShellCommand(command)
+	cmd := utils.GetShellCommand(command)
 
 	cmd.Dir = currentDir
 	cmd.Env = os.Environ() // Pass environment variables to the shell
@@ -400,4 +411,11 @@ func runShell(command string) (string, error) {
 	activeMu.Unlock()
 
 	return string(output), err
+}
+
+func titleCase(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }

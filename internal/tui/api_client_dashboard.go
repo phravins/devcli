@@ -196,7 +196,8 @@ func (m APIClientModel) View() string {
 	switch m.state {
 	case StateAPIMethodSelect:
 		var sb strings.Builder
-		sb.WriteString(headerStyle + "\n\nSelect HTTP Method:\n\n")
+		sb.WriteString(headerStyle)
+		sb.WriteString("\n\nSelect HTTP Method:\n\n")
 
 		for i, method := range m.methods {
 			cursor := "  "

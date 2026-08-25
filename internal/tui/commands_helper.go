@@ -24,7 +24,8 @@ func generateCommandsHelp() string {
 	}
 
 	// 1. CLI Commands
-	cmds.WriteString(sectionStyle.Render("CORE CLI:") + "\n")
+	cmds.WriteString(sectionStyle.Render("CORE CLI:"))
+	cmds.WriteString("\n")
 	addCmd("devcli dev", "Project Creation & Tools")
 	addCmd("devcli file", "File Manager")
 	addCmd("devcli ai", "AI Chat")
@@ -32,20 +33,23 @@ func generateCommandsHelp() string {
 	cmds.WriteString("\n")
 
 	// 2. Global Navigation
-	cmds.WriteString(sectionStyle.Render("NAVIGATION:") + "\n")
+	cmds.WriteString(sectionStyle.Render("NAVIGATION:"))
+	cmds.WriteString("\n")
 	addKey("↑ / ↓", "Move Up / Down")
 	addKey("Enter", "Select / Confirm")
 	addKey("Esc / q", "Go Back / Exit")
 	cmds.WriteString("\n")
 
 	// 3. Project Tools
-	cmds.WriteString(sectionStyle.Render("PROJECT TOOLS:") + "\n")
+	cmds.WriteString(sectionStyle.Render("PROJECT TOOLS:"))
+	cmds.WriteString("\n")
 	addKey("b", "Backup Project (List)")
 	addKey("d", "Delete History (History)")
 	cmds.WriteString("\n")
 
 	// 4. Dev Server
-	cmds.WriteString(sectionStyle.Render("DEV SERVER:") + "\n")
+	cmds.WriteString(sectionStyle.Render("DEV SERVER:"))
+	cmds.WriteString("\n")
 	addKey("s", "Start/Stop Server")
 	addKey("f", "Toggle Filters")
 	addKey("b", "Toggle Server Source (Fullstack)")
@@ -56,7 +60,8 @@ func generateCommandsHelp() string {
 	cmds.WriteString("\n")
 
 	// 5. Venv Wizard
-	cmds.WriteString(sectionStyle.Render("VENV WIZARD:") + "\n")
+	cmds.WriteString(sectionStyle.Render("VENV WIZARD:"))
+	cmds.WriteString("\n")
 	addKey("n", "New Environment")
 	addKey("s", "Scan System")
 	addKey("y", "Sync Packages")
@@ -65,7 +70,8 @@ func generateCommandsHelp() string {
 	cmds.WriteString("\n")
 
 	// 6. File Manager
-	cmds.WriteString(sectionStyle.Render("FILE MANAGER:") + "\n")
+	cmds.WriteString(sectionStyle.Render("FILE MANAGER:"))
+	cmds.WriteString("\n")
 	addKey("Tab", "Toggle Global Search")
 	addKey("Alt+M", "Move/Rename File")
 	addKey("Alt+C", "Copy File")
@@ -73,13 +79,15 @@ func generateCommandsHelp() string {
 	cmds.WriteString("\n")
 
 	// 7. AI Chat
-	cmds.WriteString(sectionStyle.Render("AI CHAT:") + "\n")
+	cmds.WriteString(sectionStyle.Render("AI CHAT:"))
+	cmds.WriteString("\n")
 	addKey("Enter", "Send Message")
 	addKey("Esc", "Exit Chat")
 	cmds.WriteString("\n")
 
 	// 8. Editor Shortcuts
-	cmds.WriteString(sectionStyle.Render("EDITOR (Multi-Lang):") + "\n")
+	cmds.WriteString(sectionStyle.Render("EDITOR (Multi-Lang):"))
+	cmds.WriteString("\n")
 	addKey("Ctrl+R", "Run Code")
 	addKey("Ctrl+S", "Save File")
 	addKey("Ctrl+N", "New File")
@@ -87,7 +95,8 @@ func generateCommandsHelp() string {
 	addKey("Ctrl+H", "Toggle Help")
 	addKey("Ctrl+C", "Exit Editor")
 
-	cmds.WriteString("\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("  Press Esc to go back"))
+	cmds.WriteString("\n")
+	cmds.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("  Press Esc to go back"))
 
 	return cmds.String()
 }

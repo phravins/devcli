@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -24,19 +25,28 @@ type Session struct {
 }
 
 var (
-	users      = make(map[string]User)
-	sessions   = make(map[string]Session)
-	pendingVer = make(map[string]string) // email -> token
-	authMu     sync.RWMutex
-	usersFile  = "users.json"
+	users    = make(map[string]User)
+	sessions = make(map[string]Session)
+	authMu   sync.RWMutex
 )
 
 func init() {
 	loadUsers()
 }
 
+func getUsersFilePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "web_users.json"
+	}
+	dir := filepath.Join(home, ".devcli")
+	_ = os.MkdirAll(dir, 0700)
+	return filepath.Join(dir, "web_users.json")
+}
+
 func loadUsers() {
-	data, err := os.ReadFile(usersFile)
+	path := getUsersFilePath()
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return
 	}
@@ -44,8 +54,11 @@ func loadUsers() {
 }
 
 func saveUsers() {
+	path := getUsersFilePath()
 	data, _ := json.MarshalIndent(users, "", "  ")
-	os.WriteFile(usersFile, data, 0644)
+	if err := os.WriteFile(path, data, 0600); err == nil {
+		_ = os.Chmod(path, 0600)
+	}
 }
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {

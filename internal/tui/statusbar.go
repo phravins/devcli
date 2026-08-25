@@ -53,7 +53,8 @@ func getCachedStatusInfo() (string, string, string) {
 		cfg, _ := config.LoadConfig()
 		aiBackend := "Ollama"
 		if cfg != nil && cfg.AIBackend != "" {
-			aiBackend = strings.Title(cfg.AIBackend)
+			b := cfg.AIBackend
+			aiBackend = strings.ToUpper(b[:1]) + b[1:]
 		}
 		cachedAIBackend = aiBackend
 	}

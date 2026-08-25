@@ -953,7 +953,8 @@ func (m FileManagerModel) View() string {
 				rowRendered = lipgloss.NewStyle().Width(w - 2).Render(rowRendered)
 			}
 
-			list.WriteString(rowRendered + "\n")
+			list.WriteString(rowRendered)
+			list.WriteString("\n")
 		}
 	}
 

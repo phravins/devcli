@@ -294,14 +294,17 @@ func (m *SettingsModel) updateMainViewContent() {
 	b.WriteString(button)
 
 	if m.successMsg != "" {
-		b.WriteString("\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Align(lipgloss.Center).Width(54).Render(m.successMsg))
+		b.WriteString("\n\n")
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Align(lipgloss.Center).Width(54).Render(m.successMsg))
 	}
 	if m.err != nil {
-		b.WriteString("\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Align(lipgloss.Center).Width(54).Render(m.err.Error()))
+		b.WriteString("\n\n")
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Align(lipgloss.Center).Width(54).Render(m.err.Error()))
 	}
 
 	help := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Align(lipgloss.Center).Width(54).Render("Esc to Cancel • Tab to Navigate • [?] Help")
-	b.WriteString("\n\n" + help)
+	b.WriteString("\n\n")
+	b.WriteString(help)
 
 	// Wrap everything in a nice centered box
 	view := lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,

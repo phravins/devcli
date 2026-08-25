@@ -729,7 +729,8 @@ func (m DevServerDashboardModel) renderReady() string {
 	var commandInfo strings.Builder
 	commandInfo.WriteString(lipgloss.NewStyle().
 		Foreground(lipgloss.Color("141")).
-		Render("Command to run:") + "\n\n")
+		Render("Command to run:"))
+	commandInfo.WriteString("\n\n")
 
 	for i, srv := range m.projectInfo.Servers {
 		cmdStyle := lipgloss.NewStyle().

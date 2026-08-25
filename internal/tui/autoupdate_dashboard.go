@@ -503,7 +503,8 @@ func checkLanguageVersionsCmd() tea.Cmd {
 		pinky := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
 		header := lipgloss.NewStyle().Foreground(lipgloss.Color("62")).Bold(true).Render("# Installed Languages & Tools")
 
-		sb.WriteString(header + "\n\n")
+		sb.WriteString(header)
+		sb.WriteString("\n\n")
 
 		check := func(name, cmdName string, args []string, fallbacks []string) {
 			path := utils.FindExecutable(cmdName, fallbacks)
