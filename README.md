@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="assets/devcli_logo.png" width="400" alt="DevCLI Logo">
   <br>
 
   [![Version](https://img.shields.io/badge/Version-v1.1.0-50FA7B?style=for-the-badge&logo=go&logoColor=black)](https://github.com/phravins/devcli) [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/) [![GitHub](https://img.shields.io/badge/GitHub-Repo-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/phravins/devcli) [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://kernel.org/) [![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows/) [![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)](https://apple.com/macos/)
