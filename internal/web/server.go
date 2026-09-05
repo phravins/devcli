@@ -12,8 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/phravins/devcli/pkg/utils"
+	"unicode"
 )
 
 //go:embed static/*
@@ -366,15 +365,97 @@ func runCode(lang, code string) (string, error) {
 	return outStr, err
 }
 
-// runShell executes shell commands in the web terminal
+// parseCommand parses a shell command string into arguments, handling basic quoting and escaping
+func parseCommand(command string) []string {
+	var args []string
+	var current strings.Builder
+	inSingleQuote := false
+	inDoubleQuote := false
+	escaped := false
+
+	for _, r := range command {
+		if escaped {
+			current.WriteRune(r)
+			escaped = false
+			continue
+		}
+
+		if r == '\\' && !inSingleQuote {
+			escaped = true
+			continue
+		}
+
+		if r == '\'' && !inDoubleQuote {
+			inSingleQuote = !inSingleQuote
+			continue
+		}
+
+		if r == '"' && !inSingleQuote {
+			inDoubleQuote = !inDoubleQuote
+			continue
+		}
+
+		if unicode.IsSpace(r) && !inSingleQuote && !inDoubleQuote {
+			if current.Len() > 0 {
+				args = append(args, current.String())
+				current.Reset()
+			}
+			continue
+		}
+
+		current.WriteRune(r)
+	}
+
+	if current.Len() > 0 {
+		args = append(args, current.String())
+	}
+
+	return args
+}
+
+// allowedCommands is a list of safe commands that can be executed
+var allowedCommands = map[string]bool{
+	"ls":     true,
+	"pwd":    true,
+	"cat":    true,
+	"echo":   true,
+	"go":     true,
+	"python": true,
+	"python3": true,
+	"node":   true,
+	"git":    true,
+	"grep":   true,
+	"head":   true,
+	"tail":   true,
+	"npm":    true,
+}
+
+// runShell executes shell commands in the web terminal securely
 func runShell(command string) (string, error) {
 	if currentDir == "" {
 		currentDir, _ = os.Getwd()
 	}
 
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return "", nil
+	}
+
 	// Handle the 'cd' command specially to change directories
-	if len(command) >= 3 && command[:3] == "cd " {
-		path := strings.TrimSpace(command[3:])
+	if strings.HasPrefix(command, "cd ") || command == "cd" {
+		path := ""
+		if len(command) > 3 {
+			path = strings.TrimSpace(command[3:])
+		}
+
+		if path == "" {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return "", fmt.Errorf("could not determine home directory")
+			}
+			path = homeDir
+		}
+
 		// Convert relative paths to absolute paths
 		newDir := filepath.Join(currentDir, path)
 		if filepath.IsAbs(path) {
@@ -394,10 +475,25 @@ func runShell(command string) (string, error) {
 		return fmt.Sprintf("Changed directory to %s", currentDir), nil
 	}
 
-	cmd := utils.GetShellCommand(command)
+	args := parseCommand(command)
+	if len(args) == 0 {
+		return "", nil
+	}
+
+	baseCmd := args[0]
+	if !allowedCommands[baseCmd] {
+		return "", fmt.Errorf("command not allowed for security reasons: %s. Allowed commands are: ls, pwd, cat, echo, go, python, node, git, grep, head, tail, npm", baseCmd)
+	}
+
+	var cmd *exec.Cmd
+	if len(args) > 1 {
+		cmd = exec.Command(baseCmd, args[1:]...)
+	} else {
+		cmd = exec.Command(baseCmd)
+	}
 
 	cmd.Dir = currentDir
-	cmd.Env = os.Environ() // Pass environment variables to the shell
+	cmd.Env = os.Environ() // Pass environment variables
 
 	// Register this command so it can be cancelled with Ctrl+C
 	activeMu.Lock()
