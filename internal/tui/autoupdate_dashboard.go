@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -757,6 +758,7 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 				return installMsg{err: fmt.Errorf("go install failed: %s", string(output))}
 			}
 
+			syncDevCLIBin()
 			return installMsg{err: nil}
 		}
 
@@ -767,7 +769,41 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 			return installMsg{err: fmt.Errorf("go install failed: %s", string(output))}
 		}
 
+		syncDevCLIBin()
 		return installMsg{err: nil}
+	}
+}
+
+func syncDevCLIBin() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	var binName string
+	if runtime.GOOS == "windows" {
+		binName = "devcli.exe"
+	} else {
+		binName = "devcli"
+	}
+
+	devcliBin := filepath.Join(home, ".devcli", "bin", binName)
+	if _, err := os.Stat(devcliBin); err != nil {
+		return
+	}
+
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		gopath = filepath.Join(home, "go")
+	}
+	srcBin := filepath.Join(gopath, "bin", binName)
+	data, err := os.ReadFile(srcBin)
+	if err != nil {
+		return
+	}
+
+	tmpBin := devcliBin + ".tmp"
+	if err := os.WriteFile(tmpBin, data, 0755); err == nil {
+		os.Rename(tmpBin, devcliBin)
 	}
 }
 
