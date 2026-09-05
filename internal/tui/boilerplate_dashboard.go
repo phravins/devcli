@@ -32,6 +32,14 @@ const (
 	StateBPHelp          // Help screen
 )
 
+type BoilerplateItemType int
+
+const (
+	ItemTypeNone BoilerplateItemType = iota
+	ItemTypeSnippet
+	ItemTypeArchitecture
+)
+
 type BoilerplateDashboardModel struct {
 	menuList     list.Model
 	snippetList  list.Model
@@ -53,6 +61,7 @@ type BoilerplateDashboardModel struct {
 	selectedTemplate string
 	selectedProject  string
 	selectedItem     string // Generic selection (Snippet Name or Arch Name)
+	selectedItemType BoilerplateItemType
 	targetLang       string // For snippet language
 
 	statusMsg   string
@@ -225,6 +234,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 				if ok {
 					// 1. Store the ID (key) of the snippet
 					m.selectedItem = i.id
+					m.selectedItemType = ItemTypeSnippet
 
 					// 2. Fetch the snippet to get available languages
 					snip, exists := boilerplate.Snippets[i.id]
@@ -280,6 +290,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 				if ok {
 					// Go to Path Input
 					m.selectedItem = i.id
+					m.selectedItemType = ItemTypeArchitecture
 					m.state = StateBPInputPath
 					m.pathInput.SetValue("./")
 					m.pathInput.Focus()
@@ -386,9 +397,9 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 				// Create dir if not exists
 				os.MkdirAll(pathVal, 0755)
 
-				// Determine what we were doing based on selected item lookup
-				// Hacky? logic check
-				if _, ok := boilerplate.Snippets[m.selectedItem]; ok {
+				// Determine what we were doing based on selected item type
+				switch m.selectedItemType {
+				case ItemTypeSnippet:
 					// Generating Snippet
 					path, err := m.manager.GenerateSnippet(m.selectedItem, m.targetLang, pathVal)
 					if err != nil {
@@ -404,7 +415,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 						m.state = StateBPShowResult
 						return m, bpTickCmd()
 					}
-				} else if _, ok := boilerplate.Architectures[m.selectedItem]; ok {
+				case ItemTypeArchitecture:
 					// Generating Architecture
 					paths, err := m.manager.GenerateArchitecture(m.selectedItem, pathVal)
 					if err != nil {
@@ -425,7 +436,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 						m.state = StateBPShowResult
 						return m, bpTickCmd()
 					}
-				} else {
+				default:
 					// Only Snippet and Arch use this flow currently
 					m.state = StateBPMenu
 				}
