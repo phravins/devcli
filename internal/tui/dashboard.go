@@ -55,7 +55,7 @@ func NewDashboard() DashboardModel {
 	delegate.Styles.SelectedDesc = lipgloss.NewStyle().Foreground(lipgloss.Color("#8BE9FD"))
 
 	m := DashboardModel{
-		list:     list.New(items, delegate, 0, 0),
+		list:     list.New(items, delegate, 80, 20),
 		settings: NewSettingsModel(),
 	}
 	m.list.SetShowTitle(false)
@@ -183,7 +183,11 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v-16)
+		listHeight := msg.Height - v - 10
+		if listHeight < 14 {
+			listHeight = 14
+		}
+		m.list.SetSize(msg.Width-h, listHeight)
 
 		// Resize Settings
 		if m.showSettings {
@@ -263,7 +267,15 @@ func (m DashboardModel) View() string {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 	}
 
-	m.list.SetSize(m.width, m.height-14)
+	listWidth := m.width
+	if listWidth <= 0 {
+		listWidth = 80
+	}
+	listHeight := m.height - 10
+	if listHeight < 14 {
+		listHeight = 14
+	}
+	m.list.SetSize(listWidth, listHeight)
 
 	contentView := lipgloss.JoinVertical(lipgloss.Left,
 		centeredHeader,
