@@ -751,11 +751,10 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 				}
 			}
 
-			// go build
-			// Assuming we run this from the project root or we can find it
-			build := exec.Command("go", "build", "-o", "devcli.exe", ".")
+			// go install
+			build := exec.Command("go", "install", ".")
 			if output, err := build.CombinedOutput(); err != nil {
-				return installMsg{err: fmt.Errorf("go build failed: %s", string(output))}
+				return installMsg{err: fmt.Errorf("go install failed: %s", string(output))}
 			}
 
 			return installMsg{err: nil}
