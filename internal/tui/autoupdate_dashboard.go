@@ -102,7 +102,13 @@ func showKeyProviderMenu(m *AutoUpdateModel) {
 }
 
 func NewAutoUpdateModel() AutoUpdateModel {
-	l := list.New(autoUpdateMenuItems, list.NewDefaultDelegate(), 0, 0)
+	delegate := list.NewDefaultDelegate()
+	delegate.Styles.NormalTitle = lipgloss.NewStyle().Foreground(lipgloss.Color("#F8F8F2")).Bold(true)
+	delegate.Styles.NormalDesc = lipgloss.NewStyle().Foreground(lipgloss.Color("#A0A0A0"))
+	delegate.Styles.SelectedTitle = lipgloss.NewStyle().Foreground(lipgloss.Color("#50FA7B")).Bold(true)
+	delegate.Styles.SelectedDesc = lipgloss.NewStyle().Foreground(lipgloss.Color("#8BE9FD"))
+
+	l := list.New(autoUpdateMenuItems, delegate, 0, 0)
 	l.Title = "Auto-Update Center"
 	l.SetShowTitle(true)
 
