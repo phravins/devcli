@@ -822,12 +822,6 @@ func (m FileManagerModel) View() string {
 	grey := lipgloss.Color("240")
 	infoStyle := lipgloss.NewStyle().Foreground(grey)
 
-	// Truncate path if too long
-	// dispPath := m.currentPath
-	// if len(dispPath) > w/2 {
-	// 	dispPath = "..." + dispPath[len(dispPath)-(w/2):]
-	// }
-
 	// Path Box Style
 	pathBoxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
