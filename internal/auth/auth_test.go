@@ -7,25 +7,67 @@ import (
 
 func TestPasswordValidation(t *testing.T) {
 	tests := []struct {
-		password string
-		valid    bool
+		name        string
+		password    string
+		valid       bool
+		expectedErr string
 	}{
-		{"short", false},
-		{"alllowercase123", false},
-		{"ALLUPPERCASE123", false},
-		{"NoNumbersHere!", false},
-		{"SecureP@ssw0rd2026", true},
-		{"DevCLISecure!99", true},
+		{
+			name:        "Too short",
+			password:    "short",
+			valid:       false,
+			expectedErr: "password must be at least 8 characters long",
+		},
+		{
+			name:        "Exactly 8 characters valid",
+			password:    "Aa345678",
+			valid:       true,
+		},
+		{
+			name:        "Missing uppercase",
+			password:    "alllowercase123",
+			valid:       false,
+			expectedErr: "password must contain at least one uppercase letter (A-Z)",
+		},
+		{
+			name:        "Missing lowercase",
+			password:    "ALLUPPERCASE123",
+			valid:       false,
+			expectedErr: "password must contain at least one lowercase letter (a-z)",
+		},
+		{
+			name:        "Missing number",
+			password:    "NoNumbersHere!",
+			valid:       false,
+			expectedErr: "password must contain at least one digit (0-9)",
+		},
+		{
+			name:        "Valid secure password",
+			password:    "SecureP@ssw0rd2026",
+			valid:       true,
+		},
+		{
+			name:        "Another valid password",
+			password:    "DevCLISecure!99",
+			valid:       true,
+		},
 	}
 
 	for _, tt := range tests {
-		err := ValidatePasswordStrength(tt.password)
-		if tt.valid && err != nil {
-			t.Errorf("expected password '%s' to be valid, got: %v", tt.password, err)
-		}
-		if !tt.valid && err == nil {
-			t.Errorf("expected password '%s' to be invalid, but validation passed", tt.password)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidatePasswordStrength(tt.password)
+			if tt.valid {
+				if err != nil {
+					t.Errorf("expected password to be valid, got error: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("expected password to be invalid, but validation passed")
+				} else if err.Error() != tt.expectedErr {
+					t.Errorf("expected error '%s', got '%v'", tt.expectedErr, err)
+				}
+			}
+		})
 	}
 }
 
