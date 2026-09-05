@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -123,25 +124,31 @@ func (m UpdaterModel) View() string {
 		Foreground(lipgloss.Color("#888888")).
 		Padding(1, 0)
 
-	var content string
+	var contentBuilder strings.Builder
 
 	title := titleStyle.Render("🔄 DevCLI Update Checker")
-	content = title + "\n\n"
+	contentBuilder.WriteString(title)
+	contentBuilder.WriteString("\n\n")
 
 	// Show status
-	content += statusStyle.Render(m.status) + "\n\n"
+	contentBuilder.WriteString(statusStyle.Render(m.status))
+	contentBuilder.WriteString("\n\n")
 
 	// Show version info if available
 	if m.info != nil {
-		content += versionStyle.Render(fmt.Sprintf("Current Version: %s", m.info.CurrentVersion)) + "\n"
-		content += versionStyle.Render(fmt.Sprintf("Latest Version:  %s", m.info.LatestVersion)) + "\n\n"
+		contentBuilder.WriteString(versionStyle.Render(fmt.Sprintf("Current Version: %s", m.info.CurrentVersion)))
+		contentBuilder.WriteString("\n")
+		contentBuilder.WriteString(versionStyle.Render(fmt.Sprintf("Latest Version:  %s", m.info.LatestVersion)))
+		contentBuilder.WriteString("\n\n")
 
 		if m.info.IsUpdateAvailable && m.info.ReleaseNotes != "" {
-			content += lipgloss.NewStyle().
+			contentBuilder.WriteString(lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color("#6BCF7F")).
-				Render("📝 Release Notes:") + "\n"
-			content += notesStyle.Render(m.info.ReleaseNotes) + "\n"
+				Render("📝 Release Notes:"))
+			contentBuilder.WriteString("\n")
+			contentBuilder.WriteString(notesStyle.Render(m.info.ReleaseNotes))
+			contentBuilder.WriteString("\n")
 		}
 	}
 
@@ -153,7 +160,7 @@ func (m UpdaterModel) View() string {
 		footer = "Q/Esc: Back • Ctrl+C: Quit"
 	}
 
-	content += footerStyle.Render(footer)
+	contentBuilder.WriteString(footerStyle.Render(footer))
 
 	// Center content
 	box := lipgloss.NewStyle().
@@ -161,7 +168,7 @@ func (m UpdaterModel) View() string {
 		BorderForeground(lipgloss.Color("#4ECDC4")).
 		Padding(2, 4).
 		Width(m.width - 4).
-		Render(content)
+		Render(contentBuilder.String())
 
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
 }
