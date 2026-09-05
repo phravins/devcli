@@ -763,6 +763,7 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 
 		// Fallback: update globally via go install
 		cmd := exec.Command("go", "install", "github.com/phravins/devcli@latest")
+		cmd.Env = append(os.Environ(), "GOPROXY=direct")
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return installMsg{err: fmt.Errorf("go install failed: %s", string(output))}
 		}
