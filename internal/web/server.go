@@ -29,6 +29,225 @@ var (
 	logChan       chan string // Channel to send logs to the TUI
 )
 
+// setupRoutes configures all the HTTP routes for the web server
+func setupRoutes(mux *http.ServeMux) {
+	// Serve static files from embedded FS
+	fileServer := http.FileServer(http.FS(staticAssets))
+	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+
+	// Redirect root to index.html in static
+	mux.HandleFunc("/", handleRoot)
+
+	// Auth Routes
+	mux.HandleFunc("/auth/login", handleLogin)
+	mux.HandleFunc("/auth/register", handleRegister)
+	mux.HandleFunc("/auth/logout", handleLogout)
+	mux.HandleFunc("/auth/forgot-password", handleForgotPassword)
+	mux.HandleFunc("/auth/verify-email", handleVerifyEmail)
+	mux.HandleFunc("/auth/google", handleGoogleOAuth)
+
+	// Storage Routes
+	mux.HandleFunc("/drive/save", handleDriveSave)
+
+	// Web terminal and execution routes
+	mux.HandleFunc("/logs", handleLogs)
+	mux.HandleFunc("/cancel", handleCancel)
+	mux.HandleFunc("/save", handleSave)
+	mux.HandleFunc("/run", handleRun)
+	mux.HandleFunc("/terminal", handleTerminal)
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		data, err := staticAssets.ReadFile("static/index.html")
+		if err != nil {
+			http.Error(w, "Error loading page", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(data)
+		return
+	}
+
+	// Serve other static files directly if they exist in static/
+	filePath := "static" + r.URL.Path
+	data, err := staticAssets.ReadFile(filePath)
+	if err == nil {
+		contentType := "text/plain"
+		switch {
+		case strings.HasSuffix(filePath, ".css"):
+			contentType = "text/css"
+		case strings.HasSuffix(filePath, ".js"):
+			contentType = "application/javascript"
+		case strings.HasSuffix(filePath, ".png"):
+			contentType = "image/png"
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Write(data)
+		return
+	}
+
+	http.NotFound(w, r)
+}
+
+func handleGoogleOAuth(w http.ResponseWriter, r *http.Request) {
+	// Mock Google OAuth redirect
+	fmt.Fprintf(w, "Google OAuth redirect would happen here.")
+}
+
+func handleLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading body", http.StatusInternalServerError)
+		return
+	}
+	msg := fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), string(body))
+	fmt.Printf("\n[WEB-COMPILER LOG] %s\n", msg)
+	if logChan != nil {
+		logChan <- msg
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleCancel(w http.ResponseWriter, r *http.Request) {
+	activeMu.Lock()
+	defer activeMu.Unlock()
+	if activeCmd != nil && activeCmd.Process != nil {
+		activeCmd.Process.Kill()
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var payload struct {
+		Filename string `json:"filename"`
+		Content  string `json:"content"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	filename := payload.Filename
+	if filename == "" {
+		http.Error(w, "Filename required", http.StatusBadRequest)
+		return
+	}
+
+	// Create parent directories if they don't exist
+	dir := filepath.Dir(filename)
+	if dir != "." && dir != "/" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			msg := "Failed to create directory: " + err.Error()
+			if logChan != nil {
+				logChan <- msg
+			}
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	err := os.WriteFile(filename, []byte(payload.Content), 0644)
+	if err != nil {
+		msg := "Error saving file: " + err.Error()
+		if logChan != nil {
+			logChan <- msg
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	msg := "File saved successfully: " + filename
+	if logChan != nil {
+		logChan <- msg
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleRun(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading body", http.StatusBadRequest)
+		return
+	}
+
+	language := "python"
+	code := string(bodyBytes)
+
+	// Try parsing JSON payload if present
+	var reqPayload struct {
+		Language string `json:"language"`
+		Code     string `json:"code"`
+	}
+	if err := json.Unmarshal(bodyBytes, &reqPayload); err == nil && reqPayload.Code != "" {
+		code = reqPayload.Code
+		if reqPayload.Language != "" {
+			language = strings.ToLower(reqPayload.Language)
+		}
+	}
+
+	output, err := runCode(language, code)
+
+	if logChan != nil {
+		if err != nil {
+			logChan <- fmt.Sprintf("[%s Execution Error]: %v", titleCase(language), err)
+		} else {
+			logChan <- fmt.Sprintf("[%s Execution Success]", titleCase(language))
+		}
+	}
+
+	response := map[string]string{
+		"output": output,
+	}
+	if err != nil {
+		response["error"] = err.Error()
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleTerminal(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading body", http.StatusBadRequest)
+		return
+	}
+
+	command := string(body)
+	output, err := runShell(command)
+
+	response := map[string]string{
+		"output": output,
+	}
+	if err != nil {
+		response["error"] = err.Error()
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // StartServer launches the web-based Python compiler on the specified port
 func StartServer(port string, logs chan string) error {
 	logChan = logs
@@ -40,213 +259,7 @@ func StartServer(port string, logs chan string) error {
 	}
 
 	mux := http.NewServeMux()
-
-	// Serve static files from embedded FS
-	fileServer := http.FileServer(http.FS(staticAssets))
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
-
-	// Redirect root to index.html in static
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			data, err := staticAssets.ReadFile("static/index.html")
-			if err != nil {
-				http.Error(w, "Error loading page", http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "text/html")
-			w.Write(data)
-			return
-		}
-
-		// Serve other static files directly if they exist in static/
-		filePath := "static" + r.URL.Path
-		data, err := staticAssets.ReadFile(filePath)
-		if err == nil {
-			contentType := "text/plain"
-			switch {
-			case strings.HasSuffix(filePath, ".css"):
-				contentType = "text/css"
-			case strings.HasSuffix(filePath, ".js"):
-				contentType = "application/javascript"
-			case strings.HasSuffix(filePath, ".png"):
-				contentType = "image/png"
-			}
-			w.Header().Set("Content-Type", contentType)
-			w.Write(data)
-			return
-		}
-
-		http.NotFound(w, r)
-	})
-
-	// Auth Routes
-	mux.HandleFunc("/auth/login", handleLogin)
-	mux.HandleFunc("/auth/register", handleRegister)
-	mux.HandleFunc("/auth/logout", handleLogout)
-	mux.HandleFunc("/auth/forgot-password", handleForgotPassword)
-	mux.HandleFunc("/auth/verify-email", handleVerifyEmail)
-	mux.HandleFunc("/auth/google", func(w http.ResponseWriter, r *http.Request) {
-		// Mock Google OAuth redirect
-		fmt.Fprintf(w, "Google OAuth redirect would happen here.")
-	})
-
-	// Storage Routes
-	mux.HandleFunc("/drive/save", handleDriveSave)
-
-	// Logging Sync Route
-	mux.HandleFunc("/logs", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "Error reading body", http.StatusInternalServerError)
-			return
-		}
-		msg := fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), string(body))
-		fmt.Printf("\n[WEB-COMPILER LOG] %s\n", msg)
-		if logChan != nil {
-			logChan <- msg
-		}
-		w.WriteHeader(http.StatusOK)
-	})
-
-	// Handle Ctrl+C from the web terminal
-	mux.HandleFunc("/cancel", func(w http.ResponseWriter, r *http.Request) {
-		activeMu.Lock()
-		defer activeMu.Unlock()
-		if activeCmd != nil && activeCmd.Process != nil {
-			activeCmd.Process.Kill()
-		}
-		w.WriteHeader(http.StatusOK)
-	})
-
-	mux.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		var payload struct {
-			Filename string `json:"filename"`
-			Content  string `json:"content"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-
-		filename := payload.Filename
-		if filename == "" {
-			http.Error(w, "Filename required", http.StatusBadRequest)
-			return
-		}
-
-		// Create parent directories if they don't exist
-		dir := filepath.Dir(filename)
-		if dir != "." && dir != "/" {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				msg := "Failed to create directory: " + err.Error()
-				if logChan != nil {
-					logChan <- msg
-				}
-				http.Error(w, msg, http.StatusInternalServerError)
-				return
-			}
-		}
-
-		err := os.WriteFile(filename, []byte(payload.Content), 0644)
-		if err != nil {
-			msg := "Error saving file: " + err.Error()
-			if logChan != nil {
-				logChan <- msg
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		msg := "File saved successfully: " + filename
-		if logChan != nil {
-			logChan <- msg
-		}
-		w.WriteHeader(http.StatusOK)
-	})
-
-	mux.HandleFunc("/run", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "Error reading body", http.StatusBadRequest)
-			return
-		}
-
-		language := "python"
-		code := string(bodyBytes)
-
-		// Try parsing JSON payload if present
-		var reqPayload struct {
-			Language string `json:"language"`
-			Code     string `json:"code"`
-		}
-		if err := json.Unmarshal(bodyBytes, &reqPayload); err == nil && reqPayload.Code != "" {
-			code = reqPayload.Code
-			if reqPayload.Language != "" {
-				language = strings.ToLower(reqPayload.Language)
-			}
-		}
-
-		output, err := runCode(language, code)
-
-		if logChan != nil {
-			if err != nil {
-				logChan <- fmt.Sprintf("[%s Execution Error]: %v", titleCase(language), err)
-			} else {
-				logChan <- fmt.Sprintf("[%s Execution Success]", titleCase(language))
-			}
-		}
-
-		response := map[string]string{
-			"output": output,
-		}
-		if err != nil {
-			response["error"] = err.Error()
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
-
-	mux.HandleFunc("/terminal", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "Error reading body", http.StatusBadRequest)
-			return
-		}
-
-		command := string(body)
-		output, err := runShell(command)
-
-		response := map[string]string{
-			"output": output,
-		}
-		if err != nil {
-			response["error"] = err.Error()
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	})
+	setupRoutes(mux)
 
 	serverStarted = true
 	serverPort = port

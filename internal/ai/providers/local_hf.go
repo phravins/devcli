@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/phravins/devcli/internal/ai"
@@ -92,11 +93,17 @@ func (p *LocalHFProvider) Send(messages []ai.Message) (string, error) {
 
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	var prompt string
+
+	var builder strings.Builder
 	for _, m := range messages {
-		prompt += fmt.Sprintf("%s: %s\n", m.Role, m.Content)
+		builder.WriteString(m.Role)
+		builder.WriteString(": ")
+		builder.WriteString(m.Content)
+		builder.WriteString("\n")
 	}
-	prompt += "assistant:"
+	builder.WriteString("assistant:")
+
+	prompt := builder.String()
 
 	req := pythonRequest{Prompt: prompt}
 	jsonBytes, _ := json.Marshal(req)

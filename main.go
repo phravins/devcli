@@ -49,163 +49,154 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	// Add all subcommands
-	rootCmd.AddCommand(auth.AuthCmd)
-	fileops.FileCmd.Run = func(cmd *cobra.Command, args []string) {
-		tui.RunFileManager("")
-	}
-	rootCmd.AddCommand(fileops.FileCmd)
-	rootCmd.AddCommand(ai.AICmd)
-	rootCmd.AddCommand(tui.EditorCmd)
-	ai.AICmd.AddCommand(tui.ChatCmd)
-	ai.AICmd.AddCommand(aicommit.CommitCmd)
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "start [name] [stack]",
-		Short: "Initialize a new project",
-		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			name := args[0]
-			stack := "Go" // Default
-			if len(args) > 1 {
-				stack = args[1]
-			}
+var startCmd = &cobra.Command{
+	Use:   "start [name] [stack]",
+	Short: "Initialize a new project",
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		name := args[0]
+		stack := "Go" // Default
+		if len(args) > 1 {
+			stack = args[1]
+		}
 
-			mgr := project.NewManager("")
-			fmt.Printf("Creating %s project '%s'...\n", stack, name)
-			if _, _, err := mgr.CreateProject(name, "Go Fiber API", ""); err != nil {
-				fmt.Printf("Error: %v\n", err)
-			} else {
-				fmt.Printf("Project created successfully in ./%s\n", name)
-			}
-		},
-	})
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "timemachine [file]",
-		Short: "Code Time Machine - Track code evolution and find bugs",
-		Long:  `Interactive Git blame and history viewer showing line-by-line changes, bug risks, and commit timeline.`,
-		Args:  cobra.MaximumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			var filePath string
-			if len(args) > 0 {
-				filePath = args[0]
-			}
-			cwd, _ := os.Getwd()
-			if err := tui.RunTimeMachine(cwd, filePath); err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
-			}
-		},
-	})
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "install",
-		Short: "Install DevCLI globally to your system",
-		Long:  `Copies the DevCLI binary to your home directory and adds it to your system PATH.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Starting DevCLI installation...")
+		mgr := project.NewManager("")
+		fmt.Printf("Creating %s project '%s'...\n", stack, name)
+		if _, _, err := mgr.CreateProject(name, "Go Fiber API", ""); err != nil {
+			fmt.Printf("Error: %v\n", err)
+		} else {
+			fmt.Printf("Project created successfully in ./%s\n", name)
+		}
+	},
+}
 
-			exePath, err := os.Executable()
+var timemachineCmd = &cobra.Command{
+	Use:   "timemachine [file]",
+	Short: "Code Time Machine - Track code evolution and find bugs",
+	Long:  `Interactive Git blame and history viewer showing line-by-line changes, bug risks, and commit timeline.`,
+	Args:  cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var filePath string
+		if len(args) > 0 {
+			filePath = args[0]
+		}
+		cwd, _ := os.Getwd()
+		if err := tui.RunTimeMachine(cwd, filePath); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
+var installCmd = &cobra.Command{
+	Use:   "install",
+	Short: "Install DevCLI globally to your system",
+	Long:  `Copies the DevCLI binary to your home directory and adds it to your system PATH.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Starting DevCLI installation...")
+
+		exePath, err := os.Executable()
+		if err != nil {
+			fmt.Printf("Error finding executable: %v\n", err)
+			return
+		}
+
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("Error finding home directory: %v\n", err)
+			return
+		}
+
+		// Destination Directory
+		var binDir string
+		var destPath string
+		if runtime.GOOS == "windows" {
+			binDir = filepath.Join(home, ".devcli", "bin")
+			destPath = filepath.Join(binDir, "devcli.exe")
+		} else {
+			// Unix: standard is often ~/.local/bin or just ~/go/bin, but let's stick to .devcli/bin for consistency
+			// or use /usr/local/bin if root? Let's use user-local to avoid permission issues.
+			binDir = filepath.Join(home, ".devcli", "bin")
+			destPath = filepath.Join(binDir, "devcli")
+		}
+
+		if err := os.MkdirAll(binDir, 0755); err != nil {
+			fmt.Printf("Error creating bin directory: %v\n", err)
+			return
+		}
+
+		// Write to destination if not already running from destination
+		evalExe, err1 := filepath.EvalSymlinks(exePath)
+		evalDest, err2 := filepath.EvalSymlinks(destPath)
+		isSame := (err1 == nil && err2 == nil && evalExe == evalDest) || (exePath == destPath)
+
+		if !isSame {
+			data, err := os.ReadFile(exePath)
 			if err != nil {
-				fmt.Printf("Error finding executable: %v\n", err)
+				fmt.Printf("Error reading current binary: %v\n", err)
 				return
 			}
+			if err := os.WriteFile(destPath, data, 0755); err != nil {
+				fmt.Printf("Error copying binary: %v\n", err)
+				return
+			}
+		}
 
-			home, err := os.UserHomeDir()
+		fmt.Printf("Binary deployed to: %s\n", destPath)
+
+		// Update PATH
+		if runtime.GOOS == "windows" {
+			script := fmt.Sprintf(`
+			$binPath = "%s"
+			$currentPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+			if ($currentPath -notlike "*$binPath*") {
+				[System.Environment]::SetEnvironmentVariable("Path", $currentPath + ";" + $binPath, "User")
+				Write-Output "ADDED"
+			} else {
+				Write-Output "EXISTS"
+			}
+		`, binDir)
+
+			out, err := exec.Command("powershell", "-NonInteractive", "-NoProfile", "-Command", script).CombinedOutput()
 			if err != nil {
-				fmt.Printf("Error finding home directory: %v\n", err)
-				return
-			}
-
-			// Destination Directory
-			var binDir string
-			var destPath string
-			if runtime.GOOS == "windows" {
-				binDir = filepath.Join(home, ".devcli", "bin")
-				destPath = filepath.Join(binDir, "devcli.exe")
+				fmt.Printf("Warning: Automated PATH update failed: %v\n", err)
+				fmt.Printf("Please add this folder to your PATH manually: %s\n", binDir)
 			} else {
-				// Unix: standard is often ~/.local/bin or just ~/go/bin, but let's stick to .devcli/bin for consistency
-				// or use /usr/local/bin if root? Let's use user-local to avoid permission issues.
-				binDir = filepath.Join(home, ".devcli", "bin")
-				destPath = filepath.Join(binDir, "devcli")
-			}
-
-			if err := os.MkdirAll(binDir, 0755); err != nil {
-				fmt.Printf("Error creating bin directory: %v\n", err)
-				return
-			}
-
-			// Write to destination if not already running from destination
-			evalExe, err1 := filepath.EvalSymlinks(exePath)
-			evalDest, err2 := filepath.EvalSymlinks(destPath)
-			isSame := (err1 == nil && err2 == nil && evalExe == evalDest) || (exePath == destPath)
-
-			if !isSame {
-				data, err := os.ReadFile(exePath)
-				if err != nil {
-					fmt.Printf("Error reading current binary: %v\n", err)
-					return
-				}
-				if err := os.WriteFile(destPath, data, 0755); err != nil {
-					fmt.Printf("Error copying binary: %v\n", err)
-					return
-				}
-			}
-
-			fmt.Printf("Binary deployed to: %s\n", destPath)
-
-			// Update PATH
-			if runtime.GOOS == "windows" {
-				script := fmt.Sprintf(`
-				$binPath = "%s"
-				$currentPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-				if ($currentPath -notlike "*$binPath*") {
-					[System.Environment]::SetEnvironmentVariable("Path", $currentPath + ";" + $binPath, "User")
-					Write-Output "ADDED"
+				res := strings.TrimSpace(string(out))
+				if res == "ADDED" {
+					fmt.Println("Successfully added DevCLI to your User PATH!")
+					fmt.Println("Installation complete. PLEASE RESTART YOUR TERMINAL to use 'devcli' from anywhere.")
 				} else {
-					Write-Output "EXISTS"
+					fmt.Println("DevCLI already exists in your PATH.")
+					fmt.Println("Installation complete.")
 				}
-			`, binDir)
+			}
+		} else {
+			// Linux Desktop Integration (Icons & Launcher)
+			if runtime.GOOS == "linux" {
+				fmt.Println("Configuring Linux Desktop integration...")
 
-				out, err := exec.Command("powershell", "-NonInteractive", "-NoProfile", "-Command", script).CombinedOutput()
-				if err != nil {
-					fmt.Printf("Warning: Automated PATH update failed: %v\n", err)
-					fmt.Printf("Please add this folder to your PATH manually: %s\n", binDir)
-				} else {
-					res := strings.TrimSpace(string(out))
-					if res == "ADDED" {
-						fmt.Println("Successfully added DevCLI to your User PATH!")
-						fmt.Println("Installation complete. PLEASE RESTART YOUR TERMINAL to use 'devcli' from anywhere.")
-					} else {
-						fmt.Println("DevCLI already exists in your PATH.")
-						fmt.Println("Installation complete.")
+				// 1. Install Icon
+				logoBytes, err := assets.GetLogo()
+				if err == nil && len(logoBytes) > 0 {
+					iconDirs := []string{
+						filepath.Join(home, ".local", "share", "icons", "hicolor", "512x512", "apps"),
+						filepath.Join(home, ".local", "share", "pixmaps"),
 					}
+					for _, iconDir := range iconDirs {
+						if err := os.MkdirAll(iconDir, 0755); err == nil {
+							iconPath := filepath.Join(iconDir, "devcli.png")
+							os.WriteFile(iconPath, logoBytes, 0644)
+						}
+					}
+					fmt.Println("Installed DevCLI icon to ~/.local/share/icons/")
 				}
-			} else {
-				// Linux Desktop Integration (Icons & Launcher)
-				if runtime.GOOS == "linux" {
-					fmt.Println("Configuring Linux Desktop integration...")
 
-					// 1. Install Icon
-					logoBytes, err := assets.GetLogo()
-					if err == nil && len(logoBytes) > 0 {
-						iconDirs := []string{
-							filepath.Join(home, ".local", "share", "icons", "hicolor", "512x512", "apps"),
-							filepath.Join(home, ".local", "share", "pixmaps"),
-						}
-						for _, iconDir := range iconDirs {
-							if err := os.MkdirAll(iconDir, 0755); err == nil {
-								iconPath := filepath.Join(iconDir, "devcli.png")
-								os.WriteFile(iconPath, logoBytes, 0644)
-							}
-						}
-						fmt.Println("Installed DevCLI icon to ~/.local/share/icons/")
-					}
-
-					// 2. Create Desktop Entry (.desktop file)
-					appsDir := filepath.Join(home, ".local", "share", "applications")
-					if err := os.MkdirAll(appsDir, 0755); err == nil {
-						desktopPath := filepath.Join(appsDir, "devcli.desktop")
-						desktopContent := fmt.Sprintf(`[Desktop Entry]
+				// 2. Create Desktop Entry (.desktop file)
+				appsDir := filepath.Join(home, ".local", "share", "applications")
+				if err := os.MkdirAll(appsDir, 0755); err == nil {
+					desktopPath := filepath.Join(appsDir, "devcli.desktop")
+					desktopContent := fmt.Sprintf(`[Desktop Entry]
 Version=1.0
 Type=Application
 Name=DevCLI
@@ -219,121 +210,139 @@ Keywords=developer;cli;terminal;ide;ai;workspace;
 StartupNotify=true
 `, destPath)
 
-						if err := os.WriteFile(desktopPath, []byte(desktopContent), 0644); err == nil {
-							fmt.Println("Created Linux Desktop application entry: " + desktopPath)
+					if err := os.WriteFile(desktopPath, []byte(desktopContent), 0644); err == nil {
+						fmt.Println("Created Linux Desktop application entry: " + desktopPath)
+					}
+				}
+
+				// 3. Refresh desktop database & icon cache if tools exist
+				exec.Command("update-desktop-database", filepath.Join(home, ".local", "share", "applications")).Run()
+				exec.Command("gtk-update-icon-cache", filepath.Join(home, ".local", "share", "icons", "hicolor")).Run()
+			}
+
+			// Check current Shell
+			shell := os.Getenv("SHELL")
+			rcFile := ""
+
+			// Detect Shell Configuration File
+			if strings.Contains(shell, "zsh") {
+				rcFile = filepath.Join(home, ".zshrc")
+			} else if strings.Contains(shell, "bash") {
+				rcFile = filepath.Join(home, ".bashrc")
+			} else if strings.Contains(shell, "fish") {
+				// Fish shell support
+				configDir, _ := os.UserConfigDir() // usually ~/.config
+				rcFile = filepath.Join(configDir, "fish", "config.fish")
+			}
+
+			// Check if already in PATH (rough check)
+			pathEnv := os.Getenv("PATH")
+			if !strings.Contains(pathEnv, binDir) {
+				if rcFile != "" {
+					fmt.Printf("Detecting shell: %s. Attempting to update %s...\n", shell, rcFile)
+
+					// Prepare export line based on shell
+					var exportLine string
+					if strings.Contains(shell, "fish") {
+						exportLine = fmt.Sprintf("\n# DevCLI\nset -gx PATH $PATH %s\n", binDir)
+					} else {
+						exportLine = fmt.Sprintf("\n# DevCLI\nexport PATH=\"$PATH:%s\"\n", binDir)
+					}
+
+					// Check if file already has it
+					content, err := os.ReadFile(rcFile)
+					// If file doesn't exist, Create it
+					if os.IsNotExist(err) {
+						// For fish, ensure directory exists
+						if strings.Contains(shell, "fish") {
+							os.MkdirAll(filepath.Dir(rcFile), 0755)
 						}
 					}
 
-					// 3. Refresh desktop database & icon cache if tools exist
-					exec.Command("update-desktop-database", filepath.Join(home, ".local", "share", "applications")).Run()
-					exec.Command("gtk-update-icon-cache", filepath.Join(home, ".local", "share", "icons", "hicolor")).Run()
-				}
-
-				// Check current Shell
-				shell := os.Getenv("SHELL")
-				rcFile := ""
-
-				// Detect Shell Configuration File
-				if strings.Contains(shell, "zsh") {
-					rcFile = filepath.Join(home, ".zshrc")
-				} else if strings.Contains(shell, "bash") {
-					rcFile = filepath.Join(home, ".bashrc")
-				} else if strings.Contains(shell, "fish") {
-					// Fish shell support
-					configDir, _ := os.UserConfigDir() // usually ~/.config
-					rcFile = filepath.Join(configDir, "fish", "config.fish")
-				}
-
-				// Check if already in PATH (rough check)
-				pathEnv := os.Getenv("PATH")
-				if !strings.Contains(pathEnv, binDir) {
-					if rcFile != "" {
-						fmt.Printf("Detecting shell: %s. Attempting to update %s...\n", shell, rcFile)
-
-						// Prepare export line based on shell
-						var exportLine string
-						if strings.Contains(shell, "fish") {
-							exportLine = fmt.Sprintf("\n# DevCLI\nset -gx PATH $PATH %s\n", binDir)
-						} else {
-							exportLine = fmt.Sprintf("\n# DevCLI\nexport PATH=\"$PATH:%s\"\n", binDir)
-						}
-
-						// Check if file already has it
-						content, err := os.ReadFile(rcFile)
-						// If file doesn't exist, Create it
-						if os.IsNotExist(err) {
-							// For fish, ensure directory exists
-							if strings.Contains(shell, "fish") {
-								os.MkdirAll(filepath.Dir(rcFile), 0755)
-							}
-						}
-
-						if err == nil && strings.Contains(string(content), binDir) {
-							fmt.Println("PATH already seems to be configured in RC file.")
-						} else {
-							f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-							if err != nil {
-								fmt.Printf("Error opening rc file: %v\n", err)
-							} else {
-								defer f.Close()
-								if _, err = f.WriteString(exportLine); err != nil {
-									fmt.Printf("Error writing to rc file: %v\n", err)
-								} else {
-									fmt.Println("Successfully added install path to shell configuration.")
-									fmt.Printf("Run 'source %s' or restart terminal to apply changes.\n", rcFile)
-								}
-							}
-						}
+					if err == nil && strings.Contains(string(content), binDir) {
+						fmt.Println("PATH already seems to be configured in RC file.")
 					} else {
-						fmt.Printf("Could not detect shell configuration file (.bashrc/.zshrc/config.fish).\n")
-						fmt.Printf("Please manually add the following to your PATH:\n%s\n", binDir)
+						f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+						if err != nil {
+							fmt.Printf("Error opening rc file: %v\n", err)
+						} else {
+							defer f.Close()
+							if _, err = f.WriteString(exportLine); err != nil {
+								fmt.Printf("Error writing to rc file: %v\n", err)
+							} else {
+								fmt.Println("Successfully added install path to shell configuration.")
+								fmt.Printf("Run 'source %s' or restart terminal to apply changes.\n", rcFile)
+							}
+						}
 					}
 				} else {
-					fmt.Println("DevCLI is already in your PATH.")
+					fmt.Printf("Could not detect shell configuration file (.bashrc/.zshrc/config.fish).\n")
+					fmt.Printf("Please manually add the following to your PATH:\n%s\n", binDir)
 				}
+			} else {
+				fmt.Println("DevCLI is already in your PATH.")
 			}
-		},
-	})
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "update",
-		Short: "Update DevCLI to the latest version",
-		Long:  `Checks for the latest version of DevCLI on GitHub and updates the binary if a new version is available.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("🔍 Checking for updates...")
-
-			info, err := updater.CheckForUpdates()
-			if err != nil {
-				fmt.Printf("❌ Error checking for updates: %v\n", err)
-				return
-			}
-
-			fmt.Printf("📦 Current version: %s\n", info.CurrentVersion)
-			fmt.Printf("📦 Latest version:  %s\n", info.LatestVersion)
-
-			if !info.IsUpdateAvailable {
-				fmt.Println("✅ You are already running the latest version!")
-				return
-			}
-
-			fmt.Printf("\n🎉 New version available: %s\n", info.LatestVersion)
-			if info.ReleaseNotes != "" {
-				fmt.Printf("\n📝 Release Notes:\n%s\n", info.ReleaseNotes)
-			}
-
-			fmt.Println("\n⬇️  Downloading and installing update...")
-			if err := updater.PerformUpdate(); err != nil {
-				fmt.Printf("❌ Update failed: %v\n", err)
-				fmt.Println("\n💡 You can try updating manually by downloading from:")
-				fmt.Printf("   %s\n", info.ReleaseURL)
-				return
-			}
-
-			fmt.Println("✅ Update successful!")
-			fmt.Println("🔄 Please restart DevCLI to use the new version.")
-		},
-	})
-
+		}
+	},
 }
+
+var updateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update DevCLI to the latest version",
+	Long:  `Checks for the latest version of DevCLI on GitHub and updates the binary if a new version is available.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("🔍 Checking for updates...")
+
+		info, err := updater.CheckForUpdates()
+		if err != nil {
+			fmt.Printf("❌ Error checking for updates: %v\n", err)
+			return
+		}
+
+		fmt.Printf("📦 Current version: %s\n", info.CurrentVersion)
+		fmt.Printf("📦 Latest version:  %s\n", info.LatestVersion)
+
+		if !info.IsUpdateAvailable {
+			fmt.Println("✅ You are already running the latest version!")
+			return
+		}
+
+		fmt.Printf("\n🎉 New version available: %s\n", info.LatestVersion)
+		if info.ReleaseNotes != "" {
+			fmt.Printf("\n📝 Release Notes:\n%s\n", info.ReleaseNotes)
+		}
+
+		fmt.Println("\n⬇️  Downloading and installing update...")
+		if err := updater.PerformUpdate(); err != nil {
+			fmt.Printf("❌ Update failed: %v\n", err)
+			fmt.Println("\n💡 You can try updating manually by downloading from:")
+			fmt.Printf("   %s\n", info.ReleaseURL)
+			return
+		}
+
+		fmt.Println("✅ Update successful!")
+		fmt.Println("🔄 Please restart DevCLI to use the new version.")
+	},
+}
+
+func init() {
+	// Add all subcommands
+	rootCmd.AddCommand(auth.AuthCmd)
+	fileops.FileCmd.Run = func(cmd *cobra.Command, args []string) {
+		tui.RunFileManager("")
+	}
+	rootCmd.AddCommand(fileops.FileCmd)
+	rootCmd.AddCommand(ai.AICmd)
+	rootCmd.AddCommand(tui.EditorCmd)
+	ai.AICmd.AddCommand(tui.ChatCmd)
+	ai.AICmd.AddCommand(aicommit.CommitCmd)
+
+	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(timemachineCmd)
+	rootCmd.AddCommand(installCmd)
+	rootCmd.AddCommand(updateCmd)
+}
+
 func main() {
 	// If args were passed (CLI mode), just run once
 	if len(os.Args) > 1 {

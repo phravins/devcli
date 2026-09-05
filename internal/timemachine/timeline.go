@@ -94,21 +94,13 @@ func (t *Timeline) updateBlameData() error {
 
 	// Get blame at this specific commit
 	// Note: Git blame at a specific commit shows state AT that commit
-	blame, err := getBlameAtCommit(t.RepoPath, t.FilePath, currentHash)
+	blame, err := GetBlameAtCommit(t.RepoPath, t.FilePath, currentHash)
 	if err != nil {
 		return fmt.Errorf("failed to get blame at commit %s: %w", currentHash, err)
 	}
 
 	t.BlameData = blame
 	return nil
-}
-
-// getBlameAtCommit gets blame data for a file at a specific commit
-func getBlameAtCommit(repoPath, filePath, commitHash string) ([]BlameLine, error) {
-	// Use git blame <commit> -- <file> to get blame at that point in time
-	// This is more complex - for MVP, we'll use current blame
-	// TODO: Implement historical blame
-	return GetBlame(repoPath, filePath)
 }
 
 // GetCurrentCommit returns the commit at the current timeline position

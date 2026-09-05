@@ -127,8 +127,25 @@ func Detect(path string) ProjectInfo {
 		detectedType = TypeAngular
 	}
 
+	// Cache package.json content to avoid multiple reads
+	var pkgJsonContent []byte
+	var pkgJsonRead bool
+	var pkgJsonExists bool
+
+	getPkgJson := func() ([]byte, bool) {
+		if !pkgJsonRead {
+			pkgJsonRead = true
+			pkgPath := filepath.Join(path, "package.json")
+			if exists(pkgPath) {
+				pkgJsonExists = true
+				pkgJsonContent, _ = os.ReadFile(pkgPath)
+			}
+		}
+		return pkgJsonContent, pkgJsonExists
+	}
+
 	// Check for Vue.js (vue.config.js or vite.config with vue)
-	if isVue(path) && len(servers) == 0 {
+	if isVue(path, getPkgJson) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
 			Name: "Vue Dev Server",
 			Type: TypeVue,
@@ -166,7 +183,7 @@ func Detect(path string) ProjectInfo {
 	}
 
 	// Check for React (package.json with react)
-	if isReact(path) && len(servers) == 0 {
+	if isReact(getPkgJson) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
 			Name: "React Dev Server",
 			Type: TypeReact,
@@ -178,7 +195,7 @@ func Detect(path string) ProjectInfo {
 	}
 
 	// Check for Express.js (package.json with express)
-	if isExpress(path) && len(servers) == 0 {
+	if isExpress(getPkgJson) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
 			Name: "Express Server",
 			Type: TypeExpress,
@@ -190,7 +207,8 @@ func Detect(path string) ProjectInfo {
 	}
 
 	// Check for generic Node.js (package.json)
-	if exists(filepath.Join(path, "package.json")) && len(servers) == 0 {
+	_, pkgExists := getPkgJson()
+	if pkgExists && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
 			Name: "Node.js Server",
 			Type: TypeNode,
@@ -310,35 +328,25 @@ func isFastAPI(path string) bool {
 	return false
 }
 
-func isReact(path string) bool {
-	pkgPath := filepath.Join(path, "package.json")
-	if exists(pkgPath) {
-		content, err := os.ReadFile(pkgPath)
-		if err == nil {
-			return strings.Contains(string(content), "\"react\"")
-		}
+func isReact(getPkgJson func() ([]byte, bool)) bool {
+	if content, exists := getPkgJson(); exists {
+		return strings.Contains(string(content), "\"react\"")
 	}
 	return false
 }
 
-func isVue(path string) bool {
-	pkgPath := filepath.Join(path, "package.json")
-	if exists(pkgPath) {
-		content, err := os.ReadFile(pkgPath)
-		if err == nil {
-			return strings.Contains(string(content), "\"vue\"")
+func isVue(path string, getPkgJson func() ([]byte, bool)) bool {
+	if content, exists := getPkgJson(); exists {
+		if strings.Contains(string(content), "\"vue\"") {
+			return true
 		}
 	}
 	return exists(filepath.Join(path, "vue.config.js"))
 }
 
-func isExpress(path string) bool {
-	pkgPath := filepath.Join(path, "package.json")
-	if exists(pkgPath) {
-		content, err := os.ReadFile(pkgPath)
-		if err == nil {
-			return strings.Contains(string(content), "\"express\"")
-		}
+func isExpress(getPkgJson func() ([]byte, bool)) bool {
+	if content, exists := getPkgJson(); exists {
+		return strings.Contains(string(content), "\"express\"")
 	}
 	return false
 }

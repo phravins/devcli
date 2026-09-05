@@ -5,7 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type ProjectStatus int
@@ -56,9 +59,12 @@ type ProjectInfo struct {
 func DetectTechStack(projectPath string) []string {
 	var stack []string
 	seen := make(map[string]bool)
+	var mu sync.Mutex
 
 	// Helper to add unique items
 	add := func(tech string) {
+		mu.Lock()
+		defer mu.Unlock()
 		if !seen[tech] {
 			stack = append(stack, tech)
 			seen[tech] = true
@@ -90,47 +96,57 @@ func DetectTechStack(projectPath string) []string {
 		}
 	}
 
+	var eg errgroup.Group
+
 	// Check package.json for frameworks
-	pkgPath := filepath.Join(projectPath, "package.json")
-	if data, err := os.ReadFile(pkgPath); err == nil {
-		content := string(data)
-		frameworks := map[string]string{
-			"react":      "React",
-			"vue":        "Vue",
-			"angular":    "Angular",
-			"next":       "Next.js",
-			"express":    "Express",
-			"fastify":    "Fastify",
-			"typescript": "TypeScript",
-			"vite":       "Vite",
-		}
-		for pkg, name := range frameworks {
-			if strings.Contains(content, `"`+pkg+`"`) {
-				add(name)
+	eg.Go(func() error {
+		pkgPath := filepath.Join(projectPath, "package.json")
+		if data, err := os.ReadFile(pkgPath); err == nil {
+			content := string(data)
+			frameworks := map[string]string{
+				"react":      "React",
+				"vue":        "Vue",
+				"angular":    "Angular",
+				"next":       "Next.js",
+				"express":    "Express",
+				"fastify":    "Fastify",
+				"typescript": "TypeScript",
+				"vite":       "Vite",
+			}
+			for pkg, name := range frameworks {
+				if strings.Contains(content, `"`+pkg+`"`) {
+					add(name)
+				}
 			}
 		}
-	}
+		return nil
+	})
 
 	// Check requirements.txt for frameworks
-	reqPath := filepath.Join(projectPath, "requirements.txt")
-	if data, err := os.ReadFile(reqPath); err == nil {
-		content := strings.ToLower(string(data))
-		frameworks := map[string]string{
-			"django":     "Django",
-			"flask":      "Flask",
-			"fastapi":    "FastAPI",
-			"pytest":     "Pytest",
-			"numpy":      "NumPy",
-			"pandas":     "Pandas",
-			"pytorch":    "PyTorch",
-			"tensorflow": "TensorFlow",
-		}
-		for pkg, name := range frameworks {
-			if strings.Contains(content, pkg) {
-				add(name)
+	eg.Go(func() error {
+		reqPath := filepath.Join(projectPath, "requirements.txt")
+		if data, err := os.ReadFile(reqPath); err == nil {
+			content := strings.ToLower(string(data))
+			frameworks := map[string]string{
+				"django":     "Django",
+				"flask":      "Flask",
+				"fastapi":    "FastAPI",
+				"pytest":     "Pytest",
+				"numpy":      "NumPy",
+				"pandas":     "Pandas",
+				"pytorch":    "PyTorch",
+				"tensorflow": "TensorFlow",
+			}
+			for pkg, name := range frameworks {
+				if strings.Contains(content, pkg) {
+					add(name)
+				}
 			}
 		}
-	}
+		return nil
+	})
+
+	eg.Wait()
 
 	// Check for Kotlin
 	if hasExtension(projectPath, ".kt") {
