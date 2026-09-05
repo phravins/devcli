@@ -1044,7 +1044,7 @@ func (m *FileManagerModel) filterFiles(query string) {
 		}
 	}
 
-	var results []fs.DirEntry
+	results := make([]fs.DirEntry, 0, len(matches))
 	for _, matchPath := range matches {
 		results = append(results, dummyEntry{path: matchPath})
 	}
