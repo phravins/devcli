@@ -35,6 +35,20 @@ func GetBlame(repoPath, filePath string) ([]BlameLine, error) {
 	return parseBlameOutput(string(output))
 }
 
+// GetBlameAtCommit retrieves the Git blame information for a file at a specific commit
+func GetBlameAtCommit(repoPath, filePath, commitHash string) ([]BlameLine, error) {
+	// Run git blame with porcelain format for a specific commit
+	cmd := exec.Command("git", "blame", "--line-porcelain", commitHash, "--", filePath)
+	cmd.Dir = repoPath
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git blame failed at commit %s: %w", commitHash, err)
+	}
+
+	return parseBlameOutput(string(output))
+}
+
 // parseBlameOutput parses the porcelain format output from git blame
 func parseBlameOutput(output string) ([]BlameLine, error) {
 	var lines []BlameLine
