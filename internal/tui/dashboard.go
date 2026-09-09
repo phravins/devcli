@@ -35,24 +35,21 @@ type DashboardModel struct {
 
 func NewDashboard() DashboardModel {
 	items := []list.Item{
-		item{title: "📂 Project Tools", desc: "Create projects, sync, clone, scan"},
-		item{title: "🤖 AI Chat", desc: "Chat with AI models"},
-		item{title: "✏️ Editor", desc: "Built-in code editor"},
-		item{title: "🗂️ File Manager", desc: "Explore, Search, and Manage Files (RW/Move)"},
-		item{title: "🐳 Docker Dashboard", desc: "Manage Containers, Inspect Logs, Start/Stop"},
-		item{title: "🌐 API & HTTP Playground", desc: "Test REST API Endpoints with HTTP Client"},
-		item{title: "⚙️ Settings / Configuration", desc: "Configure AI backends and Keys"},
-		item{title: "💻 DevCLI Commands", desc: "List all available project commands"},
-		item{title: "🔄 Auto-Update", desc: "Update Languages, AI Keys, and DevCLI"},
-		item{title: "📚 Docs", desc: "Read DevCLI Documentation"},
-		item{title: "🚪 Exit", desc: "Quit DevCLI"},
+		item{title: "Project Tools", desc: "Create projects, sync, clone, scan"},
+		item{title: "AI Chat", desc: "Chat with AI models"},
+		item{title: "Editor", desc: "Built-in code editor"},
+		item{title: "File Manager", desc: "Explore, Search, and Manage Files (RW/Move)"},
+		item{title: "Settings / Configuration", desc: "Configure AI backends and Keys"},
+		item{title: "DevCLI Commands", desc: "List all available project commands"},
+		item{title: "Auto-Update", desc: "Update Languages, AI Keys, and DevCLI"},
+		item{title: "..", desc: ""},
 	}
 
 	m := DashboardModel{
 		list:     list.New(items, list.NewDefaultDelegate(), 0, 0),
 		settings: NewSettingsModel(),
 	}
-	m.list.SetShowTitle(false)
+	m.list.SetShowTitle(true)
 
 	// Initialize viewport
 	m.commandView = viewport.New(0, 0)
@@ -98,13 +95,13 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			i, ok := m.list.SelectedItem().(item)
 			if ok {
-				if i.title == "💻 DevCLI Commands" {
+				if strings.Contains(i.title, "DevCLI Commands") {
 					m.showCommands = true
 					m.commandView.SetContent(generateCommandsHelp())
 					m.commandView.GotoTop()
 					return m, nil
 				}
-				if i.title == "⚙️ Settings / Configuration" {
+				if strings.Contains(i.title, "Settings / Configuration") {
 					m.showSettings = true
 					// Re-init settings to read fresh config
 					m.settings = NewSettingsModel()
@@ -115,41 +112,42 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					return m, m.settings.inputs[0].Focus()
 				}
-				if i.title == "🗂️ File Manager" {
+				if strings.Contains(i.title, "File Manager") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateFileManager} }
 				}
-				if i.title == "📂 Project Tools" {
+				if strings.Contains(i.title, "Project Tools") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateProject} }
 				}
-				if i.title == "🤖 AI Chat" {
+				if strings.Contains(i.title, "AI Chat") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateChat} }
 				}
-				if i.title == "✏️ Editor" {
+				if strings.Contains(i.title, "Editor") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateEditor} }
 				}
-				if i.title == "🔄 Auto-Update" {
+				if strings.Contains(i.title, "Auto-Update") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateAutoUpdate} }
 				}
-				if i.title == "🐳 Docker Dashboard" {
+				if strings.Contains(i.title, "Docker Dashboard") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateDocker} }
 				}
-				if i.title == "🌐 API & HTTP Playground" {
+				if strings.Contains(i.title, "API & HTTP Playground") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateAPIClient} }
 				}
-				if i.title == "📚 Docs" {
+				if strings.Contains(i.title, "Docs") {
 					m.choice = i.title
 					return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateDocs} }
 				}
 
 				m.choice = i.title
-				return m, tea.Quit // Exit for "Exit" option or unknown
+				m.quitting = true
+				return m, tea.Quit // Exit for ".." option or unknown
 			}
 		}
 	case tea.MouseMsg:
