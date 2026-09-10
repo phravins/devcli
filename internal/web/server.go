@@ -137,9 +137,10 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filename := payload.Filename
-	if filename == "" {
-		http.Error(w, "Filename required", http.StatusBadRequest)
+	// Security check: prevent path traversal attacks (e.g. "../" or absolute paths)
+	filename := filepath.Clean(payload.Filename)
+	if payload.Filename == "" || !filepath.IsLocal(filename) {
+		http.Error(w, "Invalid filename or path traversal detected", http.StatusBadRequest)
 		return
 	}
 
