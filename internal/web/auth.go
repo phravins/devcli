@@ -224,8 +224,15 @@ func handleDriveSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Security check: prevent path traversal attacks (e.g. "../" or absolute paths)
+	filename := filepath.Clean(req.Filename)
+	if req.Filename == "" || !filepath.IsLocal(filename) {
+		http.Error(w, "Invalid filename or path traversal detected", http.StatusBadRequest)
+		return
+	}
+
 	// Mock Drive Integration
-	msg := fmt.Sprintf("Uploading file '%s' (%d bytes) to Google Drive...", req.Filename, len(req.Content))
+	msg := fmt.Sprintf("Uploading file '%s' (%d bytes) to Google Drive...", filename, len(req.Content))
 	fmt.Printf("\n[MOCK DRIVE] %s\n", msg)
 	
 	if logChan != nil {
