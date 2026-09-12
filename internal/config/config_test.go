@@ -30,12 +30,19 @@ func TestLoadConfig_Success(t *testing.T) {
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
 
-	// Create a dummy config file
+	// Create a dummy config file testing all fields and string cleaning
 	configContent := []byte(`
 ai_backend: "openai"
 ai_model: "gpt-4"
+ai_api_key: "sk-test123"
+ai_base_url: "https://api.openai.com/v1"
 editor_theme: "dark"
-user_name: "TestUser"
+user_name: "TestUser]11;"
+hf_access_token: "hf_test_token"
+gemini_api_key: "gemini_secret_key"
+compilers:
+  gcc: "/usr/bin/gcc"
+  python: "/usr/bin/python3"
 `)
 	err := os.WriteFile(filepath.Join(tmpHome, ".devcli.yaml"), configContent, 0644)
 	if err != nil {
@@ -52,11 +59,29 @@ user_name: "TestUser"
 	if cfg.AIBackend != "openai" {
 		t.Errorf("expected AIBackend 'openai', got '%s'", cfg.AIBackend)
 	}
+	if cfg.AIModel != "gpt-4" {
+		t.Errorf("expected AIModel 'gpt-4', got '%s'", cfg.AIModel)
+	}
+	if cfg.AIAPIKey != "sk-test123" {
+		t.Errorf("expected AIAPIKey 'sk-test123', got '%s'", cfg.AIAPIKey)
+	}
+	if cfg.AIBaseURL != "https://api.openai.com/v1" {
+		t.Errorf("expected AIBaseURL 'https://api.openai.com/v1', got '%s'", cfg.AIBaseURL)
+	}
 	if cfg.EditorTheme != "dark" {
 		t.Errorf("expected EditorTheme 'dark', got '%s'", cfg.EditorTheme)
 	}
 	if cfg.UserName != "TestUser" {
-		t.Errorf("expected UserName 'TestUser', got '%s'", cfg.UserName)
+		t.Errorf("expected UserName 'TestUser' (cleaned), got '%s'", cfg.UserName)
+	}
+	if cfg.HFAccessToken != "hf_test_token" {
+		t.Errorf("expected HFAccessToken 'hf_test_token', got '%s'", cfg.HFAccessToken)
+	}
+	if cfg.GeminiAPIKey != "gemini_secret_key" {
+		t.Errorf("expected GeminiAPIKey 'gemini_secret_key', got '%s'", cfg.GeminiAPIKey)
+	}
+	if cfg.Compilers["gcc"] != "/usr/bin/gcc" || cfg.Compilers["python"] != "/usr/bin/python3" {
+		t.Errorf("expected compilers gcc and python, got map: %v", cfg.Compilers)
 	}
 }
 
