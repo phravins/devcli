@@ -1,6 +1,8 @@
 package history_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -75,4 +77,88 @@ func TestGetOldEntries(t *testing.T) {
 	if len(oldEntries) != 0 {
 		t.Errorf("Expected 0 old entries, got %d", len(oldEntries))
 	}
+}
+
+func TestLoad(t *testing.T) {
+	t.Run("file does not exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir)
+
+		entries, err := history.Load()
+		if err != nil {
+			t.Fatalf("Expected no error when file does not exist, got: %v", err)
+		}
+		if len(entries) != 0 {
+			t.Errorf("Expected empty entries slice, got %d entries", len(entries))
+		}
+	})
+
+	t.Run("valid history file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir)
+
+		expected := []history.Entry{
+			{Name: "Project A", Path: "/path/a"},
+			{Name: "Project B", Path: "/path/b"},
+		}
+		if err := history.Save(expected); err != nil {
+			t.Fatalf("Failed to save initial history: %v", err)
+		}
+
+		entries, err := history.Load()
+		if err != nil {
+			t.Fatalf("Expected no error loading valid file, got: %v", err)
+		}
+		if len(entries) != len(expected) {
+			t.Fatalf("Expected %d entries, got %d", len(expected), len(entries))
+		}
+		if entries[0].Name != expected[0].Name || entries[1].Name != expected[1].Name {
+			t.Errorf("Loaded entries do not match expected: %v", entries)
+		}
+	})
+
+	t.Run("invalid json content", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir)
+
+		// Create .devcli dir and corrupt history.json
+		devcliDir := filepath.Join(tmpDir, ".devcli")
+		if err := os.MkdirAll(devcliDir, 0755); err != nil {
+			t.Fatalf("Failed to create dir: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(devcliDir, "history.json"), []byte("{corrupt json"), 0644); err != nil {
+			t.Fatalf("Failed to write corrupt json: %v", err)
+		}
+
+		entries, err := history.Load()
+		if err != nil {
+			t.Fatalf("Expected no error when unmarshaling fails, got: %v", err)
+		}
+		if len(entries) != 0 {
+			t.Errorf("Expected empty entries slice on corrupt JSON, got %d entries", len(entries))
+		}
+	})
+
+	t.Run("read file error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir)
+
+		// Create history.json as a directory so os.ReadFile fails with read error (not IsNotExist)
+		devcliDir := filepath.Join(tmpDir, ".devcli")
+		if err := os.MkdirAll(filepath.Join(devcliDir, "history.json"), 0755); err != nil {
+			t.Fatalf("Failed to create directory as history.json: %v", err)
+		}
+
+		entries, err := history.Load()
+		if err == nil {
+			t.Fatalf("Expected error when history.json is a directory, got nil")
+		}
+		if entries != nil {
+			t.Errorf("Expected nil entries slice on read error, got %v", entries)
+		}
+	})
 }
