@@ -102,7 +102,7 @@ func performSearchCmd(paths []string, query string) tea.Cmd {
 				if len(matches) >= maxResults {
 					break
 				}
-				if strings.Contains(strings.ToLower(path), lowerQuery) {
+				if containsIgnoreCase(path, lowerQuery) {
 					matches = append(matches, path)
 				}
 			}
@@ -1018,7 +1018,8 @@ func (m *FileManagerModel) filterFiles(query string) {
 		m.reloadAllFiles()
 	}
 
-	const fastSearchThreshold = 20000
+	const maxResults = 1000
+	const fastSearchThreshold = 5000
 
 	var matches []string
 
@@ -1026,7 +1027,10 @@ func (m *FileManagerModel) filterFiles(query string) {
 		// FAST PATH: Simple Case-Insensitive Substring Match
 		lowerQuery := strings.ToLower(query)
 		for _, path := range m.allFilePaths {
-			if strings.Contains(strings.ToLower(path), lowerQuery) {
+			if len(matches) >= maxResults {
+				break
+			}
+			if containsIgnoreCase(path, lowerQuery) {
 				matches = append(matches, path)
 			}
 		}
@@ -1034,6 +1038,9 @@ func (m *FileManagerModel) filterFiles(query string) {
 		// SLOW PATH: Fuzzy Match
 		fuzzyMatches := fuzzy.Find(query, m.allFilePaths)
 		for _, m := range fuzzyMatches {
+			if len(matches) >= maxResults {
+				break
+			}
 			matches = append(matches, m.Str)
 		}
 	}
@@ -1044,6 +1051,42 @@ func (m *FileManagerModel) filterFiles(query string) {
 	}
 	m.filtered = results
 	m.cursor = 0
+}
+
+func containsIgnoreCase(s, lowerSubstr string) bool {
+	if len(lowerSubstr) == 0 {
+		return true
+	}
+	if len(s) < len(lowerSubstr) {
+		return false
+	}
+	isASCII := true
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 {
+			isASCII = false
+			break
+		}
+	}
+	if isASCII {
+		for i := 0; i <= len(s)-len(lowerSubstr); i++ {
+			match := true
+			for j := 0; j < len(lowerSubstr); j++ {
+				cb := s[i+j]
+				if cb >= 'A' && cb <= 'Z' {
+					cb += 'a' - 'A'
+				}
+				if cb != lowerSubstr[j] {
+					match = false
+					break
+				}
+			}
+			if match {
+				return true
+			}
+		}
+		return false
+	}
+	return strings.Contains(strings.ToLower(s), lowerSubstr)
 }
 
 func (m *FileManagerModel) reloadAllFiles() {
