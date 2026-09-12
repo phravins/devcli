@@ -3,11 +3,14 @@ package web
 import (
 	"bytes"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseCommand(t *testing.T) {
@@ -30,6 +33,139 @@ func TestParseCommand(t *testing.T) {
 				t.Errorf("parseCommand(%q) = %v, want %v", tt.command, got, tt.expected)
 			}
 		})
+	}
+}
+
+func getFreePort(t *testing.T) string {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to listen on free port: %v", err)
+	}
+	defer l.Close()
+	_, portStr, err := net.SplitHostPort(l.Addr().String())
+	if err != nil {
+		t.Fatalf("failed to split host port: %v", err)
+	}
+	return portStr
+}
+
+func TestStartServerAlreadyRunningSamePort(t *testing.T) {
+	serverStarted = true
+	serverPort = "8080"
+	defer func() {
+		serverStarted = false
+		serverPort = ""
+		logChan = nil
+	}()
+
+	err := StartServer("8080", nil)
+	if err != nil {
+		t.Errorf("expected nil error when calling StartServer with same port, got: %v", err)
+	}
+}
+
+func TestStartServerAlreadyRunningDifferentPort(t *testing.T) {
+	serverStarted = true
+	serverPort = "8080"
+	defer func() {
+		serverStarted = false
+		serverPort = ""
+		logChan = nil
+	}()
+
+	err := StartServer("8081", nil)
+	if err == nil {
+		t.Errorf("expected error when calling StartServer with different port, got nil")
+	}
+}
+
+func TestStartServerInvalidPort(t *testing.T) {
+	serverStarted = false
+	serverPort = ""
+	defer func() {
+		serverStarted = false
+		serverPort = ""
+		logChan = nil
+	}()
+
+	err := StartServer("invalid_port_999999", nil)
+	if err == nil {
+		t.Errorf("expected error for invalid port, got nil")
+	}
+	if serverStarted {
+		t.Errorf("expected serverStarted to be false after ListenAndServe error")
+	}
+}
+
+func TestStartServerSuccess(t *testing.T) {
+	serverStarted = false
+	serverPort = ""
+	defer func() {
+		serverStarted = false
+		serverPort = ""
+		logChan = nil
+	}()
+
+	port := getFreePort(t)
+	logs := make(chan string, 10)
+
+	go func() {
+		_ = StartServer(port, logs)
+	}()
+
+	targetURL := "http://127.0.0.1:" + port + "/"
+	var resp *http.Response
+	var err error
+
+	for i := 0; i < 20; i++ {
+		time.Sleep(50 * time.Millisecond)
+		resp, err = http.Get(targetURL)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		t.Fatalf("failed to connect to server on port %s: %v", port, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status OK, got %v", resp.StatusCode)
+	}
+
+	expectedHeaders := map[string]string{
+		"X-Content-Type-Options": "nosniff",
+		"X-Frame-Options":        "DENY",
+		"X-XSS-Protection":       "1; mode=block",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
+	}
+
+	for header, expectedValue := range expectedHeaders {
+		if got := resp.Header.Get(header); got != expectedValue {
+			t.Errorf("header %s = %q, want %q", header, got, expectedValue)
+		}
+	}
+
+	logMsg := "test log message"
+	logReq, err := http.NewRequest("POST", "http://127.0.0.1:"+port+"/logs", bytes.NewBufferString(logMsg))
+	if err != nil {
+		t.Fatalf("failed to create log request: %v", err)
+	}
+
+	logResp, err := http.DefaultClient.Do(logReq)
+	if err != nil {
+		t.Fatalf("failed to send log request: %v", err)
+	}
+	logResp.Body.Close()
+
+	select {
+	case receivedLog := <-logs:
+		if !strings.Contains(receivedLog, logMsg) {
+			t.Errorf("expected log to contain %q, got %q", logMsg, receivedLog)
+		}
+	case <-time.After(1 * time.Second):
+		t.Errorf("timed out waiting for log on channel")
 	}
 }
 
