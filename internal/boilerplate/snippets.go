@@ -1,4 +1,4 @@
-﻿package boilerplate
+package boilerplate
 
 type Snippet struct {
 	Name        string
