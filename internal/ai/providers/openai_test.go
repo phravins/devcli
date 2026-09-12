@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -144,4 +145,127 @@ func TestOpenAIProvider_Send_Errors(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOpenAIProvider_Configure(t *testing.T) {
+	t.Run("Default OpenAI Configuration", func(t *testing.T) {
+		p := &OpenAIProvider{}
+		cfg := &config.Config{
+			AIAPIKey: "secret-key",
+		}
+
+		err := p.Configure(cfg)
+		if err != nil {
+			t.Fatalf("Configure failed: %v", err)
+		}
+
+		if p.BaseURL != "https://api.openai.com/v1" {
+			t.Errorf("Expected default BaseURL 'https://api.openai.com/v1', got '%s'", p.BaseURL)
+		}
+		if p.Model() != "gpt-3.5-turbo" {
+			t.Errorf("Expected default model 'gpt-3.5-turbo', got '%s'", p.Model())
+		}
+		if p.APIKey != "secret-key" {
+			t.Errorf("Expected APIKey 'secret-key', got '%s'", p.APIKey)
+		}
+		if p.Name() != "OpenAI" {
+			t.Errorf("Expected Name 'OpenAI', got '%s'", p.Name())
+		}
+		if p.IsLocal() != false {
+			t.Errorf("Expected IsLocal false, got %v", p.IsLocal())
+		}
+		if p.httpClient == nil {
+			t.Error("Expected httpClient to be initialized, got nil")
+		} else if p.httpClient.Timeout != 90*time.Second {
+			t.Errorf("Expected httpClient timeout 90s, got %v", p.httpClient.Timeout)
+		}
+	})
+
+	t.Run("LMStudio Configuration", func(t *testing.T) {
+		p := &OpenAIProvider{}
+		cfg := &config.Config{
+			AIBackend: "lmstudio",
+		}
+
+		err := p.Configure(cfg)
+		if err != nil {
+			t.Fatalf("Configure failed: %v", err)
+		}
+
+		if p.BaseURL != "http://localhost:1234/v1" {
+			t.Errorf("Expected LMStudio BaseURL 'http://localhost:1234/v1', got '%s'", p.BaseURL)
+		}
+		if p.Model() != "local-model" {
+			t.Errorf("Expected LMStudio model 'local-model', got '%s'", p.Model())
+		}
+		if p.Name() != "LM Studio" {
+			t.Errorf("Expected Name 'LM Studio', got '%s'", p.Name())
+		}
+		if p.IsLocal() != true {
+			t.Errorf("Expected IsLocal true, got %v", p.IsLocal())
+		}
+	})
+
+	t.Run("Custom Overrides", func(t *testing.T) {
+		p := &OpenAIProvider{}
+		cfg := &config.Config{
+			AIAPIKey:  "key-123",
+			AIBaseURL: "https://custom.openai.proxy/v1",
+			AIModel:   "gpt-4o",
+		}
+
+		err := p.Configure(cfg)
+		if err != nil {
+			t.Fatalf("Configure failed: %v", err)
+		}
+
+		if p.BaseURL != "https://custom.openai.proxy/v1" {
+			t.Errorf("Expected custom BaseURL 'https://custom.openai.proxy/v1', got '%s'", p.BaseURL)
+		}
+		if p.Model() != "gpt-4o" {
+			t.Errorf("Expected custom model 'gpt-4o', got '%s'", p.Model())
+		}
+	})
+
+	t.Run("LMStudio with Custom Overrides", func(t *testing.T) {
+		p := &OpenAIProvider{}
+		cfg := &config.Config{
+			AIBackend: "lmstudio",
+			AIBaseURL: "http://127.0.0.1:9999/v1",
+			AIModel:   "custom-local-model",
+		}
+
+		err := p.Configure(cfg)
+		if err != nil {
+			t.Fatalf("Configure failed: %v", err)
+		}
+
+		if p.BaseURL != "http://127.0.0.1:9999/v1" {
+			t.Errorf("Expected overridden LMStudio BaseURL, got '%s'", p.BaseURL)
+		}
+		if p.Model() != "custom-local-model" {
+			t.Errorf("Expected overridden LMStudio model, got '%s'", p.Model())
+		}
+		if p.IsLocal() != true {
+			t.Errorf("Expected IsLocal true for LMStudio, got %v", p.IsLocal())
+		}
+	})
+
+	t.Run("Existing BaseURL Preserved if set on struct before Configure", func(t *testing.T) {
+		p := &OpenAIProvider{
+			BaseURL: "https://predefined.url/v1",
+		}
+		cfg := &config.Config{
+			AIAPIKey: "key-abc",
+		}
+
+		err := p.Configure(cfg)
+		if err != nil {
+			t.Fatalf("Configure failed: %v", err)
+		}
+
+		if p.BaseURL != "https://predefined.url/v1" {
+			t.Errorf("Expected predefined BaseURL to be preserved, got '%s'", p.BaseURL)
+		}
+	})
 }
