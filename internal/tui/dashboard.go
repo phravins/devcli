@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -20,6 +21,46 @@ type item struct {
 func (i item) Title() string       { return i.title }
 func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
+
+// Custom delegate to match the exact design in the image
+type customItemDelegate struct{}
+
+func (d customItemDelegate) Height() int                               { return 2 }
+func (d customItemDelegate) Spacing() int                              { return 1 }
+func (d customItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(item)
+	if !ok {
+		return
+	}
+
+	isSelected := index == m.Index()
+
+	var bar, title, desc string
+
+	if isSelected {
+		barStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true) // Pink/Purple vertical line
+		titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
+		descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
+
+		bar = barStyle.Render("│ ")
+		title = titleStyle.Render(i.title)
+		desc = descStyle.Render(i.desc)
+	} else {
+		titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#EFE9E0")).Bold(true)
+		descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+
+		bar = "  "
+		title = titleStyle.Render(i.title)
+		desc = descStyle.Render(i.desc)
+	}
+
+	if i.desc == "" {
+		fmt.Fprintf(w, "%s%s", bar, title)
+	} else {
+		fmt.Fprintf(w, "%s%s\n  %s", bar, title, desc)
+	}
+}
 
 type DashboardModel struct {
 	list         list.Model
@@ -45,11 +86,22 @@ func NewDashboard() DashboardModel {
 		item{title: "..", desc: ""},
 	}
 
+	delegate := customItemDelegate{}
+	l := list.New(items, delegate, 0, 0)
+	l.Title = "8 items"
+	l.SetShowTitle(true)
+	l.SetShowStatusBar(false)
+	l.SetShowHelp(true)
+
+	// Custom list styles to match dark theme cleanly
+	l.Styles.Title = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888")).
+		Padding(0, 0, 1, 0)
+
 	m := DashboardModel{
-		list:     list.New(items, list.NewDefaultDelegate(), 0, 0),
+		list:     l,
 		settings: NewSettingsModel(),
 	}
-	m.list.SetShowTitle(true)
 
 	// Initialize viewport
 	m.commandView = viewport.New(0, 0)
@@ -211,12 +263,9 @@ func (m DashboardModel) View() string {
 	logo := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#0F9E99")). // Tropical Teal
 		Bold(true).
-		Render(`
-  ____  _______     __   ____ _     ___ 
- |  _ \| ____\ \   / /  / ___| |   |_ _|
- | | | |  _|  \ \ / /  | |   | |    | | 
- | |_| | |___  \ V /   | |___| |___ | | 
- |____/|_____|  \_/     \____|_____|___|`)
+		Render(`|---| /---| \   /   /---| |   |
+|   | |---|  \ /    |     |   |
+|---| \___|   V     \___| |___|`)
 
 	title := lipgloss.NewStyle().
 		Bold(true).
@@ -226,8 +275,8 @@ func (m DashboardModel) View() string {
 	footer := lipgloss.NewStyle().
 		Width(m.width).
 		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("#666666")). // Grey for "smaller" feel
-		Render("Opendev Toolkit")
+		Foreground(lipgloss.Color("#666666")). // Grey
+		Render("OPENDEV TOOLKIT")
 
 	version := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#666666")).
