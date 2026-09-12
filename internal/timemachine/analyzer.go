@@ -13,6 +13,17 @@ type BugSuspect struct {
 	Context []string // Additional context
 }
 
+// containsAny returns true if s contains any of the provided substrings (case-insensitive).
+func containsAny(s string, keywords ...string) bool {
+	sLower := strings.ToLower(s)
+	for _, kw := range keywords {
+		if strings.Contains(sLower, strings.ToLower(kw)) {
+			return true
+		}
+	}
+	return false
+}
+
 // AnalyzeBugRisks analyzes commits and identifies suspicious patterns
 func AnalyzeBugRisks(commits []Commit) []BugSuspect {
 	var suspects []BugSuspect
@@ -40,19 +51,13 @@ func AnalyzeBugRisks(commits []Commit) []BugSuspect {
 		}
 
 		// Check commit message for fix keywords
-		msgLower := strings.ToLower(commit.Message)
-		if strings.Contains(msgLower, "fix") ||
-			strings.Contains(msgLower, "hotfix") ||
-			strings.Contains(msgLower, "patch") ||
-			strings.Contains(msgLower, "bugfix") {
+		if containsAny(commit.Message, "fix", "hotfix", "patch", "bugfix") {
 			risk += 0.3
 			reasons = append(reasons, "Quick fix commit")
 		}
 
-		// Check for WIP or TODO in message
-		if strings.Contains(msgLower, "wip") ||
-			strings.Contains(msgLower, "todo") ||
-			strings.Contains(msgLower, "temp") {
+		// Check for WIP or TODO markers in message
+		if containsAny(commit.Message, "wip", "todo", "temp") {
 			risk += 0.4
 			reasons = append(reasons, "Work in progress")
 		}
@@ -63,8 +68,7 @@ func AnalyzeBugRisks(commits []Commit) []BugSuspect {
 			timeDiff := nextCommit.Date.Sub(commit.Date)
 
 			if timeDiff < 2*time.Hour {
-				nextMsgLower := strings.ToLower(nextCommit.Message)
-				if strings.Contains(nextMsgLower, "fix") {
+				if containsAny(nextCommit.Message, "fix") {
 					risk += 0.3
 					reasons = append(reasons, "Followed by quick fix")
 					context = append(context, "Next commit: "+nextCommit.Message)
