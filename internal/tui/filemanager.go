@@ -81,46 +81,91 @@ type filterFinishedMsg struct {
 	results []fs.DirEntry
 }
 
+const maxSearchResults = 1000
+const fastSearchThreshold = 5000
+
+// containsIgnoreCase checks if s contains lowerSubstr case-insensitively.
+// lowerSubstr must be lowercased by the caller.
+// It avoids allocating lowercased strings for ASCII strings.
+func containsIgnoreCase(s, lowerSubstr string) bool {
+	if len(lowerSubstr) == 0 {
+		return true
+	}
+	if len(s) < len(lowerSubstr) {
+		return false
+	}
+
+	hasNonASCII := false
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 {
+			hasNonASCII = true
+			break
+		}
+	}
+
+	if hasNonASCII {
+		return strings.Contains(strings.ToLower(s), lowerSubstr)
+	}
+
+	n := len(lowerSubstr)
+	for i := 0; i <= len(s)-n; i++ {
+		match := true
+		for j := 0; j < n; j++ {
+			b := s[i+j]
+			if b >= 'A' && b <= 'Z' {
+				b += 32
+			}
+			if b != lowerSubstr[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func matchPaths(paths []string, query string) []fs.DirEntry {
+	if query == "" {
+		return nil
+	}
+
+	var matches []string
+	useFastPath := len(paths) > fastSearchThreshold
+
+	if useFastPath {
+		lowerQuery := strings.ToLower(query)
+		for _, path := range paths {
+			if len(matches) >= maxSearchResults {
+				break
+			}
+			if containsIgnoreCase(path, lowerQuery) {
+				matches = append(matches, path)
+			}
+		}
+	} else {
+		fuzzyMatches := fuzzy.Find(query, paths)
+		for _, m := range fuzzyMatches {
+			if len(matches) >= maxSearchResults {
+				break
+			}
+			matches = append(matches, m.Str)
+		}
+	}
+
+	results := make([]fs.DirEntry, 0, len(matches))
+	for _, matchPath := range matches {
+		results = append(results, dummyEntry{path: matchPath})
+	}
+	return results
+}
+
 // Async Search Command
 func performSearchCmd(paths []string, query string) tea.Cmd {
 	return func() tea.Msg {
-		if query == "" {
-			// Special case: usually handled before calling this, but safe fallback
-			return filterFinishedMsg{results: nil}
-		}
-
-		// Cap results to prevent UI lag on huge result sets
-		const maxResults = 1000
-		var matches []string
-
-		useFastPath := len(paths) > 5000
-
-		lowerQuery := strings.ToLower(query)
-
-		if useFastPath {
-			for _, path := range paths {
-				if len(matches) >= maxResults {
-					break
-				}
-				if strings.Contains(strings.ToLower(path), lowerQuery) {
-					matches = append(matches, path)
-				}
-			}
-		} else {
-			// Fuzzy match for smaller sets
-			fuzzyMatches := fuzzy.Find(query, paths)
-			for _, m := range fuzzyMatches {
-				if len(matches) >= maxResults {
-					break
-				}
-				matches = append(matches, m.Str)
-			}
-		}
-
-		var results []fs.DirEntry
-		for _, matchPath := range matches {
-			results = append(results, dummyEntry{path: matchPath})
-		}
+		results := matchPaths(paths, query)
 		return filterFinishedMsg{results: results}
 	}
 }
@@ -302,7 +347,10 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.searchInput.Value() != "" {
 			query := strings.ToLower(m.searchInput.Value())
 			for _, p := range msg.paths {
-				if strings.Contains(strings.ToLower(p), query) {
+				if len(m.filtered) >= maxSearchResults {
+					break
+				}
+				if containsIgnoreCase(p, query) {
 					m.filtered = append(m.filtered, dummyEntry{path: p})
 				}
 			}
@@ -1018,31 +1066,7 @@ func (m *FileManagerModel) filterFiles(query string) {
 		m.reloadAllFiles()
 	}
 
-	const fastSearchThreshold = 20000
-
-	var matches []string
-
-	if len(m.allFilePaths) > fastSearchThreshold {
-		// FAST PATH: Simple Case-Insensitive Substring Match
-		lowerQuery := strings.ToLower(query)
-		for _, path := range m.allFilePaths {
-			if strings.Contains(strings.ToLower(path), lowerQuery) {
-				matches = append(matches, path)
-			}
-		}
-	} else {
-		// SLOW PATH: Fuzzy Match
-		fuzzyMatches := fuzzy.Find(query, m.allFilePaths)
-		for _, m := range fuzzyMatches {
-			matches = append(matches, m.Str)
-		}
-	}
-
-	results := make([]fs.DirEntry, 0, len(matches))
-	for _, matchPath := range matches {
-		results = append(results, dummyEntry{path: matchPath})
-	}
-	m.filtered = results
+	m.filtered = matchPaths(m.allFilePaths, query)
 	m.cursor = 0
 }
 
