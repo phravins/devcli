@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestParseCommand(t *testing.T) {
@@ -98,6 +99,12 @@ func TestHandleSavePathTraversal(t *testing.T) {
 		},
 	}
 
+	// Create active session for authenticated testing
+	sessionID := generateSessionID()
+	authMu.Lock()
+	sessions[sessionID] = Session{Email: "test@example.com", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	authMu.Unlock()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(map[string]string{
@@ -109,12 +116,42 @@ func TestHandleSavePathTraversal(t *testing.T) {
 				t.Fatalf("Failed to create request: %v", err)
 			}
 			req.Header.Set("Content-Type", "application/json")
+			req.AddCookie(&http.Cookie{Name: "session_id", Value: sessionID})
 
 			rr := httptest.NewRecorder()
 			handleSave(rr, req)
 
 			if status := rr.Code; status != tt.expectedStatus {
 				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.expectedStatus)
+			}
+		})
+	}
+}
+
+func TestUnauthenticatedEndpoints(t *testing.T) {
+	endpoints := []struct {
+		name    string
+		path    string
+		handler http.HandlerFunc
+		body    string
+	}{
+		{"handleSave unauthenticated", "/save", handleSave, `{"filename":"test.txt","content":"hello"}`},
+		{"handleRun unauthenticated", "/run", handleRun, `{"language":"python","code":"print('hi')"}`},
+		{"handleTerminal unauthenticated", "/terminal", handleTerminal, `ls`},
+		{"handleDriveSave unauthenticated", "/drive/save", handleDriveSave, `{"filename":"test.txt","content":"hello"}`},
+	}
+
+	for _, ep := range endpoints {
+		t.Run(ep.name, func(t *testing.T) {
+			req, err := http.NewRequest("POST", ep.path, bytes.NewBufferString(ep.body))
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+			rr := httptest.NewRecorder()
+			ep.handler(rr, req)
+
+			if rr.Code != http.StatusUnauthorized {
+				t.Errorf("expected status %v, got %v", http.StatusUnauthorized, rr.Code)
 			}
 		})
 	}

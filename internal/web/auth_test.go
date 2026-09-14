@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 func TestHandleRegister(t *testing.T) {
 	// Isolate the test environment by resetting users and setting a temp HOME dir
@@ -81,6 +82,11 @@ func TestHandleRegister(t *testing.T) {
 }
 
 func TestHandleDriveSave(t *testing.T) {
+	sessionID := generateSessionID()
+	authMu.Lock()
+	sessions[sessionID] = Session{Email: "test@example.com", ExpiresAt: time.Now().Add(1 * time.Hour)}
+	authMu.Unlock()
+
 	tests := []struct {
 		name           string
 		filename       string
@@ -131,6 +137,7 @@ func TestHandleDriveSave(t *testing.T) {
 				t.Fatalf("Failed to create request: %v", err)
 			}
 			req.Header.Set("Content-Type", "application/json")
+			req.AddCookie(&http.Cookie{Name: "session_id", Value: sessionID})
 
 			rr := httptest.NewRecorder()
 			handleDriveSave(rr, req)
