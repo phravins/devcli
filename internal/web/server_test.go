@@ -33,6 +33,34 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestHandleLogsSanitization(t *testing.T) {
+	ch := make(chan string, 1)
+	logChan = ch
+	defer func() { logChan = nil }()
+
+	rawLog := "First line\r\nSecond line [ADMIN] Fake Log entry"
+	req, err := http.NewRequest("POST", "/logs", bytes.NewBufferString(rawLog))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleLogs(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handleLogs returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	select {
+	case msg := <-ch:
+		if bytes.Contains([]byte(msg), []byte("\n")) || bytes.Contains([]byte(msg), []byte("\r")) {
+			t.Errorf("handleLogs output contains unescaped newline or carriage return: %q", msg)
+		}
+	default:
+		t.Error("expected log message in channel, got none")
+	}
+}
+
 func TestRunShellAllowed(t *testing.T) {
 	_, err := runShell("ls")
 	if err != nil {

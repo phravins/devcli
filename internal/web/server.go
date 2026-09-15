@@ -104,7 +104,11 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
 		return
 	}
-	msg := fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), string(body))
+	// Sanitize log body to prevent Log Injection / CRLF injection attacks
+	sanitizedBody := strings.ReplaceAll(string(body), "\r", "\\r")
+	sanitizedBody = strings.ReplaceAll(sanitizedBody, "\n", "\\n")
+
+	msg := fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), sanitizedBody)
 	fmt.Printf("\n[WEB-COMPILER LOG] %s\n", msg)
 	if logChan != nil {
 		logChan <- msg
