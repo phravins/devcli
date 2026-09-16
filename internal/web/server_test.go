@@ -33,6 +33,44 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestHandleSaveErrorSanitization(t *testing.T) {
+	tempDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	os.Chdir(tempDir)
+	defer os.Chdir(origWd)
+
+	// Make a read-only directory to trigger a save error
+	readOnlyDir := "readonly_dir"
+	if err := os.Mkdir(readOnlyDir, 0444); err != nil {
+		t.Fatalf("Failed to create read-only dir: %v", err)
+	}
+	defer os.Chmod(readOnlyDir, 0755)
+
+	body, _ := json.Marshal(map[string]string{
+		"filename": readOnlyDir + "/file.txt",
+		"content":  "test",
+	})
+	req, err := http.NewRequest("POST", "/save", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleSave(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Errorf("expected status %v, got %v", http.StatusInternalServerError, rr.Code)
+	}
+
+	resBody := rr.Body.String()
+	if bytes.Contains([]byte(resBody), []byte("permission denied")) || bytes.Contains([]byte(resBody), []byte(tempDir)) {
+		t.Errorf("handleSave response leaked sensitive OS error details: %q", resBody)
+	}
+	if !bytes.Contains([]byte(resBody), []byte("Failed to save file")) && !bytes.Contains([]byte(resBody), []byte("Failed to create directory")) {
+		t.Errorf("expected sanitized generic error message, got: %q", resBody)
+	}
+}
+
 func TestHandleLogsSanitization(t *testing.T) {
 	ch := make(chan string, 1)
 	logChan = ch
