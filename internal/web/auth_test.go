@@ -50,6 +50,24 @@ func TestHandleRegister(t *testing.T) {
 			setup:          func() {},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name: "Empty email",
+			body: map[string]interface{}{
+				"email":    "   ",
+				"password": "password123",
+			},
+			setup:          func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Empty password",
+			body: map[string]interface{}{
+				"email":    "user@example.com",
+				"password": "   ",
+			},
+			setup:          func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
