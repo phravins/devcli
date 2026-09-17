@@ -161,7 +161,7 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 			if logChan != nil {
 				logChan <- msg
 			}
-			http.Error(w, msg, http.StatusInternalServerError)
+			http.Error(w, "Failed to create directory", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -172,7 +172,7 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		if logChan != nil {
 			logChan <- msg
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to save file", http.StatusInternalServerError)
 		return
 	}
 
