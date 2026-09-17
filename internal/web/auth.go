@@ -215,6 +215,11 @@ func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDriveSave(w http.ResponseWriter, r *http.Request) {
+	if _, ok := GetSessionUser(r); !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	var req struct {
 		Filename string `json:"filename"`
 		Content  string `json:"content"`
