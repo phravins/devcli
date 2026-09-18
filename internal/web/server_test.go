@@ -40,6 +40,18 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(origWd)
 
+	authMu.Lock()
+	sessions["test-save-session"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "test-save-session")
+		authMu.Unlock()
+	}()
+
 	// Make a read-only directory to trigger a save error
 	readOnlyDir := "readonly_dir"
 	if err := os.Mkdir(readOnlyDir, 0444); err != nil {
@@ -55,6 +67,7 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "test-save-session"})
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)
@@ -77,11 +90,24 @@ func TestHandleLogsSanitization(t *testing.T) {
 	logChan = ch
 	defer func() { logChan = nil }()
 
+	authMu.Lock()
+	sessions["test-logs-session"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "test-logs-session")
+		authMu.Unlock()
+	}()
+
 	rawLog := "First line\r\nSecond line [ADMIN] Fake Log entry"
 	req, err := http.NewRequest("POST", "/logs", bytes.NewBufferString(rawLog))
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "test-logs-session"})
 
 	rr := httptest.NewRecorder()
 	handleLogs(rr, req)
@@ -129,6 +155,30 @@ func TestHandleRunAndTerminalAuth(t *testing.T) {
 	handleTerminal(rrTerm, reqTerm)
 	if rrTerm.Code != http.StatusUnauthorized {
 		t.Errorf("handleTerminal unauthenticated got status %d, want %d", rrTerm.Code, http.StatusUnauthorized)
+	}
+
+	// Test handleLogs unauthenticated
+	reqLogs, _ := http.NewRequest("POST", "/logs", bytes.NewBufferString("test log"))
+	rrLogs := httptest.NewRecorder()
+	handleLogs(rrLogs, reqLogs)
+	if rrLogs.Code != http.StatusUnauthorized {
+		t.Errorf("handleLogs unauthenticated got status %d, want %d", rrLogs.Code, http.StatusUnauthorized)
+	}
+
+	// Test handleCancel unauthenticated
+	reqCancel, _ := http.NewRequest("POST", "/cancel", nil)
+	rrCancel := httptest.NewRecorder()
+	handleCancel(rrCancel, reqCancel)
+	if rrCancel.Code != http.StatusUnauthorized {
+		t.Errorf("handleCancel unauthenticated got status %d, want %d", rrCancel.Code, http.StatusUnauthorized)
+	}
+
+	// Test handleCancel method not allowed
+	reqCancelGet, _ := http.NewRequest("GET", "/cancel", nil)
+	rrCancelGet := httptest.NewRecorder()
+	handleCancel(rrCancelGet, reqCancelGet)
+	if rrCancelGet.Code != http.StatusMethodNotAllowed {
+		t.Errorf("handleCancel GET got status %d, want %d", rrCancelGet.Code, http.StatusMethodNotAllowed)
 	}
 }
 
