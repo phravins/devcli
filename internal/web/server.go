@@ -117,6 +117,11 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleCancel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	activeMu.Lock()
 	defer activeMu.Unlock()
 	if activeCmd != nil && activeCmd.Process != nil {

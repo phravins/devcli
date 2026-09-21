@@ -40,6 +40,19 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(origWd)
 
+	// Set up valid session
+	authMu.Lock()
+	sessions["save-err-session"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "save-err-session")
+		authMu.Unlock()
+	}()
+
 	// Make a read-only directory to trigger a save error
 	readOnlyDir := "readonly_dir"
 	if err := os.Mkdir(readOnlyDir, 0444); err != nil {
@@ -55,6 +68,7 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "save-err-session"})
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)
@@ -111,6 +125,30 @@ func TestRunShellDisallowed(t *testing.T) {
 	_, err := runShell("rm -rf /")
 	if err == nil {
 		t.Errorf("expected rm to be disallowed, but it succeeded")
+	}
+}
+
+func TestHandleCancelMethodRestriction(t *testing.T) {
+	// GET request to /cancel should be rejected with 405 Method Not Allowed
+	reqGet, err := http.NewRequest("GET", "/cancel", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	rrGet := httptest.NewRecorder()
+	handleCancel(rrGet, reqGet)
+	if rrGet.Code != http.StatusMethodNotAllowed {
+		t.Errorf("handleCancel with GET got status %d, want %d", rrGet.Code, http.StatusMethodNotAllowed)
+	}
+
+	// POST request to /cancel should succeed with 200 OK
+	reqPost, err := http.NewRequest("POST", "/cancel", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	rrPost := httptest.NewRecorder()
+	handleCancel(rrPost, reqPost)
+	if rrPost.Code != http.StatusOK {
+		t.Errorf("handleCancel with POST got status %d, want %d", rrPost.Code, http.StatusOK)
 	}
 }
 
