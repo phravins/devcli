@@ -47,6 +47,18 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	}
 	defer os.Chmod(readOnlyDir, 0755)
 
+	authMu.Lock()
+	sessions["valid-test-session"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "valid-test-session")
+		authMu.Unlock()
+	}()
+
 	body, _ := json.Marshal(map[string]string{
 		"filename": readOnlyDir + "/file.txt",
 		"content":  "test",
@@ -55,6 +67,7 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-test-session"})
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)

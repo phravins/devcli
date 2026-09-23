@@ -68,6 +68,15 @@ func TestHandleRegister(t *testing.T) {
 			setup:          func() {},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name: "Password exceeds length limit",
+			body: map[string]interface{}{
+				"email":    "longpass@example.com",
+				"password": string(make([]byte, 80)),
+			},
+			setup:          func() {},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
 
 	for _, tt := range tests {
