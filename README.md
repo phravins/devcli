@@ -10,7 +10,7 @@
 
 ---
 
-## ⚡ Quick Start: One-Liner Linux Installation
+## Quick Start: One-Liner Linux Installation
 
 Install DevCLI globally on any Linux desktop environment (GNOME, KDE, XFCE, Cinnamon, etc.) with a single command:
 
@@ -22,32 +22,20 @@ curl -fsSL https://raw.githubusercontent.com/phravins/devcli/main/install_linux.
 
 ---
 
-## 🔥 Key Features in v1.1.0
+##  Key Features in v1.1.0
 
 * **Dual-Pane TUI Interface**: Framed navigation menu alongside a live workspace info card displaying Git status, memory consumption, virtual environments, and AI provider status.
 * **Live System & Git Status Bar**: Persistent header bar displaying active Git branch (`git:main`), memory usage in MB, active Python `venv`, and connected AI model.
-* **🐳 Docker Container Dashboard**: Inspect running & stopped Docker containers, start/stop/restart containers (`s`/`r`), and stream live container logs in a scrollable viewport (`l`).
-* **🌐 API & HTTP Client Playground**: Built-in TUI Postman alternative for testing `GET`, `POST`, `PUT`, `DELETE`, and `PATCH` endpoints with formatted JSON views and latency counters (ms).
-* **🤖 AI Assistant & Conventional Git Commit Auto-Generator**: Connects to Ollama, Gemini, OpenAI, Claude, or HuggingFace. Run `devcli ai commit` to generate conventional git commit messages directly from your `git diff`.
-* **💻 Multi-Language Web IDE & Compiler**: Embedded HTTP server (`http://127.0.0.1:8080`) supporting online compilation for **Python**, **JavaScript (Node.js)**, **Go**, **Rust**, and **C/C++**.
-* **📂 Project Scaffolder & File Manager**: Instant scaffolding for Go, Python, Node, React, and FastAPI projects with Git initialization, alongside a built-in terminal file explorer.
-* **🕰️ Code Time Machine**: Line-by-line Git blame examiner and history timeline viewer.
+* **Docker Container Dashboard**: Inspect running & stopped Docker containers, start/stop/restart containers (`s`/`r`), and stream live container logs in a scrollable viewport (`l`).
+* **API & HTTP Client Playground**: Built-in TUI Postman alternative for testing `GET`, `POST`, `PUT`, `DELETE`, and `PATCH` endpoints with formatted JSON views and latency counters (ms).
+* **AI Assistant & Conventional Git Commit Auto-Generator**: Connects to Ollama, Gemini, OpenAI, Claude, or HuggingFace. Run `devcli ai commit` to generate conventional git commit messages directly from your `git diff`.
+* **Multi-Language Web IDE & Compiler**: Embedded HTTP server (`http://127.0.0.1:8080`) supporting online compilation for **Python**, **JavaScript (Node.js)**, **Go**, **Rust**, and **C/C++**.
+* **Project Scaffolder & File Manager**: Instant scaffolding for Go, Python, Node, React, and FastAPI projects with Git initialization, alongside a built-in terminal file explorer.
+* **Code Time Machine**: Line-by-line Git blame examiner and history timeline viewer.
 
 ---
 
-## 📚 Table of Contents
-
-* [Installation Guide](docs/INSTALLATION.md)
-* [Detailed Features Breakdown](docs/FEATURES.md)
-* [Usage & Shortcuts Guide](docs/USAGE.md)
-* [Configuration & AI Keys](docs/CONFIGURATION.md)
-* [Architecture & Code Structure](docs/ARCHITECTURE.md)
-* [Contributing](CONTRIBUTING.md)
-* [License](LICENSE)
-
----
-
-## 🛠️ Subcommands Cheat Sheet
+## Subcommands Cheat Sheet
 
 | Command | Description |
 | :--- | :--- |
