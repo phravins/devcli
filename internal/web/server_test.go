@@ -51,10 +51,24 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 		"filename": readOnlyDir + "/file.txt",
 		"content":  "test",
 	})
+	// Set up valid session
+	authMu.Lock()
+	sessions["valid-test-session"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "valid-test-session")
+		authMu.Unlock()
+	}()
+
 	req, err := http.NewRequest("POST", "/save", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-test-session"})
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)
@@ -129,6 +143,37 @@ func TestHandleRunAndTerminalAuth(t *testing.T) {
 	handleTerminal(rrTerm, reqTerm)
 	if rrTerm.Code != http.StatusUnauthorized {
 		t.Errorf("handleTerminal unauthenticated got status %d, want %d", rrTerm.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestHandleCancelAuth(t *testing.T) {
+	// Test handleCancel unauthenticated
+	reqUnauth, _ := http.NewRequest("POST", "/cancel", nil)
+	rrUnauth := httptest.NewRecorder()
+	handleCancel(rrUnauth, reqUnauth)
+	if rrUnauth.Code != http.StatusUnauthorized {
+		t.Errorf("handleCancel unauthenticated got status %d, want %d", rrUnauth.Code, http.StatusUnauthorized)
+	}
+
+	// Test handleCancel authenticated
+	authMu.Lock()
+	sessions["cancel-test-session"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "cancel-test-session")
+		authMu.Unlock()
+	}()
+
+	reqAuth, _ := http.NewRequest("POST", "/cancel", nil)
+	reqAuth.AddCookie(&http.Cookie{Name: "session_id", Value: "cancel-test-session"})
+	rrAuth := httptest.NewRecorder()
+	handleCancel(rrAuth, reqAuth)
+	if rrAuth.Code != http.StatusOK {
+		t.Errorf("handleCancel authenticated got status %d, want %d", rrAuth.Code, http.StatusOK)
 	}
 }
 
