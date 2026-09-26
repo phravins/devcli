@@ -40,6 +40,19 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(origWd)
 
+	// Set up valid session
+	authMu.Lock()
+	sessions["test-session-save-error"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "test-session-save-error")
+		authMu.Unlock()
+	}()
+
 	// Make a read-only directory to trigger a save error
 	readOnlyDir := "readonly_dir"
 	if err := os.Mkdir(readOnlyDir, 0444); err != nil {
@@ -55,6 +68,7 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "test-session-save-error"})
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)
@@ -129,6 +143,45 @@ func TestHandleRunAndTerminalAuth(t *testing.T) {
 	handleTerminal(rrTerm, reqTerm)
 	if rrTerm.Code != http.StatusUnauthorized {
 		t.Errorf("handleTerminal unauthenticated got status %d, want %d", rrTerm.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestHandleCancelAuthAndMethod(t *testing.T) {
+	// Test wrong HTTP method (GET)
+	reqGet, _ := http.NewRequest("GET", "/cancel", nil)
+	rrGet := httptest.NewRecorder()
+	handleCancel(rrGet, reqGet)
+	if rrGet.Code != http.StatusMethodNotAllowed {
+		t.Errorf("handleCancel GET got status %d, want %d", rrGet.Code, http.StatusMethodNotAllowed)
+	}
+
+	// Test unauthenticated POST
+	reqPost, _ := http.NewRequest("POST", "/cancel", nil)
+	rrPost := httptest.NewRecorder()
+	handleCancel(rrPost, reqPost)
+	if rrPost.Code != http.StatusUnauthorized {
+		t.Errorf("handleCancel unauthenticated got status %d, want %d", rrPost.Code, http.StatusUnauthorized)
+	}
+
+	// Test authenticated POST
+	authMu.Lock()
+	sessions["cancel-test-session"] = Session{
+		Email:     "test@example.com",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "cancel-test-session")
+		authMu.Unlock()
+	}()
+
+	reqAuth, _ := http.NewRequest("POST", "/cancel", nil)
+	reqAuth.AddCookie(&http.Cookie{Name: "session_id", Value: "cancel-test-session"})
+	rrAuth := httptest.NewRecorder()
+	handleCancel(rrAuth, reqAuth)
+	if rrAuth.Code != http.StatusOK {
+		t.Errorf("handleCancel authenticated got status %d, want %d", rrAuth.Code, http.StatusOK)
 	}
 }
 
