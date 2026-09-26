@@ -200,23 +200,22 @@ func fetchContainerLogsCmd(id string) tea.Cmd {
 }
 
 func (m DockerDashboardModel) View() string {
-	statusBar := RenderStatusBar(m.width)
 
 	switch m.state {
 	case StateDockerList:
 		actions := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[Enter/l] Logs • [s] Start/Stop • [r] Refresh • [Esc] Back")
 		content := m.list.View() + "\n" + m.statusMsg + actions
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar, content)
+		return lipgloss.JoinVertical(lipgloss.Left, content)
 
 	case StateDockerLogs:
 		header := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).Render(fmt.Sprintf("Logs: %s (%s)", m.selected.Names, m.selected.Image))
 		footer := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\nPress [Esc] or [q] to return to containers")
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar, header, m.viewport.View(), footer)
+		return lipgloss.JoinVertical(lipgloss.Left, header, m.viewport.View(), footer)
 
 	case StateDockerError:
 		errText := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("Docker Connection Error:\n" + m.err.Error())
 		footer := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\nEnsure Docker Desktop or dockerd service is active.\nPress [Esc] to return.")
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar, errText, footer)
+		return lipgloss.JoinVertical(lipgloss.Left, errText, footer)
 	}
 
 	return "Unknown Docker view"

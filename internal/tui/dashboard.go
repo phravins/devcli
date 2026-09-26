@@ -18,15 +18,15 @@ type item struct {
 	id, title, desc string
 }
 
-func (i item) Title() string		{ return i.title }
-func (i item) Description() string	{ return i.desc }
-func (i item) FilterValue() string	{ return i.title }
+func (i item) Title() string       { return i.title }
+func (i item) Description() string { return i.desc }
+func (i item) FilterValue() string { return i.title }
 
 type customItemDelegate struct{}
 
-func (d customItemDelegate) Height() int				{ return 2 }
-func (d customItemDelegate) Spacing() int				{ return 1 }
-func (d customItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd	{ return nil }
+func (d customItemDelegate) Height() int                             { return 2 }
+func (d customItemDelegate) Spacing() int                            { return 1 }
+func (d customItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	i, ok := listItem.(item)
 	if !ok {
@@ -62,15 +62,15 @@ func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 }
 
 type DashboardModel struct {
-	list		list.Model
-	settings	SettingsModel
-	choice		string
-	quitting	bool
-	showCommands	bool
-	showSettings	bool
-	width		int
-	height		int
-	commandView	viewport.Model
+	list         list.Model
+	settings     SettingsModel
+	choice       string
+	quitting     bool
+	showCommands bool
+	showSettings bool
+	width        int
+	height       int
+	commandView  viewport.Model
 }
 
 func NewDashboard() DashboardModel {
@@ -81,6 +81,8 @@ func NewDashboard() DashboardModel {
 		item{title: "File Manager", desc: "Explore, Search, and Manage Files (RW/Move)"},
 		item{title: "Settings / Configuration", desc: "Configure AI backends and Keys"},
 		item{title: "DevCLI Commands", desc: "List all available project commands"},
+		item{title: "API & HTTP Playground", desc: "Built-in Postman alternative"},
+		item{title: "Docker Dashboard", desc: "Inspect and manage containers"},
 		item{title: "Auto-Update", desc: "Update Languages, AI Keys, and DevCLI"},
 		item{title: "..", desc: ""},
 	}
@@ -97,8 +99,8 @@ func NewDashboard() DashboardModel {
 		Padding(0, 0, 1, 0)
 
 	m := DashboardModel{
-		list:		l,
-		settings:	NewSettingsModel(),
+		list:     l,
+		settings: NewSettingsModel(),
 	}
 
 	m.commandView = viewport.New(0, 0)

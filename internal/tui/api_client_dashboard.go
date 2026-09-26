@@ -187,7 +187,6 @@ func executeAPIReqCmd(method, url, body string) tea.Cmd {
 }
 
 func (m APIClientModel) View() string {
-	statusBar := RenderStatusBar(m.width)
 
 	headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).Render("🌐 DevCLI API & HTTP Playground")
 
@@ -208,7 +207,7 @@ func (m APIClientModel) View() string {
 		}
 
 		sb.WriteString("\n[Enter] Select Method • [Esc] Back")
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar, sb.String())
+		return lipgloss.JoinVertical(lipgloss.Left, sb.String())
 
 	case StateAPIURLInput:
 		method := m.methods[m.methodIndex]
@@ -219,7 +218,7 @@ func (m APIClientModel) View() string {
 			m.urlInput.View(),
 			"\n[Enter] Next/Send • [Esc] Back",
 		)
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar, card)
+		return lipgloss.JoinVertical(lipgloss.Left, card)
 
 	case StateAPIBodyInput:
 		method := m.methods[m.methodIndex]
@@ -230,10 +229,10 @@ func (m APIClientModel) View() string {
 			m.bodyInput.View(),
 			"\n[Enter] Send Request • [Esc] Back",
 		)
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar, card)
+		return lipgloss.JoinVertical(lipgloss.Left, card)
 
 	case StateAPISending:
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar,
+		return lipgloss.JoinVertical(lipgloss.Left, 
 			lipgloss.Place(m.width, m.height-2, lipgloss.Center, lipgloss.Center,
 				lipgloss.JoinVertical(lipgloss.Center,
 					m.spinner.View(),
@@ -255,7 +254,7 @@ func (m APIClientModel) View() string {
 		topInfo := lipgloss.JoinHorizontal(lipgloss.Left, statusBadge, " ", timerBadge, fmt.Sprintf("  URL: %s", m.urlInput.Value()))
 		footer := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[r] Resend • [Esc/q] Back")
 
-		return lipgloss.JoinVertical(lipgloss.Left, statusBar, topInfo, "\n", m.viewport.View(), footer)
+		return lipgloss.JoinVertical(lipgloss.Left, topInfo, "\n", m.viewport.View(), footer)
 	}
 
 	return "Unknown API Client state"

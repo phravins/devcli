@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -79,6 +81,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		msg.Height -= 1 // Reserve 1 line for global status bar
 
 	case SwitchViewMsg:
 		m.state = msg.TargetState
@@ -91,14 +94,14 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.fileManager = NewFileManagerModel(path)
 			var fm tea.Model
-			fm, cmd = m.fileManager.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			fm, cmd = m.fileManager.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.fileManager = fm.(FileManagerModel)
 			cmds = append(cmds, cmd, m.fileManager.Init())
 
 		case StateChat:
 			m.chat = NewChatModel()
 			var cm tea.Model
-			cm, cmd = m.chat.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			cm, cmd = m.chat.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.chat = cm.(ChatModel)
 			cmds = append(cmds, cmd, m.chat.Init())
 
@@ -109,42 +112,42 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.editor = initialModel(filename)
 			var em tea.Model
-			em, cmd = m.editor.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			em, cmd = m.editor.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.editor = em.(model)
 			cmds = append(cmds, cmd, m.editor.Init())
 
 		case StateProject:
 			m.project = NewProjectDashboardModel()
 			var pm tea.Model
-			pm, cmd = m.project.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			pm, cmd = m.project.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.project = pm.(ProjectDashboardModel)
 			cmds = append(cmds, cmd, m.project.Init())
 
 		case StateAutoUpdate:
 			m.autoupdate = NewAutoUpdateModel()
 			var am tea.Model
-			am, cmd = m.autoupdate.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			am, cmd = m.autoupdate.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.autoupdate = am.(AutoUpdateModel)
 			cmds = append(cmds, cmd, m.autoupdate.Init())
 
 		case StateDocs:
 			m.docs = NewDocsModel()
 			var dm tea.Model
-			dm, cmd = m.docs.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			dm, cmd = m.docs.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.docs = dm.(DocsModel)
 			cmds = append(cmds, cmd, m.docs.Init())
 
 		case StateDocker:
 			m.docker = NewDockerDashboardModel()
 			var dockM tea.Model
-			dockM, cmd = m.docker.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			dockM, cmd = m.docker.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.docker = dockM.(DockerDashboardModel)
 			cmds = append(cmds, cmd, m.docker.Init())
 
 		case StateAPIClient:
 			m.apiClient = NewAPIClientModel()
 			var apiM tea.Model
-			apiM, cmd = m.apiClient.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+			apiM, cmd = m.apiClient.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height - 1})
 			m.apiClient = apiM.(APIClientModel)
 			cmds = append(cmds, cmd, m.apiClient.Init())
 		}
@@ -199,27 +202,30 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m RootModel) View() string {
+	var content string
 	switch m.state {
 	case StateDashboard:
-		return m.dashboard.View()
+		content = m.dashboard.View()
 	case StateProject:
-		return m.project.View()
+		content = m.project.View()
 	case StateFileManager:
-		return m.fileManager.View()
+		content = m.fileManager.View()
 	case StateChat:
-		return m.chat.View()
+		content = m.chat.View()
 	case StateEditor:
-		return m.editor.View()
+		content = m.editor.View()
 	case StateAutoUpdate:
-		return m.autoupdate.View()
+		content = m.autoupdate.View()
 	case StateDocs:
-		return m.docs.View()
+		content = m.docs.View()
 	case StateDocker:
-		return m.docker.View()
+		content = m.docker.View()
 	case StateAPIClient:
-		return m.apiClient.View()
+		content = m.apiClient.View()
+	default:
+		content = "Unknown State"
 	}
-	return "Unknown State"
+	return lipgloss.JoinVertical(lipgloss.Top, RenderStatusBar(m.width), content)
 }
 
 func RunRoot() {
