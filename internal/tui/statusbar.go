@@ -15,22 +15,20 @@ import (
 )
 
 var (
-	statusCacheMu   sync.Mutex
-	lastStatusCheck time.Time
-	cachedBranch    string = "No Git"
-	cachedVenv      string = "venv:none"
-	cachedAIBackend string = "Ollama"
+	statusCacheMu	sync.Mutex
+	lastStatusCheck	time.Time
+	cachedBranch	string	= "No Git"
+	cachedVenv	string	= "venv:none"
+	cachedAIBackend	string	= "Ollama"
 )
 
 func getCachedStatusInfo() (string, string, string) {
 	statusCacheMu.Lock()
 	defer statusCacheMu.Unlock()
 
-	// Refresh metrics at most once every 5 seconds to prevent process spawning lag in View()
 	if time.Since(lastStatusCheck) > 5*time.Second || lastStatusCheck.IsZero() {
 		lastStatusCheck = time.Now()
 
-		// 1. Git Branch
 		branch := "No Git"
 		if out, err := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output(); err == nil {
 			b := strings.TrimSpace(string(out))
@@ -40,7 +38,6 @@ func getCachedStatusInfo() (string, string, string) {
 		}
 		cachedBranch = branch
 
-		// 2. Virtual Environment
 		venvStr := "venv:none"
 		if v := os.Getenv("VIRTUAL_ENV"); v != "" {
 			venvStr = "venv:" + filepath.Base(v)
@@ -49,7 +46,6 @@ func getCachedStatusInfo() (string, string, string) {
 		}
 		cachedVenv = venvStr
 
-		// 3. Configured AI Provider
 		cfg, _ := config.LoadConfig()
 		aiBackend := "Ollama"
 		if cfg != nil && cfg.AIBackend != "" {
@@ -62,7 +58,6 @@ func getCachedStatusInfo() (string, string, string) {
 	return cachedBranch, cachedVenv, cachedAIBackend
 }
 
-// RenderStatusBar generates a modern responsive live status bar for DevCLI
 func RenderStatusBar(width int) string {
 	if width < 20 {
 		width = 80
@@ -70,13 +65,11 @@ func RenderStatusBar(width int) string {
 
 	branch, venvStr, aiBackend := getCachedStatusInfo()
 
-	// Memory Usage (Allocated MB - fast in-memory calculation)
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	memUsed := float64(m.Alloc) / 1024 / 1024
 	memStr := fmt.Sprintf("%.1fMB", memUsed)
 
-	// Styles for Status Bar Pills
 	brandStyle := lipgloss.NewStyle().
 		Bold(true).
 		Background(lipgloss.Color("#BD93F9")).
@@ -116,7 +109,6 @@ func RenderStatusBar(width int) string {
 		aiStyle.Render(" AI:"+aiBackend),
 	)
 
-	// Fill background to full width
 	backgroundStyle := lipgloss.NewStyle().
 		Background(lipgloss.Color("#44475a")).
 		Width(width)

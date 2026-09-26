@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	StateDockerList = iota
+	StateDockerList	= iota
 	StateDockerLogs
 	StateDockerError
 )
@@ -34,33 +34,33 @@ func (i containerItem) Description() string {
 	return fmt.Sprintf("ID: %s • Status: %s", i.container.ID[:12], i.container.Status)
 }
 
-func (i containerItem) FilterValue() string { return i.container.Names + " " + i.container.Image }
+func (i containerItem) FilterValue() string	{ return i.container.Names + " " + i.container.Image }
 
 type DockerDashboardModel struct {
-	state     int
-	list      list.Model
-	viewport  viewport.Model
-	spinner   spinner.Model
-	width     int
-	height    int
-	selected  devtools.Container
-	err       error
-	statusMsg string
+	state		int
+	list		list.Model
+	viewport	viewport.Model
+	spinner		spinner.Model
+	width		int
+	height		int
+	selected	devtools.Container
+	err		error
+	statusMsg	string
 }
 
 type dockerLoadedMsg struct {
-	containers []devtools.Container
-	err        error
+	containers	[]devtools.Container
+	err		error
 }
 
 type dockerActionMsg struct {
-	message string
-	err     error
+	message	string
+	err	error
 }
 
 type dockerLogsMsg struct {
-	logs string
-	err  error
+	logs	string
+	err	error
 }
 
 func NewDockerDashboardModel() DockerDashboardModel {
@@ -79,10 +79,10 @@ func NewDockerDashboardModel() DockerDashboardModel {
 		Padding(1, 2)
 
 	return DockerDashboardModel{
-		state:    StateDockerList,
-		list:     l,
-		viewport: vp,
-		spinner:  s,
+		state:		StateDockerList,
+		list:		l,
+		viewport:	vp,
+		spinner:	s,
 	}
 }
 

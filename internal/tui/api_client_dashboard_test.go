@@ -62,10 +62,10 @@ func TestAPIClientModel_WindowSizeMsg(t *testing.T) {
 	if m.height != 50 {
 		t.Errorf("expected height 50, got %d", m.height)
 	}
-	if m.viewport.Width != 96 { // Width - 4
+	if m.viewport.Width != 96 {
 		t.Errorf("expected viewport width 96, got %d", m.viewport.Width)
 	}
-	if m.viewport.Height != 38 { // Height - 12
+	if m.viewport.Height != 38 {
 		t.Errorf("expected viewport height 38, got %d", m.viewport.Height)
 	}
 }
@@ -73,7 +73,6 @@ func TestAPIClientModel_WindowSizeMsg(t *testing.T) {
 func TestAPIClientModel_MethodSelectState(t *testing.T) {
 	model := NewAPIClientModel()
 
-	// Navigate down with "j" and "down"
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 	m := updated.(APIClientModel)
 	if m.methodIndex != 1 {
@@ -86,7 +85,6 @@ func TestAPIClientModel_MethodSelectState(t *testing.T) {
 		t.Errorf("expected methodIndex 2 after Down, got %d", m.methodIndex)
 	}
 
-	// Navigate up with "k" and "up"
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 	m = updated.(APIClientModel)
 	if m.methodIndex != 1 {
@@ -99,14 +97,12 @@ func TestAPIClientModel_MethodSelectState(t *testing.T) {
 		t.Errorf("expected methodIndex 0 after Up, got %d", m.methodIndex)
 	}
 
-	// Test boundary up (cannot go below 0)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
 	m = updated.(APIClientModel)
 	if m.methodIndex != 0 {
 		t.Errorf("expected methodIndex 0 at lower bound, got %d", m.methodIndex)
 	}
 
-	// Move to bottom boundary
 	for i := 0; i < 10; i++ {
 		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
 		m = updated.(APIClientModel)
@@ -115,7 +111,6 @@ func TestAPIClientModel_MethodSelectState(t *testing.T) {
 		t.Errorf("expected methodIndex %d at upper bound, got %d", len(m.methods)-1, m.methodIndex)
 	}
 
-	// Test Esc key returns BackMsg
 	m.state = StateAPIMethodSelect
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	if cmd == nil {
@@ -126,7 +121,6 @@ func TestAPIClientModel_MethodSelectState(t *testing.T) {
 		t.Errorf("expected BackMsg on Esc, got %T", msg)
 	}
 
-	// Test Enter key moves to StateAPIURLInput
 	updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = updated.(APIClientModel)
 	if m.state != StateAPIURLInput {
@@ -138,13 +132,12 @@ func TestAPIClientModel_MethodSelectState(t *testing.T) {
 }
 
 func TestAPIClientModel_URLInputState(t *testing.T) {
-	// 1. GET method (methodIndex 0) -> Enter should switch directly to StateAPISending
+
 	model := NewAPIClientModel()
 	model.state = StateAPIURLInput
 	model.urlInput.Focus()
-	model.methodIndex = 0 // GET
+	model.methodIndex = 0
 
-	// Esc returns to StateAPIMethodSelect
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	m := updated.(APIClientModel)
 	if m.state != StateAPIMethodSelect {
@@ -154,7 +147,6 @@ func TestAPIClientModel_URLInputState(t *testing.T) {
 		t.Error("expected urlInput to be blurred on Esc")
 	}
 
-	// Enter on GET -> StateAPISending
 	model.state = StateAPIURLInput
 	model.urlInput.Focus()
 	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -166,11 +158,10 @@ func TestAPIClientModel_URLInputState(t *testing.T) {
 		t.Error("expected execution cmd for GET request")
 	}
 
-	// 2. DELETE method (methodIndex 3) -> Enter should switch to StateAPISending
 	model = NewAPIClientModel()
 	model.state = StateAPIURLInput
 	model.urlInput.Focus()
-	model.methodIndex = 3 // DELETE
+	model.methodIndex = 3
 	updated, cmd = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = updated.(APIClientModel)
 	if m.state != StateAPISending {
@@ -180,11 +171,10 @@ func TestAPIClientModel_URLInputState(t *testing.T) {
 		t.Error("expected execution cmd for DELETE request")
 	}
 
-	// 3. POST method (methodIndex 1) -> Enter should switch to StateAPIBodyInput
 	model = NewAPIClientModel()
 	model.state = StateAPIURLInput
 	model.urlInput.Focus()
-	model.methodIndex = 1 // POST
+	model.methodIndex = 1
 	updated, cmd = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = updated.(APIClientModel)
 	if m.state != StateAPIBodyInput {
@@ -194,7 +184,6 @@ func TestAPIClientModel_URLInputState(t *testing.T) {
 		t.Error("expected bodyInput to be focused for POST")
 	}
 
-	// 4. Typing input into URL field
 	model = NewAPIClientModel()
 	model.state = StateAPIURLInput
 	model.urlInput.Focus()
@@ -209,9 +198,8 @@ func TestAPIClientModel_BodyInputState(t *testing.T) {
 	model := NewAPIClientModel()
 	model.state = StateAPIBodyInput
 	model.bodyInput.Focus()
-	model.methodIndex = 1 // POST
+	model.methodIndex = 1
 
-	// Esc returns to StateAPIURLInput
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	m := updated.(APIClientModel)
 	if m.state != StateAPIURLInput {
@@ -224,7 +212,6 @@ func TestAPIClientModel_BodyInputState(t *testing.T) {
 		t.Error("expected bodyInput to be blurred on Esc")
 	}
 
-	// Enter sends request -> StateAPISending
 	model.state = StateAPIBodyInput
 	model.bodyInput.Focus()
 	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -236,7 +223,6 @@ func TestAPIClientModel_BodyInputState(t *testing.T) {
 		t.Error("expected execution cmd after Enter on body input")
 	}
 
-	// Typing input into Body field
 	model.state = StateAPIBodyInput
 	model.bodyInput.Focus()
 	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'{'}})
@@ -249,13 +235,12 @@ func TestAPIClientModel_BodyInputState(t *testing.T) {
 func TestAPIClientModel_APIExecMsg(t *testing.T) {
 	model := NewAPIClientModel()
 
-	// 1. Success response
 	respSuccess := devtools.APIResponse{
-		Status:     "200 OK",
-		StatusCode: 200,
-		LatencyMs:  45,
-		Formatted:  `{"status": "ok"}`,
-		Err:        nil,
+		Status:		"200 OK",
+		StatusCode:	200,
+		LatencyMs:	45,
+		Formatted:	`{"status": "ok"}`,
+		Err:		nil,
 	}
 
 	updated, _ := model.Update(apiExecMsg{response: respSuccess})
@@ -271,7 +256,6 @@ func TestAPIClientModel_APIExecMsg(t *testing.T) {
 		t.Error("expected viewport to contain response data")
 	}
 
-	// 2. Error response in APIResponse
 	respErr := devtools.APIResponse{
 		Err: errors.New("connection refused"),
 	}
@@ -291,14 +275,12 @@ func TestAPIClientModel_ResponseViewState(t *testing.T) {
 	model := NewAPIClientModel()
 	model.state = StateAPIResponseView
 
-	// Esc returns to StateAPIMethodSelect
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	m := updated.(APIClientModel)
 	if m.state != StateAPIMethodSelect {
 		t.Errorf("expected state StateAPIMethodSelect after Esc, got %d", m.state)
 	}
 
-	// 'q' returns to StateAPIMethodSelect
 	model.state = StateAPIResponseView
 	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 	m = updated.(APIClientModel)
@@ -306,7 +288,6 @@ func TestAPIClientModel_ResponseViewState(t *testing.T) {
 		t.Errorf("expected state StateAPIMethodSelect after 'q', got %d", m.state)
 	}
 
-	// 'r' resends request (transitions to StateAPISending)
 	model.state = StateAPIResponseView
 	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = updated.(APIClientModel)
@@ -323,60 +304,53 @@ func TestAPIClientModel_View(t *testing.T) {
 	model.width = 80
 	model.height = 24
 
-	// 1. StateAPIMethodSelect
 	model.state = StateAPIMethodSelect
 	viewSelect := model.View()
 	if !strings.Contains(viewSelect, "DevCLI API & HTTP Playground") || !strings.Contains(viewSelect, "Select HTTP Method:") {
 		t.Errorf("unexpected view output for StateAPIMethodSelect:\n%s", viewSelect)
 	}
 
-	// 2. StateAPIURLInput
 	model.state = StateAPIURLInput
 	viewURL := model.View()
 	if !strings.Contains(viewURL, "Enter Target URL:") {
 		t.Errorf("unexpected view output for StateAPIURLInput:\n%s", viewURL)
 	}
 
-	// 3. StateAPIBodyInput
 	model.state = StateAPIBodyInput
 	viewBody := model.View()
 	if !strings.Contains(viewBody, "Enter Request Body JSON") {
 		t.Errorf("unexpected view output for StateAPIBodyInput:\n%s", viewBody)
 	}
 
-	// 4. StateAPISending
 	model.state = StateAPISending
 	viewSending := model.View()
 	if !strings.Contains(viewSending, "Sending GET request") {
 		t.Errorf("unexpected view output for StateAPISending:\n%s", viewSending)
 	}
 
-	// 5. StateAPIResponseView - Status 200 (Green badge)
 	model.state = StateAPIResponseView
 	model.lastResponse = devtools.APIResponse{
-		StatusCode: 200,
-		Status:     "200 OK",
-		LatencyMs:  12,
-		Formatted:  "OK",
+		StatusCode:	200,
+		Status:		"200 OK",
+		LatencyMs:	12,
+		Formatted:	"OK",
 	}
 	viewResp200 := model.View()
 	if !strings.Contains(viewResp200, "200 OK") || !strings.Contains(viewResp200, "12 ms") {
 		t.Errorf("unexpected view output for StateAPIResponseView (200):\n%s", viewResp200)
 	}
 
-	// 6. StateAPIResponseView - Status 404 (Red badge)
 	model.lastResponse = devtools.APIResponse{
-		StatusCode: 404,
-		Status:     "404 Not Found",
-		LatencyMs:  15,
-		Formatted:  "Not Found",
+		StatusCode:	404,
+		Status:		"404 Not Found",
+		LatencyMs:	15,
+		Formatted:	"Not Found",
 	}
 	viewResp404 := model.View()
 	if !strings.Contains(viewResp404, "404 Not Found") {
 		t.Errorf("unexpected view output for StateAPIResponseView (404):\n%s", viewResp404)
 	}
 
-	// 7. Unknown state fallback
 	model.state = 999
 	viewUnknown := model.View()
 	if viewUnknown != "Unknown API Client state" {

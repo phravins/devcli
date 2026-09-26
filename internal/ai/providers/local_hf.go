@@ -16,11 +16,11 @@ import (
 )
 
 type LocalHFProvider struct {
-	cmd       *exec.Cmd
-	stdin     io.WriteCloser
-	stdout    *bufio.Scanner
-	mutex     sync.Mutex
-	isRunning bool
+	cmd		*exec.Cmd
+	stdin		io.WriteCloser
+	stdout		*bufio.Scanner
+	mutex		sync.Mutex
+	isRunning	bool
 }
 
 func (p *LocalHFProvider) Name() string {
@@ -82,8 +82,8 @@ type pythonRequest struct {
 }
 
 type pythonResponse struct {
-	Response string `json:"response"`
-	Error    string `json:"error"`
+	Response	string	`json:"response"`
+	Error		string	`json:"error"`
 }
 
 func (p *LocalHFProvider) Send(messages []ai.Message) (string, error) {

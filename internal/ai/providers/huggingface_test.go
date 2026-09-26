@@ -13,48 +13,48 @@ import (
 
 func TestHFProvider_Configure(t *testing.T) {
 	tests := []struct {
-		name            string
-		config          *config.Config
-		expectedModel   string
-		expectedBaseURL string
-		expectedAPIKey  string
+		name		string
+		config		*config.Config
+		expectedModel	string
+		expectedBaseURL	string
+		expectedAPIKey	string
 	}{
 		{
-			name:            "Defaults when config fields are empty",
-			config:          &config.Config{},
-			expectedModel:   "HuggingFaceH4/zephyr-7b-beta",
-			expectedBaseURL: "https://router.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
-			expectedAPIKey:  "",
+			name:			"Defaults when config fields are empty",
+			config:			&config.Config{},
+			expectedModel:		"HuggingFaceH4/zephyr-7b-beta",
+			expectedBaseURL:	"https://router.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+			expectedAPIKey:		"",
 		},
 		{
-			name: "Custom AIModel and AIAPIKey set",
+			name:	"Custom AIModel and AIAPIKey set",
 			config: &config.Config{
-				AIModel:  "meta-llama/Llama-2-7b-chat-hf",
-				AIAPIKey: "api-key-123",
+				AIModel:	"meta-llama/Llama-2-7b-chat-hf",
+				AIAPIKey:	"api-key-123",
 			},
-			expectedModel:   "meta-llama/Llama-2-7b-chat-hf",
-			expectedBaseURL: "https://router.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf",
-			expectedAPIKey:  "api-key-123",
+			expectedModel:		"meta-llama/Llama-2-7b-chat-hf",
+			expectedBaseURL:	"https://router.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf",
+			expectedAPIKey:		"api-key-123",
 		},
 		{
-			name: "Custom AIBaseURL overrides formatted BaseURL",
+			name:	"Custom AIBaseURL overrides formatted BaseURL",
 			config: &config.Config{
-				AIModel:   "custom-model",
-				AIBaseURL: "https://custom.huggingface.router/v1",
+				AIModel:	"custom-model",
+				AIBaseURL:	"https://custom.huggingface.router/v1",
 			},
-			expectedModel:   "custom-model",
-			expectedBaseURL: "https://custom.huggingface.router/v1",
-			expectedAPIKey:  "",
+			expectedModel:		"custom-model",
+			expectedBaseURL:	"https://custom.huggingface.router/v1",
+			expectedAPIKey:		"",
 		},
 		{
-			name: "HFAccessToken overrides AIAPIKey",
+			name:	"HFAccessToken overrides AIAPIKey",
 			config: &config.Config{
-				AIAPIKey:      "generic-key",
-				HFAccessToken: "hf_specific_token",
+				AIAPIKey:	"generic-key",
+				HFAccessToken:	"hf_specific_token",
 			},
-			expectedModel:   "HuggingFaceH4/zephyr-7b-beta",
-			expectedBaseURL: "https://router.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
-			expectedAPIKey:  "hf_specific_token",
+			expectedModel:		"HuggingFaceH4/zephyr-7b-beta",
+			expectedBaseURL:	"https://router.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+			expectedAPIKey:		"hf_specific_token",
 		},
 	}
 
@@ -123,8 +123,8 @@ func TestHFProvider_Send_Success(t *testing.T) {
 
 	p := &HFProvider{}
 	cfg := &config.Config{
-		AIBaseURL:     server.URL,
-		HFAccessToken: "hf_test_token",
+		AIBaseURL:	server.URL,
+		HFAccessToken:	"hf_test_token",
 	}
 	if err := p.Configure(cfg); err != nil {
 		t.Fatalf("failed to configure provider: %v", err)
@@ -148,28 +148,28 @@ func TestHFProvider_Send_Success(t *testing.T) {
 
 func TestHFProvider_Send_Errors(t *testing.T) {
 	tests := []struct {
-		name          string
-		statusCode    int
-		responseBody  string
-		expectedError string
+		name		string
+		statusCode	int
+		responseBody	string
+		expectedError	string
 	}{
 		{
-			name:          "Non-200 Status Code Error",
-			statusCode:    http.StatusBadRequest,
-			responseBody:  "Model too busy",
-			expectedError: "HF API error (400)",
+			name:		"Non-200 Status Code Error",
+			statusCode:	http.StatusBadRequest,
+			responseBody:	"Model too busy",
+			expectedError:	"HF API error (400)",
 		},
 		{
-			name:          "Invalid JSON Response",
-			statusCode:    http.StatusOK,
-			responseBody:  `{invalid json}`,
-			expectedError: "failed to decode response",
+			name:		"Invalid JSON Response",
+			statusCode:	http.StatusOK,
+			responseBody:	`{invalid json}`,
+			expectedError:	"failed to decode response",
 		},
 		{
-			name:          "Empty Response Array",
-			statusCode:    http.StatusOK,
-			responseBody:  `[]`,
-			expectedError: "empty response from HF API",
+			name:		"Empty Response Array",
+			statusCode:	http.StatusOK,
+			responseBody:	`[]`,
+			expectedError:	"empty response from HF API",
 		},
 	}
 

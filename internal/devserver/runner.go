@@ -10,32 +10,31 @@ import (
 	"sync"
 )
 
-// ANSI escape code regex
 const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
 
 var re = regexp.MustCompile(ansi)
 
 type LogLine struct {
-	ServerName string
-	Line       string
-	IsError    bool
+	ServerName	string
+	Line		string
+	IsError		bool
 }
 
 type Runner struct {
-	ctx       context.Context
-	cancel    context.CancelFunc
-	processes []*exec.Cmd
-	logChan   chan LogLine
-	wg        sync.WaitGroup
+	ctx		context.Context
+	cancel		context.CancelFunc
+	processes	[]*exec.Cmd
+	logChan		chan LogLine
+	wg		sync.WaitGroup
 }
 
 func NewRunner() *Runner {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Runner{
-		ctx:       ctx,
-		cancel:    cancel,
-		processes: make([]*exec.Cmd, 0),
-		logChan:   make(chan LogLine, 100),
+		ctx:		ctx,
+		cancel:		cancel,
+		processes:	make([]*exec.Cmd, 0),
+		logChan:	make(chan LogLine, 100),
 	}
 }
 
@@ -76,11 +75,9 @@ func (r *Runner) startServer(config ServerConfig) error {
 
 	r.processes = append(r.processes, cmd)
 
-	// Stream stdout
 	r.wg.Add(1)
 	go r.streamLogs(config.Name, stdout, false)
 
-	// Stream stderr
 	r.wg.Add(1)
 	go r.streamLogs(config.Name, stderr, true)
 
@@ -96,9 +93,9 @@ func (r *Runner) streamLogs(serverName string, reader io.Reader, isError bool) {
 		case <-r.ctx.Done():
 			return
 		case r.logChan <- LogLine{
-			ServerName: serverName,
-			Line:       re.ReplaceAllString(scanner.Text(), ""),
-			IsError:    isError,
+			ServerName:	serverName,
+			Line:		re.ReplaceAllString(scanner.Text(), ""),
+			IsError:	isError,
 		}:
 		}
 	}
@@ -130,7 +127,6 @@ func (r *Runner) IsRunning() bool {
 	return false
 }
 
-// Legacy function for backward compatibility
 func Run(info ProjectInfo) error {
 	if info.Type == TypeUnknown || len(info.Servers) == 0 {
 		return fmt.Errorf("unable to detect project type")
@@ -143,7 +139,6 @@ func Run(info ProjectInfo) error {
 		return err
 	}
 
-	// Wait for context cancellation
 	<-runner.ctx.Done()
 	return nil
 }

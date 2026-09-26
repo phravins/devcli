@@ -10,16 +10,15 @@ import (
 )
 
 type Container struct {
-	ID        string `json:"ID"`
-	Image     string `json:"Image"`
-	Command   string `json:"Command"`
-	CreatedAt string `json:"CreatedAt"`
-	Status    string `json:"Status"`
-	Names     string `json:"Names"`
-	State     string `json:"State"`
+	ID		string	`json:"ID"`
+	Image		string	`json:"Image"`
+	Command		string	`json:"Command"`
+	CreatedAt	string	`json:"CreatedAt"`
+	Status		string	`json:"Status"`
+	Names		string	`json:"Names"`
+	State		string	`json:"State"`
 }
 
-// IsDockerAvailable checks if docker command is installed and daemon is running
 func IsDockerAvailable() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -27,7 +26,6 @@ func IsDockerAvailable() bool {
 	return err == nil
 }
 
-// ListContainers returns formatted list of docker containers
 func ListContainers() ([]Container, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -54,7 +52,6 @@ func ListContainers() ([]Container, error) {
 	return containers, nil
 }
 
-// StartContainer starts a docker container
 func StartContainer(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -65,7 +62,6 @@ func StartContainer(id string) error {
 	return nil
 }
 
-// StopContainer stops a docker container
 func StopContainer(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -76,7 +72,6 @@ func StopContainer(id string) error {
 	return nil
 }
 
-// RestartContainer restarts a docker container
 func RestartContainer(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -87,7 +82,6 @@ func RestartContainer(id string) error {
 	return nil
 }
 
-// GetContainerLogs retrieves logs from container
 func GetContainerLogs(id string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

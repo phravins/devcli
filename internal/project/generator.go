@@ -12,30 +12,27 @@ import (
 )
 
 type ProjectConfig struct {
-	Name      string
-	Path      string
-	Stack     string // "Go", "Python", "Node"
-	InitGit   bool
-	AddReadme bool
+	Name		string
+	Path		string
+	Stack		string
+	InitGit		bool
+	AddReadme	bool
 }
 
 func Generate(cfg ProjectConfig) (string, error) {
-	// 1. Resolve Template
+
 	var selectedTpl templates.Template
 	found := false
 	for _, t := range templates.Registry {
-		if t.Name == cfg.Stack { // We use "Stack" field to pass Template Name for now
+		if t.Name == cfg.Stack {
 			selectedTpl = t
 			found = true
 			break
 		}
 	}
 
-	// Fallback for custom/legacy "Stack" selection if not a named template
 	if !found {
-		// Naive match or error? For now, if not found, we can't generate specific files easily
-		// unless we keep the old map. Let's assume user selects valid template.
-		// But for "legacy" support or if passed simple "Go", map to "Go Fiber API"
+
 		if cfg.Stack == "Go" {
 			selectedTpl = templates.Registry[0]
 			found = true
@@ -58,10 +55,9 @@ func Generate(cfg ProjectConfig) (string, error) {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// 2. Write Files
 	if found {
 		for filename, content := range selectedTpl.Files {
-			// Parse content as Go Template to replace {{.Name}}
+
 			tmpl, err := template.New(filename).Parse(content)
 			if err != nil {
 				return "", err
@@ -72,7 +68,7 @@ func Generate(cfg ProjectConfig) (string, error) {
 			}
 
 			fullPath := filepath.Join(targetDir, filename)
-			// Ensure subdir exists if file is in subdir
+
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				return "", err
 			}
@@ -82,17 +78,14 @@ func Generate(cfg ProjectConfig) (string, error) {
 		}
 	}
 
-	// 3. Init Git
 	if cfg.InitGit {
 		initGit(targetDir)
 	}
 
-	// 4. Create README
 	if cfg.AddReadme && found {
 		createReadme(targetDir, cfg, selectedTpl)
 	}
 
-	// 5. Return Install Command (Don't run it here, let TUI handle it)
 	if found && selectedTpl.InstallCmd != "" {
 		return selectedTpl.InstallCmd, nil
 	}
@@ -103,9 +96,9 @@ func Generate(cfg ProjectConfig) (string, error) {
 func initGit(dir string) {
 	cmd := exec.Command("git", "init")
 	cmd.Dir = dir
-	cmd.Run()
-	// Note: .gitignore is handled by template files usually,
-	// but if missing we could add default.
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Warning: git init failed: %v\n", err)
+	}
 }
 
 func createReadme(dir string, cfg ProjectConfig, tpl templates.Template) {

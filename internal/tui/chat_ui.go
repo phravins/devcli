@@ -19,18 +19,18 @@ import (
 )
 
 type ChatModel struct {
-	viewport viewport.Model
-	textarea textarea.Model
-	spinner  spinner.Model
-	provider ai.Provider
-	messages []ai.Message
-	err      error
-	loading  bool
-	width    int
-	height   int
-	ready    bool
-	showHelp bool
-	helpView viewport.Model // New
+	viewport	viewport.Model
+	textarea	textarea.Model
+	spinner		spinner.Model
+	provider	ai.Provider
+	messages	[]ai.Message
+	err		error
+	loading		bool
+	width		int
+	height		int
+	ready		bool
+	showHelp	bool
+	helpView	viewport.Model
 }
 
 func NewChatModel() ChatModel {
@@ -48,11 +48,9 @@ func NewChatModel() ChatModel {
 	sp.Spinner = spinner.Dot
 	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
-	// Help Viewport
 	hv := viewport.New(0, 0)
 	hv.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(1, 2)
 
-	// Render Markdown Help
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(80),
@@ -63,7 +61,6 @@ func NewChatModel() ChatModel {
 	}
 	hv.SetContent(out)
 
-	// Initialize provider
 	cfg, _ := config.LoadConfig()
 	p, err := providers.GetProvider(cfg)
 	if err != nil {
@@ -71,12 +68,12 @@ func NewChatModel() ChatModel {
 	}
 
 	return ChatModel{
-		textarea: ta,
-		viewport: vp,
-		spinner:  sp,
-		provider: p,
-		messages: []ai.Message{},
-		helpView: hv,
+		textarea:	ta,
+		viewport:	vp,
+		spinner:	sp,
+		provider:	p,
+		messages:	[]ai.Message{},
+		helpView:	hv,
 	}
 }
 
@@ -88,9 +85,9 @@ type errMsg error
 
 func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
-		tiCmd tea.Cmd
-		vpCmd tea.Cmd
-		cmd   tea.Cmd
+		tiCmd	tea.Cmd
+		vpCmd	tea.Cmd
+		cmd	tea.Cmd
 	)
 
 	switch msg := msg.(type) {
@@ -106,7 +103,6 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.textarea.SetWidth(msg.Width - 4)
 		m.ready = true
 
-		// Resize Help View
 		m.helpView.Width = msg.Width - 6
 		m.helpView.Height = msg.Height - 10
 
@@ -115,17 +111,14 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.helpView, cmd = m.helpView.Update(msg)
 			return m, cmd
 		}
-		// If not help, update viewport (handled below or here)
-		// We'll let it fall through to component updates
 
 	case tea.KeyMsg:
 		str := msg.String()
-		// Filter out stray terminal ANSI response sequence artifacts (e.g. background queries or mouse tracking)
+
 		if strings.Contains(str, "]11;") || strings.Contains(str, "rgb:") || strings.Contains(str, "\033") || strings.Contains(str, "\x1b") {
 			return m, nil
 		}
 
-		// Help screen handler
 		if m.showHelp {
 			switch msg.String() {
 			case "esc", "?", "enter":
@@ -157,7 +150,6 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// User message
 			userMsg := ai.Message{Role: "user", Content: input}
 			m.messages = append(m.messages, userMsg)
 			m.renderMessages()
@@ -172,7 +164,7 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case ai.Message: // AI Response
+	case ai.Message:
 		m.messages = append(m.messages, msg)
 		m.loading = false
 		m.renderMessages()
@@ -194,22 +186,18 @@ func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *ChatModel) renderMessages() {
 	var sb strings.Builder
 
-	// User Style (Light Green Text, No Background)
 	userStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#90EE90")). // Light Green
+		Foreground(lipgloss.Color("#90EE90")).
 		Bold(true).
 		Render
 
-	// AI Style (White Text, No Background)
 	aiContainerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")) // White
+		Foreground(lipgloss.Color("#FFFFFF"))
 
-	// AI Name Label
 	aiLabelStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#00FFFF")). // Cyan for the name for contrast
+		Foreground(lipgloss.Color("#00FFFF")).
 		Bold(true)
 
-	// Initialize markdown renderer
 	mdRenderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(m.width-10),
@@ -217,15 +205,15 @@ func (m *ChatModel) renderMessages() {
 
 	for _, msg := range m.messages {
 		if msg.Role == "user" {
-			// User Message
+
 			content := fmt.Sprintf("You: %s", msg.Content)
 			sb.WriteString(userStyle(content))
 			sb.WriteString("\n\n")
 		} else {
-			// AI Message
+
 			rendered, err := mdRenderer.Render(msg.Content)
 			if err != nil {
-				rendered = msg.Content // Fallback
+				rendered = msg.Content
 			}
 
 			label := aiLabelStyle.Render(m.provider.Name())
@@ -255,7 +243,6 @@ func (m ChatModel) View() string {
 		return "\n  Initializing..."
 	}
 
-	// Show help screen
 	if m.showHelp {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
 			lipgloss.JoinVertical(lipgloss.Center,
@@ -270,17 +257,16 @@ func (m ChatModel) View() string {
 		Width(m.width).
 		Align(lipgloss.Center).
 		Foreground(lipgloss.Color("#FFFFFF")).
-		Background(lipgloss.Color("#008069")). // WhatsApp Teal Header
+		Background(lipgloss.Color("#008069")).
 		Bold(true).
 		Render(fmt.Sprintf(" Devcli Chat :: %s (%s) ", m.provider.Name(), m.provider.Model()))
 
 	chatView := m.viewport.View()
 
-	// Boxed Input Footer
 	inputStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#AAAAAA")).
-		Width(m.width-2). // Account for border width
+		Width(m.width-2).
 		Padding(0, 1)
 
 	var footerContent string
@@ -309,8 +295,8 @@ func RunChat() {
 }
 
 var ChatCmd = &cobra.Command{
-	Use:   "chat",
-	Short: "Start AI chat session (TUI)",
+	Use:	"chat",
+	Short:	"Start AI chat session (TUI)",
 	Run: func(cmd *cobra.Command, args []string) {
 		RunChat()
 	},

@@ -9,9 +9,8 @@ import (
 	"github.com/phravins/devcli/internal/auth"
 )
 
-// Global States
 const (
-	StateDashboard = iota
+	StateDashboard	= iota
 	StateProject
 	StateFileManager
 	StateChat
@@ -24,38 +23,35 @@ const (
 	StateAuthLogin
 )
 
-// Messages
 type SwitchViewMsg struct {
-	TargetState int
-	Args        interface{} // Generic args (e.g., initial path)
+	TargetState	int
+	Args		interface{}
 }
 
 type BackMsg struct{}
 
-// Feature-specific Back Messages for nested navigation
 type VenvBackMsg struct{}
 type DevServerBackMsg struct{}
 type BoilerplateBackMsg struct{}
 type BonusBackMsg struct{}
-type SubFeatureBackMsg struct{} // Intermediate navigation to parent menu
+type SubFeatureBackMsg struct{}
 
 type RootModel struct {
-	state  int
-	width  int
-	height int
+	state	int
+	width	int
+	height	int
 
-	// Sub-models
-	dashboard   DashboardModel
-	project     ProjectDashboardModel
-	fileManager FileManagerModel
-	chat        ChatModel
-	editor      model // Using the struct 'model' from editor.go
-	autoupdate  AutoUpdateModel
-	docs        DocsModel
-	docker      DockerDashboardModel
-	apiClient   APIClientModel
-	authSetup   AuthSetupModel
-	authLogin   AuthLoginModel
+	dashboard	DashboardModel
+	project		ProjectDashboardModel
+	fileManager	FileManagerModel
+	chat		ChatModel
+	editor		model
+	autoupdate	AutoUpdateModel
+	docs		DocsModel
+	docker		DockerDashboardModel
+	apiClient	APIClientModel
+	authSetup	AuthSetupModel
+	authLogin	AuthLoginModel
 }
 
 func NewRootModel() RootModel {
@@ -67,11 +63,11 @@ func NewRootModel() RootModel {
 	}
 
 	return RootModel{
-		state:     initialState,
-		dashboard: NewDashboard(),
-		project:   NewProjectDashboardModel(),
-		authSetup: NewAuthSetupModel(),
-		authLogin: NewAuthLoginModel(),
+		state:		initialState,
+		dashboard:	NewDashboard(),
+		project:	NewProjectDashboardModel(),
+		authSetup:	NewAuthSetupModel(),
+		authLogin:	NewAuthLoginModel(),
 	}
 }
 
@@ -105,7 +101,6 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case SwitchViewMsg:
 		m.state = msg.TargetState
 
-		// Initialize the target model and apply current dimensions
 		switch m.state {
 		case StateFileManager:
 			path := ""

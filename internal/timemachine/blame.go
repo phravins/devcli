@@ -9,21 +9,19 @@ import (
 	"time"
 )
 
-// BlameLine represents a single line with its Git blame information
 type BlameLine struct {
-	LineNumber     int
-	Content        string
-	CommitHash     string
-	Author         string
-	AuthorEmail    string
-	Timestamp      time.Time
-	CommitMessage  string
-	BoundaryCommit bool // First commit for this file
+	LineNumber	int
+	Content		string
+	CommitHash	string
+	Author		string
+	AuthorEmail	string
+	Timestamp	time.Time
+	CommitMessage	string
+	BoundaryCommit	bool
 }
 
-// GetBlame retrieves the Git blame information for a file
 func GetBlame(repoPath, filePath string) ([]BlameLine, error) {
-	// Run git blame with porcelain format
+
 	cmd := exec.Command("git", "blame", "--line-porcelain", filePath)
 	cmd.Dir = repoPath
 
@@ -35,9 +33,8 @@ func GetBlame(repoPath, filePath string) ([]BlameLine, error) {
 	return parseBlameOutput(string(output))
 }
 
-// GetBlameAtCommit retrieves the Git blame information for a file at a specific commit
 func GetBlameAtCommit(repoPath, filePath, commitHash string) ([]BlameLine, error) {
-	// Run git blame with porcelain format for a specific commit
+
 	cmd := exec.Command("git", "blame", "--line-porcelain", commitHash, "--", filePath)
 	cmd.Dir = repoPath
 
@@ -49,7 +46,6 @@ func GetBlameAtCommit(repoPath, filePath, commitHash string) ([]BlameLine, error
 	return parseBlameOutput(string(output))
 }
 
-// parseBlameOutput parses the porcelain format output from git blame
 func parseBlameOutput(output string) ([]BlameLine, error) {
 	var lines []BlameLine
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -60,26 +56,22 @@ func parseBlameOutput(output string) ([]BlameLine, error) {
 	for scanner.Scan() {
 		text := scanner.Text()
 
-		// Commit hash line (starts hash, original line num, final line num)
 		if len(text) > 40 && text[40] == ' ' {
-			// Save previous line if exists
+
 			if currentLine.CommitHash != "" {
 				lines = append(lines, currentLine)
 			}
 
-			// Parse new commit line
 			parts := strings.Fields(text)
 			currentLine = BlameLine{
 				CommitHash: parts[0],
 			}
 
-			// Final line number is third field
 			if len(parts) >= 3 {
 				lineNum, _ = strconv.Atoi(parts[2])
 				currentLine.LineNumber = lineNum
 			}
 
-			// Check if boundary commit (prefixed with ^)
 			if strings.HasPrefix(parts[0], "^") {
 				currentLine.BoundaryCommit = true
 				currentLine.CommitHash = strings.TrimPrefix(parts[0], "^")
@@ -102,12 +94,11 @@ func parseBlameOutput(output string) ([]BlameLine, error) {
 			currentLine.CommitMessage = strings.TrimPrefix(text, "summary ")
 
 		} else if strings.HasPrefix(text, "\t") {
-			// This is the actual line content
+
 			currentLine.Content = strings.TrimPrefix(text, "\t")
 		}
 	}
 
-	// Add the last line
 	if currentLine.CommitHash != "" {
 		lines = append(lines, currentLine)
 	}
@@ -119,7 +110,6 @@ func parseBlameOutput(output string) ([]BlameLine, error) {
 	return lines, nil
 }
 
-// GetLineBlame retrieves blame info for a specific line in a file
 func GetLineBlame(repoPath, filePath string, lineNum int) (*BlameLine, error) {
 	cmd := exec.Command("git", "blame", "-L", fmt.Sprintf("%d,%d", lineNum, lineNum), "--line-porcelain", filePath)
 	cmd.Dir = repoPath
@@ -141,7 +131,6 @@ func GetLineBlame(repoPath, filePath string, lineNum int) (*BlameLine, error) {
 	return &lines[0], nil
 }
 
-// GetBlameRange retrieves blame info for a range of lines
 func GetBlameRange(repoPath, filePath string, startLine, endLine int) ([]BlameLine, error) {
 	cmd := exec.Command("git", "blame", "-L", fmt.Sprintf("%d,%d", startLine, endLine), "--line-porcelain", filePath)
 	cmd.Dir = repoPath

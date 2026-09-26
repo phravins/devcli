@@ -14,16 +14,16 @@ import (
 )
 
 type SettingsModel struct {
-	inputs     []textinput.Model
-	focusedIdx int
-	err        error
-	successMsg string
-	quitting   bool
-	showHelp   bool
-	width      int
-	height     int
-	helpView   viewport.Model
-	mainView   viewport.Model
+	inputs		[]textinput.Model
+	focusedIdx	int
+	err		error
+	successMsg	string
+	quitting	bool
+	showHelp	bool
+	width		int
+	height		int
+	helpView	viewport.Model
+	mainView	viewport.Model
 }
 
 func NewSettingsModel() SettingsModel {
@@ -31,7 +31,6 @@ func NewSettingsModel() SettingsModel {
 
 	inputs := make([]textinput.Model, 4)
 
-	// AI Backend
 	inputs[0] = textinput.New()
 	inputs[0].Placeholder = "ollama / gemini / openai / claude"
 	inputs[0].Focus()
@@ -40,7 +39,6 @@ func NewSettingsModel() SettingsModel {
 	inputs[0].CharLimit = 30
 	inputs[0].Width = 30
 
-	// Model Name
 	inputs[1] = textinput.New()
 	inputs[1].Placeholder = "gemini-1.5-flash / gpt-3.5-turbo"
 	inputs[1].Prompt = "AI Model: "
@@ -48,13 +46,11 @@ func NewSettingsModel() SettingsModel {
 	inputs[1].CharLimit = 50
 	inputs[1].Width = 30
 
-	// API Key
 	inputs[2] = textinput.New()
 	inputs[2].Placeholder = "sk-..."
 	inputs[2].Prompt = "API Key: "
 	inputs[2].EchoMode = textinput.EchoPassword
 
-	// Pre-fill key based on backend
 	currentKey := cfg.AIAPIKey
 	switch strings.ToLower(cfg.AIBackend) {
 	case "huggingface":
@@ -70,7 +66,6 @@ func NewSettingsModel() SettingsModel {
 	inputs[2].CharLimit = 100
 	inputs[2].Width = 30
 
-	// Base URL
 	inputs[3] = textinput.New()
 	inputs[3].Placeholder = "Optional (e.g. http://localhost:1234/v1)"
 	inputs[3].Prompt = "Base URL: "
@@ -78,14 +73,12 @@ func NewSettingsModel() SettingsModel {
 	inputs[3].CharLimit = 100
 	inputs[3].Width = 50
 
-	// Help Viewport
 	hv := viewport.New(100, 40)
 	hv.Style = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("62")).
 		Padding(1, 2)
 
-	// Render Markdown Help
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(80),
@@ -96,17 +89,16 @@ func NewSettingsModel() SettingsModel {
 	}
 	hv.SetContent(out)
 
-	// Main Viewport
 	mv := viewport.New(100, 40)
 	mv.Style = lipgloss.NewStyle().Padding(1, 2)
 
 	m := SettingsModel{
-		inputs:     inputs,
-		focusedIdx: 0,
-		width:      100,
-		height:     40,
-		helpView:   hv,
-		mainView:   mv,
+		inputs:		inputs,
+		focusedIdx:	0,
+		width:		100,
+		height:		40,
+		helpView:	hv,
+		mainView:	mv,
 	}
 	m.updateMainViewContent()
 	return m
@@ -131,7 +123,7 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		// Help screen handler
+
 		if m.showHelp {
 			switch msg.String() {
 			case "esc", "?", "enter":
@@ -151,18 +143,16 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "ctrl+c", "esc":
 			m.quitting = true
-			return m, tea.Quit // Return to main dashboard logic
+			return m, tea.Quit
 		case "tab", "shift+tab", "enter", "up", "down":
 			s := msg.String()
 
-			// Enter on last field = Save
 			if s == "enter" && m.focusedIdx == len(m.inputs)-1 {
 				m.saveConfig()
-				m.updateMainViewContent() // Show success/error
+				m.updateMainViewContent()
 				return m, nil
 			}
 
-			// Navigation
 			if s == "up" || s == "shift+tab" {
 				m.focusedIdx--
 			} else {
@@ -179,7 +169,7 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for i := 0; i < len(m.inputs); i++ {
 				if i == m.focusedIdx {
 					cmds[i] = m.inputs[i].Focus()
-					m.inputs[i].PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205")) // Pink
+					m.inputs[i].PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 					m.inputs[i].TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 				} else {
 					m.inputs[i].Blur()
@@ -187,7 +177,7 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.inputs[i].TextStyle = lipgloss.NewStyle()
 				}
 			}
-			m.updateMainViewContent() // CRITICAL: Update view to show new focus
+			m.updateMainViewContent()
 			return m, tea.Batch(cmds...)
 		}
 
@@ -198,7 +188,6 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-		// Fixed: Mouse wheel now changes focus instead of scrolling viewport
 		switch msg.Type {
 		case tea.MouseWheelUp:
 			m.focusedIdx--
@@ -212,7 +201,6 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// Update focus state based on new index
 		for i := 0; i < len(m.inputs); i++ {
 			if i == m.focusedIdx {
 				m.inputs[i].Focus()
@@ -225,11 +213,10 @@ func (m SettingsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		m.updateMainViewContent() // CRITICAL: Update view to show new focus
+		m.updateMainViewContent()
 		return m, nil
 	}
 
-	// Handle Input Updates
 	inputCmd := m.updateInputs(msg)
 	cmds = append(cmds, inputCmd)
 
@@ -241,15 +228,15 @@ func (m *SettingsModel) updateInputs(msg tea.Msg) tea.Cmd {
 	for i := range m.inputs {
 		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
 	}
-	m.updateMainViewContent() // Update content whenever inputs change
+	m.updateMainViewContent()
 	return tea.Batch(cmds...)
 }
 
 func (m *SettingsModel) updateMainViewContent() {
-	// Create a centralized card style
+
 	card := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")). // Purple/Blurple
+		BorderForeground(lipgloss.Color("62")).
 		Padding(1, 3).
 		Width(60).
 		Align(lipgloss.Left)
@@ -257,7 +244,7 @@ func (m *SettingsModel) updateMainViewContent() {
 	var b strings.Builder
 
 	title := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("212")). // Pink
+		Foreground(lipgloss.Color("212")).
 		Bold(true).
 		Render("CONFIGURATION")
 
@@ -267,11 +254,10 @@ func (m *SettingsModel) updateMainViewContent() {
 	for i := range m.inputs {
 		b.WriteString(m.inputs[i].View())
 		if i < len(m.inputs)-1 {
-			b.WriteString("\n\n") // More spacing
+			b.WriteString("\n\n")
 		}
 	}
 
-	// Button Logic
 	buttonStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("255")).
 		Background(lipgloss.Color("62")).
@@ -286,7 +272,7 @@ func (m *SettingsModel) updateMainViewContent() {
 
 	button := "\n\n"
 	if m.focusedIdx == len(m.inputs)-1 {
-		// Active Button
+
 		button += lipgloss.PlaceHorizontal(54, lipgloss.Center, buttonStyle.Render("SAVE CHANGES"))
 	} else {
 		button += lipgloss.PlaceHorizontal(54, lipgloss.Center, inactiveButton)
@@ -306,7 +292,6 @@ func (m *SettingsModel) updateMainViewContent() {
 	b.WriteString("\n\n")
 	b.WriteString(help)
 
-	// Wrap everything in a nice centered box
 	view := lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
 		card.Render(b.String()),
 	)
@@ -325,9 +310,8 @@ func (m *SettingsModel) saveConfig() {
 	config.Set("ai_model", strings.TrimSpace(m.inputs[1].Value()))
 
 	apiKey := strings.TrimSpace(m.inputs[2].Value())
-	config.Set("ai_api_key", apiKey) // Set default/active key
+	config.Set("ai_api_key", apiKey)
 
-	// Also save to specific provider keys for persistence
 	backend := strings.ToLower(strings.TrimSpace(m.inputs[0].Value()))
 	switch backend {
 	case "huggingface":
@@ -355,7 +339,6 @@ func (m *SettingsModel) validateInputs() error {
 		return fmt.Errorf("backend cannot be empty")
 	}
 
-	// List of backends that require an API key
 	needsKey := []string{"openai", "gemini", "google", "claude", "anthropic", "mistral", "groq", "huggingface", "kimi"}
 
 	for _, b := range needsKey {
@@ -363,7 +346,7 @@ func (m *SettingsModel) validateInputs() error {
 			return fmt.Errorf("API Key is required for %s", b)
 		}
 	}
-	// Base URL validation
+
 	baseURL := strings.TrimSpace(m.inputs[3].Value())
 	if baseURL != "" {
 		if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
@@ -379,8 +362,6 @@ func (m SettingsModel) View() string {
 		return ""
 	}
 
-	// Show help screen
-	// Show help screen
 	if m.showHelp {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
 			lipgloss.JoinVertical(lipgloss.Center,
@@ -391,14 +372,12 @@ func (m SettingsModel) View() string {
 		)
 	}
 
-	// Return the viewport view instead of the raw string
 	if m.mainView.Width == 0 {
-		m.updateMainViewContent() // Fallback init
+		m.updateMainViewContent()
 	}
 	return m.mainView.View()
 }
 
-// Wrap for standalone run if needed, but we will call from dashboard
 func RunSettings() {
 	p := tea.NewProgram(NewSettingsModel())
 	if _, err := p.Run(); err != nil {

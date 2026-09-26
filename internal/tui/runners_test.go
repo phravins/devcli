@@ -56,13 +56,11 @@ func TestDevServerDashboardModelPathInputEnter(t *testing.T) {
 func TestRunDevServer(t *testing.T) {
 	tempDir := t.TempDir()
 
-	// Create dummy go.mod in tempDir
 	goModPath := filepath.Join(tempDir, "go.mod")
 	if err := os.WriteFile(goModPath, []byte("module test"), 0644); err != nil {
 		t.Fatalf("failed to create dummy go.mod: %v", err)
 	}
 
-	// \x03 is Ctrl+C which triggers tea.Quit in DevServerDashboardModel
 	err := RunDevServer(tempDir, tea.WithoutRenderer(), tea.WithInput(strings.NewReader("\x03")))
 	if err != nil {
 		t.Errorf("expected RunDevServer with custom path to return nil error, got: %v", err)

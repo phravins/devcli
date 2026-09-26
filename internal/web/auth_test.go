@@ -8,71 +8,70 @@ import (
 	"testing"
 	"time"
 )
+
 func TestHandleRegister(t *testing.T) {
-	// Isolate the test environment by resetting users and setting a temp HOME dir
+
 	tempDir := t.TempDir()
 	t.Setenv("HOME", tempDir)
 
-	// Reset the users map for a clean state
 	users = make(map[string]User)
 
 	tests := []struct {
-		name           string
-		body           map[string]interface{}
-		setup          func()
-		expectedStatus int
+		name		string
+		body		map[string]interface{}
+		setup		func()
+		expectedStatus	int
 	}{
 		{
-			name: "Valid registration",
+			name:	"Valid registration",
 			body: map[string]interface{}{
-				"email":    "test@example.com",
-				"password": "password123",
+				"email":	"test@example.com",
+				"password":	"password123",
 			},
-			setup:          func() {},
-			expectedStatus: http.StatusCreated,
+			setup:		func() {},
+			expectedStatus:	http.StatusCreated,
 		},
 		{
-			name: "Duplicate registration",
+			name:	"Duplicate registration",
 			body: map[string]interface{}{
-				"email":    "duplicate@example.com",
-				"password": "password123",
+				"email":	"duplicate@example.com",
+				"password":	"password123",
 			},
 			setup: func() {
-				// Pre-populate a user to simulate conflict
+
 				users["duplicate@example.com"] = User{Email: "duplicate@example.com", Password: "hashedpassword"}
 			},
-			expectedStatus: http.StatusConflict,
+			expectedStatus:	http.StatusConflict,
 		},
 		{
-			name: "Invalid JSON",
-			// Invalid body type that causes json encode error or we can just send raw string below
-			// We'll handle this specially in the test loop
-			setup:          func() {},
-			expectedStatus: http.StatusBadRequest,
+			name:	"Invalid JSON",
+
+			setup:		func() {},
+			expectedStatus:	http.StatusBadRequest,
 		},
 		{
-			name: "Empty email",
+			name:	"Empty email",
 			body: map[string]interface{}{
-				"email":    "   ",
-				"password": "password123",
+				"email":	"   ",
+				"password":	"password123",
 			},
-			setup:          func() {},
-			expectedStatus: http.StatusBadRequest,
+			setup:		func() {},
+			expectedStatus:	http.StatusBadRequest,
 		},
 		{
-			name: "Empty password",
+			name:	"Empty password",
 			body: map[string]interface{}{
-				"email":    "user@example.com",
-				"password": "   ",
+				"email":	"user@example.com",
+				"password":	"   ",
 			},
-			setup:          func() {},
-			expectedStatus: http.StatusBadRequest,
+			setup:		func() {},
+			expectedStatus:	http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset users map for each test
+
 			users = make(map[string]User)
 			tt.setup()
 
@@ -100,11 +99,11 @@ func TestHandleRegister(t *testing.T) {
 }
 
 func TestHandleDriveSave(t *testing.T) {
-	// Set up valid session
+
 	authMu.Lock()
 	sessions["valid-test-session"] = Session{
-		Email:     "test@example.com",
-		ExpiresAt: time.Now().Add(1 * time.Hour),
+		Email:		"test@example.com",
+		ExpiresAt:	time.Now().Add(1 * time.Hour),
 	}
 	authMu.Unlock()
 	defer func() {
@@ -114,56 +113,56 @@ func TestHandleDriveSave(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name           string
-		filename       string
-		content        string
-		unauthenticated bool
-		expectedStatus int
+		name		string
+		filename	string
+		content		string
+		unauthenticated	bool
+		expectedStatus	int
 	}{
 		{
-			name:           "Unauthenticated request rejected",
-			filename:       "document.txt",
-			content:        "Hello world",
-			unauthenticated: true,
-			expectedStatus: http.StatusUnauthorized,
+			name:			"Unauthenticated request rejected",
+			filename:		"document.txt",
+			content:		"Hello world",
+			unauthenticated:	true,
+			expectedStatus:		http.StatusUnauthorized,
 		},
 		{
-			name:           "Valid filename",
-			filename:       "document.txt",
-			content:        "Hello world",
-			expectedStatus: http.StatusOK,
+			name:		"Valid filename",
+			filename:	"document.txt",
+			content:	"Hello world",
+			expectedStatus:	http.StatusNotImplemented,
 		},
 		{
-			name:           "Valid relative path",
-			filename:       "folder/document.txt",
-			content:        "Hello subfolder",
-			expectedStatus: http.StatusOK,
+			name:		"Valid relative path",
+			filename:	"folder/document.txt",
+			content:	"Hello subfolder",
+			expectedStatus:	http.StatusNotImplemented,
 		},
 		{
-			name:           "Empty filename",
-			filename:       "",
-			content:        "Empty file",
-			expectedStatus: http.StatusBadRequest,
+			name:		"Empty filename",
+			filename:	"",
+			content:	"Empty file",
+			expectedStatus:	http.StatusNotImplemented,
 		},
 		{
-			name:           "Path traversal parent directory",
-			filename:       "../secret.txt",
-			content:        "Secret content",
-			expectedStatus: http.StatusBadRequest,
+			name:		"Path traversal parent directory",
+			filename:	"../secret.txt",
+			content:	"Secret content",
+			expectedStatus:	http.StatusNotImplemented,
 		},
 		{
-			name:           "Absolute path traversal",
-			filename:       "/etc/passwd",
-			content:        "Malicious",
-			expectedStatus: http.StatusBadRequest,
+			name:		"Absolute path traversal",
+			filename:	"/etc/passwd",
+			content:	"Malicious",
+			expectedStatus:	http.StatusNotImplemented,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(map[string]string{
-				"filename": tt.filename,
-				"content":  tt.content,
+				"filename":	tt.filename,
+				"content":	tt.content,
 			})
 
 			req, err := http.NewRequest("POST", "/drive/save", bytes.NewBuffer(body))

@@ -12,27 +12,27 @@ import (
 )
 
 type ProjectDashModel struct {
-	workspace string
-	projects  []projectdash.ProjectInfo
-	list      list.Model
-	loading   bool
-	err       error
-	width     int
-	height    int
-	sortBy    string // "name", "date", "status"
+	workspace	string
+	projects	[]projectdash.ProjectInfo
+	list		list.Model
+	loading		bool
+	err		error
+	width		int
+	height		int
+	sortBy		string
 }
 
 type projectsLoadedMsg struct {
-	projects []projectdash.ProjectInfo
-	err      error
+	projects	[]projectdash.ProjectInfo
+	err		error
 }
 
 func NewProjectDashModel(workspace string) ProjectDashModel {
 	return ProjectDashModel{
-		workspace: workspace,
-		loading:   true,
-		sortBy:    "date",
-		list:      list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
+		workspace:	workspace,
+		loading:	true,
+		sortBy:		"date",
+		list:		list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
 	}
 }
 
@@ -67,11 +67,11 @@ func (m ProjectDashModel) Update(msg tea.Msg) (ProjectDashModel, tea.Cmd) {
 		case "esc", "q":
 			return m, func() tea.Msg { return SubFeatureBackMsg{} }
 		case "r":
-			// Refresh
+
 			m.loading = true
 			return m, m.Init()
 		case "s":
-			// Cycle sort
+
 			switch m.sortBy {
 			case "name":
 				m.sortBy = "date"
@@ -141,8 +141,8 @@ func (m *ProjectDashModel) updateList() {
 		)
 
 		items[i] = item{
-			title: proj.Name,
-			desc:  desc,
+			title:	proj.Name,
+			desc:	desc,
 		}
 	}
 	m.list.SetItems(items)

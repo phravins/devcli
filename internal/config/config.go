@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,15 +12,15 @@ import (
 const Version = "v1.1.0"
 
 type Config struct {
-	AIBackend     string            `mapstructure:"ai_backend"`
-	AIModel       string            `mapstructure:"ai_model"`
-	AIAPIKey      string            `mapstructure:"ai_api_key"`
-	AIBaseURL     string            `mapstructure:"ai_base_url"`
-	EditorTheme   string            `mapstructure:"editor_theme"`
-	UserName      string            `mapstructure:"user_name"`
-	HFAccessToken string            `mapstructure:"hf_access_token"`
-	GeminiAPIKey  string            `mapstructure:"gemini_api_key"`
-	Compilers     map[string]string `mapstructure:"compilers"` // Persisted detected paths
+	AIBackend	string			`mapstructure:"ai_backend"`
+	AIModel		string			`mapstructure:"ai_model"`
+	AIAPIKey	string			`mapstructure:"ai_api_key"`
+	AIBaseURL	string			`mapstructure:"ai_base_url"`
+	EditorTheme	string			`mapstructure:"editor_theme"`
+	UserName	string			`mapstructure:"user_name"`
+	HFAccessToken	string			`mapstructure:"hf_access_token"`
+	GeminiAPIKey	string			`mapstructure:"gemini_api_key"`
+	Compilers	map[string]string	`mapstructure:"compilers"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -37,10 +38,7 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("user_name", "Developer")
 
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
-			// or create a default one
-		} else {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, err
 		}
 	}
@@ -96,8 +94,12 @@ func Write() error {
 	}
 
 	devcliDir := filepath.Join(home, ".devcli")
-	_ = os.MkdirAll(devcliDir, 0700)
-	_ = os.Chmod(devcliDir, 0700)
+	if err := os.MkdirAll(devcliDir, 0700); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+	if err := os.Chmod(devcliDir, 0700); err != nil {
+		return fmt.Errorf("failed to set config directory permissions: %w", err)
+	}
 
 	configPath := filepath.Join(home, ".devcli.yaml")
 	viper.SetConfigFile(configPath)

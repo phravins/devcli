@@ -5,60 +5,60 @@ import (
 )
 
 type FileTemplate struct {
-	Name        string
-	Description string
-	Extension   string
-	Generator   func(options map[string]string) string
+	Name		string
+	Description	string
+	Extension	string
+	Generator	func(options map[string]string) string
 }
 
 var Templates = []FileTemplate{
 	{
-		Name:        ".env",
-		Description: "Environment variables template",
-		Extension:   ".env",
-		Generator:   GenerateEnvFile,
+		Name:		".env",
+		Description:	"Environment variables template",
+		Extension:	".env",
+		Generator:	GenerateEnvFile,
 	},
 	{
-		Name:        ".gitignore",
-		Description: "Git ignore patterns",
-		Extension:   ".gitignore",
-		Generator:   GenerateGitignore,
+		Name:		".gitignore",
+		Description:	"Git ignore patterns",
+		Extension:	".gitignore",
+		Generator:	GenerateGitignore,
 	},
 	{
-		Name:        "Dockerfile",
-		Description: "Docker container configuration",
-		Extension:   "",
-		Generator:   GenerateDockerfile,
+		Name:		"Dockerfile",
+		Description:	"Docker container configuration",
+		Extension:	"",
+		Generator:	GenerateDockerfile,
 	},
 	{
-		Name:        ".editorconfig",
-		Description: "Editor configuration",
-		Extension:   ".editorconfig",
-		Generator:   GenerateEditorConfig,
+		Name:		".editorconfig",
+		Description:	"Editor configuration",
+		Extension:	".editorconfig",
+		Generator:	GenerateEditorConfig,
 	},
 	{
-		Name:        "Makefile",
-		Description: "Build automation",
-		Extension:   "",
-		Generator:   GenerateMakefile,
+		Name:		"Makefile",
+		Description:	"Build automation",
+		Extension:	"",
+		Generator:	GenerateMakefile,
 	},
 	{
-		Name:        "GitHub Actions",
-		Description: "CI/CD workflow",
-		Extension:   ".yml",
-		Generator:   GenerateGitHubActions,
+		Name:		"GitHub Actions",
+		Description:	"CI/CD workflow",
+		Extension:	".yml",
+		Generator:	GenerateGitHubActions,
 	},
 	{
-		Name:        "docker-compose.yml",
-		Description: "Multi-container Docker setup",
-		Extension:   ".yml",
-		Generator:   GenerateDockerCompose,
+		Name:		"docker-compose.yml",
+		Description:	"Multi-container Docker setup",
+		Extension:	".yml",
+		Generator:	GenerateDockerCompose,
 	},
 	{
-		Name:        "Custom File (AI)",
-		Description: "Generate any file content using AI assistant",
-		Extension:   "",
-		Generator:   func(_ map[string]string) string { return "(AI content will be generated...)" },
+		Name:		"Custom File (AI)",
+		Description:	"Generate any file content using AI assistant",
+		Extension:	"",
+		Generator:	func(_ map[string]string) string { return "(AI content will be generated...)" },
 	},
 }
 

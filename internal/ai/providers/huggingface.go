@@ -12,9 +12,9 @@ import (
 )
 
 type HFProvider struct {
-	BaseURL   string
-	APIKey    string
-	modelName string
+	BaseURL		string
+	APIKey		string
+	modelName	string
 }
 
 func (p *HFProvider) Name() string {
@@ -30,7 +30,7 @@ func (p *HFProvider) Configure(cfg *config.Config) error {
 	if cfg.AIModel != "" {
 		p.modelName = cfg.AIModel
 	}
-	// URL: https://router.huggingface.co/models/%s
+
 	p.BaseURL = fmt.Sprintf("https://router.huggingface.co/models/%s", p.modelName)
 	if cfg.AIBaseURL != "" {
 		p.BaseURL = cfg.AIBaseURL
@@ -48,11 +48,11 @@ func (p *HFProvider) IsLocal() bool {
 }
 
 type hfRequest struct {
-	Inputs     string `json:"inputs"`
-	Parameters struct {
-		MaxNewTokens   int  `json:"max_new_tokens"`
-		ReturnFullText bool `json:"return_full_text"`
-	} `json:"parameters"`
+	Inputs		string	`json:"inputs"`
+	Parameters	struct {
+		MaxNewTokens	int	`json:"max_new_tokens"`
+		ReturnFullText	bool	`json:"return_full_text"`
+	}	`json:"parameters"`
 }
 
 type hfResponseItem struct {

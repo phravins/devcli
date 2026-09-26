@@ -19,58 +19,46 @@ import (
 )
 
 type FileManagerModel struct {
-	currentPath string
-	files       []fs.DirEntry
-	filtered    []fs.DirEntry
+	currentPath	string
+	files		[]fs.DirEntry
+	filtered	[]fs.DirEntry
 
-	cursor      int
-	width       int
-	height      int
-	quitting    bool
-	searchInput textinput.Model
-	err         error
+	cursor		int
+	width		int
+	height		int
+	quitting	bool
+	searchInput	textinput.Model
+	err		error
 
-	selectedFile string
+	selectedFile	string
 
-	// Move Implementation
-	moveMode        bool
-	moveInput       textinput.Model
-	selectedForMove string
+	moveMode	bool
+	moveInput	textinput.Model
+	selectedForMove	string
 
-	// Copy Implementation
-	copyMode        bool
-	copyInput       textinput.Model
-	selectedForCopy string
+	copyMode	bool
+	copyInput	textinput.Model
+	selectedForCopy	string
 
-	// Path Edit Implementation
-	pathMode  bool
-	pathInput textinput.Model
+	pathMode	bool
+	pathInput	textinput.Model
 
-	// Search Cache
-	allFilePaths []string
+	allFilePaths	[]string
 
-	// Navigation History
-	history []string
+	history	[]string
 
-	// Global Search
-	globalSearch bool
+	globalSearch	bool
 
-	// Loading State
-	loading bool
+	loading	bool
 
-	// Performance
-	searchID int
+	searchID	int
 
-	// Concurrency
-	scanChan chan string
+	scanChan	chan string
 
-	// Layout
-	ready bool
+	ready	bool
 
-	// Help
-	// Help
-	showHelp bool
-	helpView viewport.Model // New
+	showHelp	bool
+	helpView	viewport.Model
 }
 
 type searchDebounceMsg struct {
@@ -84,9 +72,6 @@ type filterFinishedMsg struct {
 const maxSearchResults = 1000
 const fastSearchThreshold = 5000
 
-// containsIgnoreCase checks if s contains lowerSubstr case-insensitively.
-// lowerSubstr must be lowercased by the caller.
-// It avoids allocating lowercased strings for ASCII strings.
 func containsIgnoreCase(s, lowerSubstr string) bool {
 	if len(lowerSubstr) == 0 {
 		return true
@@ -162,7 +147,6 @@ func matchPaths(paths []string, query string) []fs.DirEntry {
 	return results
 }
 
-// Async Search Command
 func performSearchCmd(paths []string, query string) tea.Cmd {
 	return func() tea.Msg {
 		results := matchPaths(paths, query)
@@ -170,7 +154,6 @@ func performSearchCmd(paths []string, query string) tea.Cmd {
 	}
 }
 
-// Get available drives (Windows specific simplified)
 func getDrives() []string {
 	drives := []string{}
 	for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
@@ -194,16 +177,13 @@ func NewFileManagerModel(startPath string) FileManagerModel {
 	ti.Width = 60
 	ti.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("33"))
 	ti.Prompt = "> "
-	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("86"))   // Cyan
-	ti.Cursor.Style = lipgloss.NewStyle().Background(lipgloss.Color("255")) // White Block Cursor
-	ti.Cursor.Style = lipgloss.NewStyle().Background(lipgloss.Color("255")) // White Block Cursor
-	ti.Focus()                                                              // Ensure focused at start
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("86"))
+	ti.Cursor.Style = lipgloss.NewStyle().Background(lipgloss.Color("255"))
+	ti.Focus()
 
-	// Help Viewport
 	hv := viewport.New(80, 20)
 	hv.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(1, 2)
 
-	// Render Markdown Help
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(80),
@@ -231,37 +211,32 @@ func NewFileManagerModel(startPath string) FileManagerModel {
 	pi.SetValue(startPath)
 
 	m := FileManagerModel{
-		currentPath:  startPath,
-		searchInput:  ti,
-		moveInput:    mi,
-		copyInput:    ci,
-		pathInput:    pi,
-		globalSearch: true, // Default to Global
-		loading:      true, // Start loading
-		scanChan:     make(chan string, 1000),
-		// width/height default to 0, waiting for WindowSizeMsg
-		helpView: hv,
+		currentPath:	startPath,
+		searchInput:	ti,
+		moveInput:	mi,
+		copyInput:	ci,
+		pathInput:	pi,
+		globalSearch:	true,
+		loading:	true,
+		scanChan:	make(chan string, 1000),
+
+		helpView:	hv,
 	}
 
-	// Pre-load current directory recursively so search works immediately for local files
-	m.reloadAllFiles() // This fills m.allFilePaths with local files first
+	m.reloadAllFiles()
 
 	m.loadFiles()
 	return m
 }
 
-// Msg when scanning starts
 type scanStartedMsg struct{}
 
-// Msg for incremental results
 type searchResultMsg struct {
 	paths []string
 }
 
-// Msg when scanning is complete
 type scanFinishedMsg struct{}
 
-// Command to start background scanning
 func startGlobalScanCmd(ch chan string) tea.Cmd {
 	return func() tea.Msg {
 		go func() {
@@ -279,7 +254,7 @@ func startGlobalScanCmd(ch chan string) tea.Cmd {
 							}
 							return nil
 						}
-						// Non-blocking send or block? If buffer full, we block.
+
 						ch <- path
 						return nil
 					})
@@ -293,21 +268,18 @@ func startGlobalScanCmd(ch chan string) tea.Cmd {
 	}
 }
 
-// Command to listen for results (Batched with Time Buffer)
 func waitForSearchResults(ch chan string) tea.Cmd {
 	return func() tea.Msg {
 		var batch []string
 		const maxBatch = 5000
 		const batchTimeout = 200 * time.Millisecond
 
-		// 1. Blocking wait for at least one item
 		path, ok := <-ch
 		if !ok {
 			return scanFinishedMsg{}
 		}
 		batch = append(batch, path)
 
-		// 2. Try to collect more items
 		timer := time.NewTimer(batchTimeout)
 		defer timer.Stop()
 
@@ -332,18 +304,14 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	// Start listening when file load starts
+
 	case scanStartedMsg:
 		m.loading = true
 		return m, waitForSearchResults(m.scanChan)
 
-	// Handle Streamed Result
 	case searchResultMsg:
 		m.allFilePaths = append(m.allFilePaths, msg.paths...)
 
-		// Performance Optimization: Incremental Filter
-		// Use simple substring match for real-time updates to avoid lag.
-		// Fuzzy is too slow for high-frequency updates.
 		if m.searchInput.Value() != "" {
 			query := strings.ToLower(m.searchInput.Value())
 			for _, p := range msg.paths {
@@ -380,10 +348,8 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.height = msg.Height
 		m.ready = true
 
-		// Resize Help View
 		m.helpView.Width = msg.Width - 6
 		m.helpView.Height = msg.Height - 10
 		return m, nil
@@ -398,48 +364,43 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.MouseWheelUp:
 			if m.cursor > 0 {
-				m.cursor -= 3 // Scroll 3 lines
+				m.cursor -= 3
 				if m.cursor < 0 {
 					m.cursor = 0
 				}
 			}
 		case tea.MouseWheelDown:
 			if m.cursor < len(m.filtered)-1 {
-				m.cursor += 3 // Scroll 3 lines
+				m.cursor += 3
 				if m.cursor >= len(m.filtered) {
 					m.cursor = len(m.filtered) - 1
 				}
 			}
 		case tea.MouseLeft:
-			// Calculate layout metrics (Must match View)
-			headerHeight := 3 // Border(2) + Input(1)
+
+			headerHeight := 3
 			spacerHeight := 1
 			footerHeight := 2
 			listStartY := headerHeight + spacerHeight
 
-			// Available height for list
 			listHeight := m.height - headerHeight - footerHeight - 2
 			if listHeight < 1 {
 				listHeight = 1
 			}
 
-			// Check if click is within list area
-			// msg.Y is 0-indexed row
 			if msg.Y >= listStartY && msg.Y < listStartY+listHeight {
-				// Calculate Scroll Offset
+
 				start := 0
 				if m.cursor >= listHeight {
 					start = m.cursor - listHeight + 1
 				}
 
-				// Determine clicked index
 				clickOffset := msg.Y - listStartY
 				clickedIndex := start + clickOffset
 
 				if clickedIndex >= 0 && clickedIndex < len(m.filtered) {
 					m.cursor = clickedIndex
 
-					// Trigger Select Action (Same as KeyEnter)
 					selected := m.filtered[m.cursor]
 					pathName := selected.Name()
 					var fullPath string
@@ -459,7 +420,7 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					if isDir {
 						m.history = append(m.history, m.currentPath)
-						m.pathInput.SetValue(fullPath) // Update path input
+						m.pathInput.SetValue(fullPath)
 						m.currentPath = fullPath
 						m.searchInput.Reset()
 						m.globalSearch = false
@@ -467,17 +428,17 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.cursor = 0
 					} else {
 						m.selectedFile = fullPath
-						// Switch to Editor
+
 						return m, func() tea.Msg { return SwitchViewMsg{TargetState: StateEditor, Args: fullPath} }
 					}
 				}
 			}
 		}
-		// Since we changed cursor, update pagination if needed? View handles it.
+
 		return m, nil
 
 	case tea.KeyMsg:
-		// Modal Inputs (Move/Copy Prompt)
+
 		if m.moveMode {
 			switch msg.Type {
 			case tea.KeyEnter:
@@ -559,7 +520,7 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.KeyEnter:
 				newPath := m.pathInput.Value()
 				if newPath != "" {
-					// Verify path exists and is dir
+
 					info, err := os.Stat(newPath)
 					if err == nil && info.IsDir() {
 						m.currentPath = newPath
@@ -582,7 +543,7 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.KeyEsc:
 				m.pathMode = false
 				m.pathInput.Blur()
-				m.pathInput.SetValue(m.currentPath) // Reset
+				m.pathInput.SetValue(m.currentPath)
 				m.searchInput.Focus()
 				return m, nil
 			}
@@ -590,9 +551,6 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-		// Main "Always Search" Mode
-
-		// Help Screen Handler
 		if m.showHelp {
 			switch msg.String() {
 			case "esc", "?":
@@ -605,7 +563,6 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// 1. Navigation & Search Control
 		switch msg.String() {
 		case "?":
 			m.showHelp = true
@@ -635,14 +592,13 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "left", "esc":
-			// 1. If searching with text/filter active, clear it first
+
 			if m.searchInput.Value() != "" {
 				m.searchInput.Reset()
 				m.filterFiles("")
 				return m, nil
 			}
 
-			// 2. If we have navigation history, pop it (Back button behavior)
 			if len(m.history) > 0 {
 				items := len(m.history)
 				prev := m.history[items-1]
@@ -654,15 +610,10 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// 3. If no history, try to go UP a directory (Parent behavior)
-			// e.g. if we started in C:\Users, Esc should go to C:\
 			parent := filepath.Dir(m.currentPath)
-			// Check if we are at root (parent is same as current or "." on some OS, or volume root)
-			// On Windows "C:\" parent is "C:\". On Linux "/" parent is "/".
+
 			if parent != "." && parent != m.currentPath {
-				// Determine if we are effectively at a drive root
-				// Windows: filepath.Dir("C:\") -> "C:\"
-				// So if parent == currentPath, we are at root. (Handled by condition above)
+
 				m.currentPath = parent
 				m.loadFiles()
 				m.cursor = 0
@@ -670,7 +621,6 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// 4. If at root and nothing else to do, Go Back
 			return m, func() tea.Msg { return BackMsg{} }
 
 		case "enter":
@@ -687,14 +637,12 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				fullPath = filepath.Join(m.currentPath, pathName)
 			}
 
-			// FIX: Check if it's a directory using os.Stat
-			// This handles dummyEntry (from search) which reports false for IsDir()
 			info, err := os.Stat(fullPath)
 			isDir := false
 			if err == nil && info.IsDir() {
 				isDir = true
 			} else if selected.IsDir() {
-				// Fallback to entry info if Stat fails (rare) or strict
+
 				isDir = true
 			}
 
@@ -702,10 +650,8 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.history = append(m.history, m.currentPath)
 				m.currentPath = fullPath
 
-				// Entering a folder:
-				// 1. Reset Search (so we see contents, not the old query)
 				m.searchInput.Reset()
-				// 2. Disable Global Search (we are now scoping to this folder)
+
 				m.globalSearch = false
 
 				m.loadFiles()
@@ -722,12 +668,7 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.globalSearch {
 				if m.allFilePaths == nil {
 					m.loading = true
-					// Start the scanner if not already done?
-					// Ideally we only scan once. If nil, scan.
-					// If we previously scanned and m.allFilePaths exists, we don't need to re-scan unless requested.
-					// But init scan handles it.
-					// If user toggles OFF then ON, we already have data.
-					// If init hasn't run yet? Init runs on startup.
+
 				}
 				m.searchInput.Placeholder = "SEARCHING ALL DRIVES..."
 			} else {
@@ -737,14 +678,9 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "left_arrow_placeholder":
-			// Consolidated above
+
 		}
 
-		// Handle explicit KEY TYPES if not caught by string
-		// actually bubbletea msg.String() handles "left" correctly.
-		// We can remove the separated blocks.
-
-		// 2. Actions (Alt+...)
 		switch msg.String() {
 		case "alt+m":
 			if len(m.filtered) > 0 {
@@ -780,7 +716,7 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "backspace":
-			// Special case: if input empty, go up?
+
 			if m.searchInput.Value() == "" {
 				m.currentPath = filepath.Dir(m.currentPath)
 				m.loadFiles()
@@ -791,8 +727,6 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// 3. Search Input (Default)
-		// Ensure focus
 		m.searchInput.Focus()
 		oldValue := m.searchInput.Value()
 		var nextCmd tea.Cmd
@@ -800,15 +734,14 @@ func (m FileManagerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.searchInput.Value() != oldValue {
 			m.searchID++
-			// If empty, reset immediately
+
 			if m.searchInput.Value() == "" {
-				m.filtered = m.files // Show local files? Or clear?
-				// "Type to search ALL DRIVES" implies we show nothing or everything?
-				// Previously we showed m.files (local dir) when empty
+				m.filtered = m.files
+
 				m.filterFiles("")
 				return m, nextCmd
 			}
-			// Trigger Debounce
+
 			nextCmd = tea.Batch(nextCmd, tea.Tick(200*time.Millisecond, func(_ time.Time) tea.Msg {
 				return searchDebounceMsg{id: m.searchID}
 			}))
@@ -823,7 +756,6 @@ func (m FileManagerModel) View() string {
 		return ""
 	}
 
-	// Fallback if dimensions incorrectly 0
 	w, h := m.width, m.height
 	if w <= 0 {
 		w = 80
@@ -832,7 +764,6 @@ func (m FileManagerModel) View() string {
 		h = 24
 	}
 
-	// Show help screen
 	if m.showHelp {
 		return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center,
 			lipgloss.JoinVertical(lipgloss.Center,
@@ -843,16 +774,14 @@ func (m FileManagerModel) View() string {
 		)
 	}
 
-	// If not ready (WindowSizeMsg not received), show Loading or Safe Default
 	if !m.ready {
-		// Return a simple loading screen to avoid artifacts
+
 		return lipgloss.NewStyle().Width(w).Height(h).Align(lipgloss.Center, lipgloss.Center).Render("Loading File Manager...")
 	}
 
-	// 1. Render Search Bar (Header) First to measure
 	searchBorder := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#0F9E99")). // Tropical Teal (Matches Dashboard)
+		BorderForeground(lipgloss.Color("#0F9E99")).
 		Padding(0, 1).
 		Width(w - 4)
 
@@ -866,24 +795,21 @@ func (m FileManagerModel) View() string {
 	searchBar := searchBorder.Render(m.searchInput.View() + loading)
 	headerHeight := lipgloss.Height(searchBar)
 
-	// 2. Render Footer to measure (moved up)
 	grey := lipgloss.Color("240")
 	infoStyle := lipgloss.NewStyle().Foreground(grey)
 
-	// Path Box Style
 	pathBoxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#BD93F9")). // Purple
+		BorderForeground(lipgloss.Color("#BD93F9")).
 		Padding(0, 1).
-		Foreground(lipgloss.Color("#50FA7B")) // Green text
+		Foreground(lipgloss.Color("#50FA7B"))
 
 	pathContent := m.pathInput.View()
 	if !m.pathMode {
-		pathContent = m.currentPath // Just show text if not editing
+		pathContent = m.currentPath
 	}
 	pathBox := pathBoxStyle.Render(pathContent)
 
-	// Status Bar (Top of Footer)
 	status := fmt.Sprintf("  Files: %d  Global: %v", len(m.filtered), m.globalSearch)
 	infoBar := lipgloss.JoinHorizontal(lipgloss.Left, pathBox, infoStyle.Render(status))
 
@@ -913,14 +839,11 @@ func (m FileManagerModel) View() string {
 	fullFooter := lipgloss.JoinVertical(lipgloss.Left, infoBar, combinedFooter)
 	footerHeight := lipgloss.Height(fullFooter)
 
-	// 3. Calculate List Height
-	// Available H = Window - Header - Footer
 	listHeight := h - headerHeight - footerHeight
 	if listHeight < 0 {
 		listHeight = 0
 	}
 
-	// 4. Render File List (with calculated height)
 	var list strings.Builder
 
 	start := 0
@@ -935,7 +858,7 @@ func (m FileManagerModel) View() string {
 
 	if len(m.filtered) == 0 {
 		list.WriteString("\n  (No matches found)")
-		// Ensure even empty msg doesn't overflow if listHeight is tiny
+
 	} else {
 		for i := start; i < end; i++ {
 			f := m.filtered[i]
@@ -962,7 +885,6 @@ func (m FileManagerModel) View() string {
 				}
 			}
 
-			// Styling
 			var nameStyle, iconStyle lipgloss.Style
 			var rowRendered string
 
@@ -991,7 +913,6 @@ func (m FileManagerModel) View() string {
 
 	listContent := list.String()
 
-	// 5. Final Assembly (Lipgloss)
 	var scrollbar strings.Builder
 	totalFiles := len(m.filtered)
 	if totalFiles > listHeight {
@@ -1029,7 +950,6 @@ func (m FileManagerModel) View() string {
 		fullFooter,
 	)
 
-	// Strict safety clamp
 	return lipgloss.NewStyle().MaxHeight(h).Render(viewContent)
 }
 
@@ -1039,7 +959,7 @@ func (m *FileManagerModel) loadFiles() {
 		m.err = err
 		return
 	}
-	// ... sort ...
+
 	sort.Slice(entries, func(i, j int) bool {
 		if entries[i].IsDir() && !entries[j].IsDir() {
 			return true
@@ -1051,7 +971,7 @@ func (m *FileManagerModel) loadFiles() {
 	})
 
 	m.files = entries
-	// FIX: Always filter to update view when files are loaded, even if background scan is running.
+
 	m.filterFiles(m.searchInput.Value())
 }
 
@@ -1062,7 +982,7 @@ func (m *FileManagerModel) filterFiles(query string) {
 	}
 
 	if !m.globalSearch && m.allFilePaths == nil {
-		// Lazy load local
+
 		m.reloadAllFiles()
 	}
 
@@ -1072,9 +992,9 @@ func (m *FileManagerModel) filterFiles(query string) {
 
 func (m *FileManagerModel) reloadAllFiles() {
 	if m.globalSearch {
-		return // Should be handled by async loader
+		return
 	}
-	// Local recursive load (sync)
+
 	m.allFilePaths = []string{}
 	filepath.WalkDir(m.currentPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -1089,21 +1009,19 @@ func (m *FileManagerModel) reloadAllFiles() {
 	})
 }
 
-// Dummy entry for search results
 type dummyEntry struct {
 	path string
 }
 
-func (d dummyEntry) Name() string               { return d.path }
-func (d dummyEntry) IsDir() bool                { return false } // Assume file for search results mainly? Or check ext? using stat is better but slow.
-func (d dummyEntry) Type() fs.FileMode          { return 0 }
-func (d dummyEntry) Info() (fs.FileInfo, error) { return nil, nil }
+func (d dummyEntry) Name() string		{ return d.path }
+func (d dummyEntry) IsDir() bool		{ return false }
+func (d dummyEntry) Type() fs.FileMode		{ return 0 }
+func (d dummyEntry) Info() (fs.FileInfo, error)	{ return nil, nil }
 
 func (m FileManagerModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	cmds = append(cmds, tea.EnableMouseCellMotion) // Enable Mouse
+	cmds = append(cmds, tea.EnableMouseCellMotion)
 
-	// Only start global scan if we haven't already loaded files or if explicitly requested.
 	if len(m.allFilePaths) == 0 {
 		cmds = append(cmds, startGlobalScanCmd(m.scanChan))
 	}

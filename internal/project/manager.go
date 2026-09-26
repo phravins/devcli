@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// Manager handles high-level project operations
 type Manager struct {
 	Workspace string
 }
@@ -25,23 +24,21 @@ func (m *Manager) CreateProject(name, stack, parentDir string) (string, string, 
 		parentDir = m.Workspace
 	}
 
-	// Expand ~ and env vars
 	parentDir = m.ExpandPath(parentDir)
 
 	cfg := ProjectConfig{
-		Name:      name,
-		Path:      filepath.Join(parentDir, name),
-		Stack:     stack,
-		InitGit:   true,
-		AddReadme: true,
+		Name:		name,
+		Path:		filepath.Join(parentDir, name),
+		Stack:		stack,
+		InitGit:	true,
+		AddReadme:	true,
 	}
-	// Debug print for verification
+
 	fmt.Printf("Generating project at: %s\n", cfg.Path)
 	cmd, err := Generate(cfg)
 	return cmd, cfg.Path, err
 }
 
-// ValidateParentDir checks if the path exists and is a directory
 func (m *Manager) ValidateParentDir(path string) (string, error) {
 	expanded := m.ExpandPath(path)
 	info, err := os.Stat(expanded)
@@ -72,14 +69,12 @@ func (m *Manager) ExpandPath(path string) string {
 	return os.ExpandEnv(path)
 }
 
-// SuggestProjectName suggests a name like "fastapi-project-01" based on template
 func (m *Manager) SuggestProjectName(templateName string) string {
-	// Clean up template name to be folder-friendly
+
 	base := strings.ToLower(templateName)
 	base = strings.ReplaceAll(base, " ", "-")
 	base = strings.ReplaceAll(base, "api", "project")
-	// e.g. "Go Fiber API" -> "go-fiber-project" (approx)
-	// Simplify:
+
 	if strings.Contains(base, "go") {
 		base = "go-project"
 	}
@@ -114,19 +109,16 @@ func (m *Manager) SuggestProjectName(templateName string) string {
 	}
 }
 
-// BackupProject creates a full copy of the project at destPath
 func (m *Manager) BackupProject(srcDir, destPath string) error {
-	// 1. Ensure absolute paths
+
 	srcDir = m.ExpandPath(srcDir)
 	destPath = m.ExpandPath(destPath)
 
-	// 2. Walk and copy
 	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Rel path
 		relPath, err := filepath.Rel(srcDir, path)
 		if err != nil {
 			return err

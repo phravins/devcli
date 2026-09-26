@@ -1,6 +1,6 @@
 package tui
 
 type execResult struct {
-	output string
-	err    error
+	output	string
+	err	error
 }

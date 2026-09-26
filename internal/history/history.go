@@ -8,15 +8,17 @@ import (
 )
 
 type Entry struct {
-	Name      string    `json:"name"`
-	Path      string    `json:"path"`
-	CreatedAt time.Time `json:"created_at"`
+	Name		string		`json:"name"`
+	Path		string		`json:"path"`
+	CreatedAt	time.Time	`json:"created_at"`
 }
 
 func getHistoryPath() string {
 	home, _ := os.UserHomeDir()
 	dir := filepath.Join(home, ".devcli")
-	os.MkdirAll(dir, 0755)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return filepath.Join(home, "history.json")
+	}
 	return filepath.Join(dir, "history.json")
 }
 
@@ -48,11 +50,11 @@ func Save(entries []Entry) error {
 
 func Add(name, path string) error {
 	entries, _ := Load()
-	// Prepend new entry
+
 	newEntry := Entry{
-		Name:      name,
-		Path:      path,
-		CreatedAt: time.Now(),
+		Name:		name,
+		Path:		path,
+		CreatedAt:	time.Now(),
 	}
 	entries = append([]Entry{newEntry}, entries...)
 	return Save(entries)
@@ -87,7 +89,7 @@ func DeleteOne(index int) error {
 	if index < 0 || index >= len(entries) {
 		return nil
 	}
-	// Remove entry at index
+
 	entries = append(entries[:index], entries[index+1:]...)
 	return Save(entries)
 }

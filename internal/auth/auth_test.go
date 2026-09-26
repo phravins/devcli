@@ -7,49 +7,49 @@ import (
 
 func TestPasswordValidation(t *testing.T) {
 	tests := []struct {
-		name        string
-		password    string
-		valid       bool
-		expectedErr string
+		name		string
+		password	string
+		valid		bool
+		expectedErr	string
 	}{
 		{
-			name:        "Too short",
-			password:    "short",
-			valid:       false,
-			expectedErr: "password must be at least 8 characters long",
+			name:		"Too short",
+			password:	"short",
+			valid:		false,
+			expectedErr:	"password must be at least 8 characters long",
 		},
 		{
-			name:        "Exactly 8 characters valid",
-			password:    "Aa345678",
-			valid:       true,
+			name:		"Exactly 8 characters valid",
+			password:	"Aa345678",
+			valid:		true,
 		},
 		{
-			name:        "Missing uppercase",
-			password:    "alllowercase123",
-			valid:       false,
-			expectedErr: "password must contain at least one uppercase letter (A-Z)",
+			name:		"Missing uppercase",
+			password:	"alllowercase123",
+			valid:		false,
+			expectedErr:	"password must contain at least one uppercase letter (A-Z)",
 		},
 		{
-			name:        "Missing lowercase",
-			password:    "ALLUPPERCASE123",
-			valid:       false,
-			expectedErr: "password must contain at least one lowercase letter (a-z)",
+			name:		"Missing lowercase",
+			password:	"ALLUPPERCASE123",
+			valid:		false,
+			expectedErr:	"password must contain at least one lowercase letter (a-z)",
 		},
 		{
-			name:        "Missing number",
-			password:    "NoNumbersHere!",
-			valid:       false,
-			expectedErr: "password must contain at least one digit (0-9)",
+			name:		"Missing number",
+			password:	"NoNumbersHere!",
+			valid:		false,
+			expectedErr:	"password must contain at least one digit (0-9)",
 		},
 		{
-			name:        "Valid secure password",
-			password:    "SecureP@ssw0rd2026",
-			valid:       true,
+			name:		"Valid secure password",
+			password:	"SecureP@ssw0rd2026",
+			valid:		true,
 		},
 		{
-			name:        "Another valid password",
-			password:    "DevCLISecure!99",
-			valid:       true,
+			name:		"Another valid password",
+			password:	"DevCLISecure!99",
+			valid:		true,
 		},
 	}
 
@@ -72,7 +72,7 @@ func TestPasswordValidation(t *testing.T) {
 }
 
 func TestAuthWorkflow(t *testing.T) {
-	// Create temporary home directory for testing auth storage
+
 	tmpDir, err := os.MkdirTemp("", "devcli_auth_test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
@@ -87,7 +87,6 @@ func TestAuthWorkflow(t *testing.T) {
 		t.Errorf("expected IsSetup() to be false initially")
 	}
 
-	// Setup user
 	err = SetupUser("testuser", "SecureP@ssw0rd2026")
 	if err != nil {
 		t.Fatalf("SetupUser failed: %v", err)
@@ -97,7 +96,6 @@ func TestAuthWorkflow(t *testing.T) {
 		t.Errorf("expected IsSetup() to be true after setup")
 	}
 
-	// Verify permissions
 	path, err := GetAuthFilePath()
 	if err != nil {
 		t.Fatalf("GetAuthFilePath failed: %v", err)
@@ -112,7 +110,6 @@ func TestAuthWorkflow(t *testing.T) {
 		t.Errorf("expected auth file permissions to be 0600, got: %04o", perm)
 	}
 
-	// Verify password
 	valid, err := VerifyPassword("SecureP@ssw0rd2026")
 	if err != nil || !valid {
 		t.Errorf("expected correct password verification to succeed")
@@ -123,7 +120,6 @@ func TestAuthWorkflow(t *testing.T) {
 		t.Errorf("expected incorrect password verification to fail")
 	}
 
-	// Change password
 	err = ChangePassword("SecureP@ssw0rd2026", "NewSecur3P@ss!")
 	if err != nil {
 		t.Fatalf("ChangePassword failed: %v", err)

@@ -13,9 +13,9 @@ import (
 
 func TestParseCommand(t *testing.T) {
 	tests := []struct {
-		name     string
-		command  string
-		expected []string
+		name		string
+		command		string
+		expected	[]string
 	}{
 		{"simple", "ls -la", []string{"ls", "-la"}},
 		{"single quotes", "echo 'hello world'", []string{"echo", "hello world"}},
@@ -40,7 +40,6 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(origWd)
 
-	// Make a read-only directory to trigger a save error
 	readOnlyDir := "readonly_dir"
 	if err := os.Mkdir(readOnlyDir, 0444); err != nil {
 		t.Fatalf("Failed to create read-only dir: %v", err)
@@ -48,13 +47,26 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	defer os.Chmod(readOnlyDir, 0755)
 
 	body, _ := json.Marshal(map[string]string{
-		"filename": readOnlyDir + "/file.txt",
-		"content":  "test",
+		"filename":	readOnlyDir + "/file.txt",
+		"content":	"test",
 	})
 	req, err := http.NewRequest("POST", "/save", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
+
+	authMu.Lock()
+	sessions["valid-test-session"] = Session{
+		Email:		"test@example.com",
+		ExpiresAt:	time.Now().Add(1 * time.Hour),
+	}
+	authMu.Unlock()
+	defer func() {
+		authMu.Lock()
+		delete(sessions, "valid-test-session")
+		authMu.Unlock()
+	}()
+	req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-test-session"})
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)
@@ -115,7 +127,7 @@ func TestRunShellDisallowed(t *testing.T) {
 }
 
 func TestHandleRunAndTerminalAuth(t *testing.T) {
-	// Test handleRun unauthenticated
+
 	reqRun, _ := http.NewRequest("POST", "/run", bytes.NewBufferString(`print("hello")`))
 	rrRun := httptest.NewRecorder()
 	handleRun(rrRun, reqRun)
@@ -123,7 +135,6 @@ func TestHandleRunAndTerminalAuth(t *testing.T) {
 		t.Errorf("handleRun unauthenticated got status %d, want %d", rrRun.Code, http.StatusUnauthorized)
 	}
 
-	// Test handleTerminal unauthenticated
 	reqTerm, _ := http.NewRequest("POST", "/terminal", bytes.NewBufferString("ls"))
 	rrTerm := httptest.NewRecorder()
 	handleTerminal(rrTerm, reqTerm)
@@ -133,17 +144,16 @@ func TestHandleRunAndTerminalAuth(t *testing.T) {
 }
 
 func TestHandleSavePathTraversal(t *testing.T) {
-	// Isolate working directory
+
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
 	os.Chdir(tempDir)
 	defer os.Chdir(origWd)
 
-	// Set up valid session
 	authMu.Lock()
 	sessions["valid-test-session"] = Session{
-		Email:     "test@example.com",
-		ExpiresAt: time.Now().Add(1 * time.Hour),
+		Email:		"test@example.com",
+		ExpiresAt:	time.Now().Add(1 * time.Hour),
 	}
 	authMu.Unlock()
 	defer func() {
@@ -153,62 +163,62 @@ func TestHandleSavePathTraversal(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name           string
-		filename       string
-		content        string
-		unauthenticated bool
-		expectedStatus int
+		name		string
+		filename	string
+		content		string
+		unauthenticated	bool
+		expectedStatus	int
 	}{
 		{
-			name:           "Unauthenticated request rejected",
-			filename:       "valid_file.txt",
-			content:        "hello world",
-			unauthenticated: true,
-			expectedStatus: http.StatusUnauthorized,
+			name:			"Unauthenticated request rejected",
+			filename:		"valid_file.txt",
+			content:		"hello world",
+			unauthenticated:	true,
+			expectedStatus:		http.StatusUnauthorized,
 		},
 		{
-			name:           "Valid local relative path",
-			filename:       "valid_file.txt",
-			content:        "hello world",
-			expectedStatus: http.StatusOK,
+			name:		"Valid local relative path",
+			filename:	"valid_file.txt",
+			content:	"hello world",
+			expectedStatus:	http.StatusOK,
 		},
 		{
-			name:           "Valid nested relative path",
-			filename:       "sub/valid_file.txt",
-			content:        "nested content",
-			expectedStatus: http.StatusOK,
+			name:		"Valid nested relative path",
+			filename:	"sub/valid_file.txt",
+			content:	"nested content",
+			expectedStatus:	http.StatusOK,
 		},
 		{
-			name:           "Path traversal attempt with parent dir",
-			filename:       "../outside.txt",
-			content:        "malicious",
-			expectedStatus: http.StatusBadRequest,
+			name:		"Path traversal attempt with parent dir",
+			filename:	"../outside.txt",
+			content:	"malicious",
+			expectedStatus:	http.StatusBadRequest,
 		},
 		{
-			name:           "Path traversal attempt deep",
-			filename:       "../../outside.txt",
-			content:        "malicious",
-			expectedStatus: http.StatusBadRequest,
+			name:		"Path traversal attempt deep",
+			filename:	"../../outside.txt",
+			content:	"malicious",
+			expectedStatus:	http.StatusBadRequest,
 		},
 		{
-			name:           "Absolute path attempt",
-			filename:       "/etc/passwd",
-			content:        "malicious",
-			expectedStatus: http.StatusBadRequest,
+			name:		"Absolute path attempt",
+			filename:	"/etc/passwd",
+			content:	"malicious",
+			expectedStatus:	http.StatusBadRequest,
 		},
 		{
-			name:           "Empty filename",
-			filename:       "",
-			content:        "empty",
-			expectedStatus: http.StatusBadRequest,
+			name:		"Empty filename",
+			filename:	"",
+			content:	"empty",
+			expectedStatus:	http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(map[string]string{
-				"filename": tt.filename,
-				"content":  tt.content,
+				"filename":	tt.filename,
+				"content":	tt.content,
 			})
 			req, err := http.NewRequest("POST", "/save", bytes.NewBuffer(body))
 			if err != nil {

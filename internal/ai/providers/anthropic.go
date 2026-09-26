@@ -12,9 +12,9 @@ import (
 )
 
 type AnthropicProvider struct {
-	BaseURL   string
-	APIKey    string
-	modelName string
+	BaseURL		string
+	APIKey		string
+	modelName	string
 }
 
 func (p *AnthropicProvider) Name() string {
@@ -44,25 +44,25 @@ func (p *AnthropicProvider) IsLocal() bool {
 }
 
 type anthropicMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role	string	`json:"role"`
+	Content	string	`json:"content"`
 }
 
 type anthropicRequest struct {
-	Model     string             `json:"model"`
-	Messages  []anthropicMessage `json:"messages"`
-	MaxTokens int                `json:"max_tokens"`
+	Model		string			`json:"model"`
+	Messages	[]anthropicMessage	`json:"messages"`
+	MaxTokens	int			`json:"max_tokens"`
 }
 
 type anthropicResponse struct {
-	Content []struct {
-		Text string `json:"text"`
-		Type string `json:"type"`
-	} `json:"content"`
-	Error *struct {
-		Type    string `json:"type"`
-		Message string `json:"message"`
-	} `json:"error,omitempty"`
+	Content	[]struct {
+		Text	string	`json:"text"`
+		Type	string	`json:"type"`
+	}	`json:"content"`
+	Error	*struct {
+		Type	string	`json:"type"`
+		Message	string	`json:"message"`
+	}	`json:"error,omitempty"`
 }
 
 func (p *AnthropicProvider) Send(messages []ai.Message) (string, error) {
@@ -75,9 +75,9 @@ func (p *AnthropicProvider) Send(messages []ai.Message) (string, error) {
 	}
 
 	reqBody := anthropicRequest{
-		Model:     p.modelName,
-		Messages:  apiMessages,
-		MaxTokens: 1024,
+		Model:		p.modelName,
+		Messages:	apiMessages,
+		MaxTokens:	1024,
 	}
 
 	jsonData, err := json.Marshal(reqBody)

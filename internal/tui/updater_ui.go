@@ -9,52 +9,44 @@ import (
 	"github.com/phravins/devcli/internal/updater"
 )
 
-// UpdaterModel represents the update checker UI state
 type UpdaterModel struct {
-	width   int
-	height  int
-	info    *updater.UpdateInfo
-	err     error
-	status  string
-	updated bool
+	width	int
+	height	int
+	info	*updater.UpdateInfo
+	err	error
+	status	string
+	updated	bool
 }
 
-// UpdateCheckMsg contains the result of checking for updates
 type UpdateCheckMsg struct {
-	info *updater.UpdateInfo
-	err  error
+	info	*updater.UpdateInfo
+	err	error
 }
 
-// UpdateCompleteMsg indicates the update completed
 type UpdateCompleteMsg struct {
 	err error
 }
 
-// NewUpdaterModel creates a new updater model
 func NewUpdaterModel() UpdaterModel {
 	return UpdaterModel{
 		status: "Checking for updates...",
 	}
 }
 
-// Init initializes the updater model
 func (m UpdaterModel) Init() tea.Cmd {
 	return checkForUpdatesCmd
 }
 
-// checkForUpdatesCmd checks for updates
 func checkForUpdatesCmd() tea.Msg {
 	info, err := updater.CheckForUpdates()
 	return UpdateCheckMsg{info: info, err: err}
 }
 
-// performUpdateCmd performs the update
 func performUpdateCmd() tea.Msg {
 	err := updater.PerformUpdate()
 	return UpdateCompleteMsg{err: err}
 }
 
-// Update handles messages
 func (m UpdaterModel) Update(msg tea.Msg) (UpdaterModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -64,7 +56,7 @@ func (m UpdaterModel) Update(msg tea.Msg) (UpdaterModel, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "u":
-			// User pressed 'u' to update
+
 			if m.info != nil && m.info.IsUpdateAvailable && !m.updated {
 				m.status = "Downloading and installing update..."
 				return m, performUpdateCmd
@@ -101,7 +93,6 @@ func (m UpdaterModel) Update(msg tea.Msg) (UpdaterModel, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the updater UI
 func (m UpdaterModel) View() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -130,11 +121,9 @@ func (m UpdaterModel) View() string {
 	contentBuilder.WriteString(title)
 	contentBuilder.WriteString("\n\n")
 
-	// Show status
 	contentBuilder.WriteString(statusStyle.Render(m.status))
 	contentBuilder.WriteString("\n\n")
 
-	// Show version info if available
 	if m.info != nil {
 		contentBuilder.WriteString(versionStyle.Render(fmt.Sprintf("Current Version: %s", m.info.CurrentVersion)))
 		contentBuilder.WriteString("\n")
@@ -152,7 +141,6 @@ func (m UpdaterModel) View() string {
 		}
 	}
 
-	// Footer with instructions
 	var footer string
 	if m.info != nil && m.info.IsUpdateAvailable && !m.updated {
 		footer = "U: Update • Q/Esc: Back • Ctrl+C: Quit"
@@ -162,7 +150,6 @@ func (m UpdaterModel) View() string {
 
 	contentBuilder.WriteString(footerStyle.Render(footer))
 
-	// Center content
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4ECDC4")).

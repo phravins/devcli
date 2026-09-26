@@ -1,23 +1,21 @@
 package templates
 
-// Template represents a project blueprint
 type Template struct {
-	Name        string
-	Description string
-	Stack       string // "Go", "Python", "Node", etc.
-	Files       map[string]string
-	InstallCmd  string //"npm install"
-	RunCmd      string //"npm start"
+	Name		string
+	Description	string
+	Stack		string
+	Files		map[string]string
+	InstallCmd	string
+	RunCmd		string
 }
 
-// Registry holds the available templates
 var Registry = []Template{
 	{
-		Name:        "Go Fiber API",
-		Description: "High-performance Go web framework",
-		Stack:       "Go",
-		InstallCmd:  "go mod tidy",
-		RunCmd:      "go run main.go",
+		Name:		"Go Fiber API",
+		Description:	"High-performance Go web framework",
+		Stack:		"Go",
+		InstallCmd:	"go mod tidy",
+		RunCmd:		"go run main.go",
 		Files: map[string]string{
 			"go.mod": `module {{.Name}}
 
@@ -51,11 +49,11 @@ func main() {
 		},
 	},
 	{
-		Name:        "Python FastAPI",
-		Description: "Modern, fast (high-performance) Python web framework",
-		Stack:       "Python",
-		InstallCmd:  "pip install -r requirements.txt",
-		RunCmd:      "uvicorn main:app --reload",
+		Name:		"Python FastAPI",
+		Description:	"Modern, fast (high-performance) Python web framework",
+		Stack:		"Python",
+		InstallCmd:	"pip install -r requirements.txt",
+		RunCmd:		"uvicorn main:app --reload",
 		Files: map[string]string{
 			"requirements.txt": `fastapi
 uvicorn[standard]
@@ -76,11 +74,11 @@ venv/
 		},
 	},
 	{
-		Name:        "Node Express API",
-		Description: "Fast, unopinionated, minimalist web framework for Node.js",
-		Stack:       "Node",
-		InstallCmd:  "npm install",
-		RunCmd:      "npm start",
+		Name:		"Node Express API",
+		Description:	"Fast, unopinionated, minimalist web framework for Node.js",
+		Stack:		"Node",
+		InstallCmd:	"npm install",
+		RunCmd:		"npm start",
 		Files: map[string]string{
 			"package.json": `{
   "name": "{{.Name}}",
@@ -113,11 +111,11 @@ app.listen(port, () => {
 		},
 	},
 	{
-		Name:        "Java Console App",
-		Description: "Standard Java application with Maven",
-		Stack:       "Java",
-		InstallCmd:  "mvn clean install",
-		RunCmd:      "java -jar target/{{.Name}}-1.0-SNAPSHOT.jar",
+		Name:		"Java Console App",
+		Description:	"Standard Java application with Maven",
+		Stack:		"Java",
+		InstallCmd:	"mvn clean install",
+		RunCmd:		"java -jar target/{{.Name}}-1.0-SNAPSHOT.jar",
 		Files: map[string]string{
 			"pom.xml": `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -182,11 +180,11 @@ public class Main {
 		},
 	},
 	{
-		Name:        "Kotlin Console App",
-		Description: "Kotlin application with Gradle (Kotlin DSL)",
-		Stack:       "Kotlin",
-		InstallCmd:  "gradle build",
-		RunCmd:      "gradle run",
+		Name:		"Kotlin Console App",
+		Description:	"Kotlin application with Gradle (Kotlin DSL)",
+		Stack:		"Kotlin",
+		InstallCmd:	"gradle build",
+		RunCmd:		"gradle run",
 		Files: map[string]string{
 			"build.gradle.kts": `plugins {
     kotlin("jvm") version "1.9.20"
@@ -223,9 +221,7 @@ build/
 .idea/
 *.iml
 `,
-			// We can't easily generate the gradlew wrapper binary scripts here without embedding them.
-			// For now, we assume user has gradle installed or we can simplify to not rely on wrapper
-			// IF we want to be safe, we change InstallCmd to "gradle build"
+
 			"README.md": `# {{.Name}}
 
 To build and run:
@@ -237,11 +233,11 @@ gradle run
 		},
 	},
 	{
-		Name:        "Dart Console App",
-		Description: "Command-line application using Dart SDK",
-		Stack:       "Dart",
-		InstallCmd:  "dart pub get",
-		RunCmd:      "dart run",
+		Name:		"Dart Console App",
+		Description:	"Command-line application using Dart SDK",
+		Stack:		"Dart",
+		InstallCmd:	"dart pub get",
+		RunCmd:		"dart run",
 		Files: map[string]string{
 			"pubspec.yaml": `name: {{.Name}}
 description: A sample command-line application.
@@ -262,7 +258,7 @@ void main(List<String> arguments) {
   print('Hello world: ${app.calculate()}!');
 }
 `,
-			// We need a proper library file structure for standard dart recommended layout
+
 			"lib/{{.Name}}.dart": `int calculate() {
   return 6 * 7;
 }
@@ -278,11 +274,11 @@ pubspec.lock
 		},
 	},
 	{
-		Name:        "C++ Console App",
-		Description: "C++ Standard Application with CMake",
-		Stack:       "C++",
-		InstallCmd:  "cmake -B build -S . && cmake --build build",
-		RunCmd:      "./build/{{.Name}}", // On Windows this might need .exe handling but keeping simple for now
+		Name:		"C++ Console App",
+		Description:	"C++ Standard Application with CMake",
+		Stack:		"C++",
+		InstallCmd:	"cmake -B build -S . && cmake --build build",
+		RunCmd:		"./build/{{.Name}}",
 		Files: map[string]string{
 			"CMakeLists.txt": `cmake_minimum_required(VERSION 3.10)
 
@@ -308,7 +304,6 @@ int main() {
 	},
 }
 
-// Get returns the full list (helper for external access)
 func List() []Template {
 	return Registry
 }

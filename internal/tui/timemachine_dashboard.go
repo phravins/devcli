@@ -15,16 +15,16 @@ import (
 )
 
 type TimeMachineModel struct {
-	timeline       *timemachine.Timeline
-	blameViewport  viewport.Model
-	detailViewport viewport.Model
-	helpViewport   viewport.Model
-	width          int
-	height         int
-	ready          bool
-	showHelp       bool
-	bugSuspects    []timemachine.BugSuspect
-	authorColors   map[string]lipgloss.Color
+	timeline	*timemachine.Timeline
+	blameViewport	viewport.Model
+	detailViewport	viewport.Model
+	helpViewport	viewport.Model
+	width		int
+	height		int
+	ready		bool
+	showHelp	bool
+	bugSuspects	[]timemachine.BugSuspect
+	authorColors	map[string]lipgloss.Color
 }
 
 func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
@@ -36,9 +36,6 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 
 	colors := generateAuthorColors(timeline.GetAuthors())
 
-	// Detect real terminal window size at startup.
-	// golang.org/x/term reads the actual console window dimensions,
-	// not just the buffer width, which is what bubbletea sometimes reports on Windows CMD.
 	initW, initH := 80, 40
 	if w, h, err2 := term.GetSize(int(os.Stdout.Fd())); err2 == nil && w > 0 {
 		initW, initH = w, h
@@ -53,15 +50,15 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	helpVp.SetContent(TimeMachineHelp)
 
 	model := &TimeMachineModel{
-		timeline:       timeline,
-		bugSuspects:    suspects,
-		authorColors:   colors,
-		blameViewport:  viewport.New(initW, initH),
-		detailViewport: viewport.New(initW, 5),
-		helpViewport:   helpVp,
-		width:          initW,
-		height:         initH,
-		ready:          true,
+		timeline:	timeline,
+		bugSuspects:	suspects,
+		authorColors:	colors,
+		blameViewport:	viewport.New(initW, initH),
+		detailViewport:	viewport.New(initW, 5),
+		helpViewport:	helpVp,
+		width:		initW,
+		height:		initH,
+		ready:		true,
 	}
 
 	model.setupViewports()
@@ -69,22 +66,20 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	return model, nil
 }
 
-// Init initializes the model and immediately requests the current terminal size.
 func (m *TimeMachineModel) Init() tea.Cmd {
 	return tea.WindowSize()
 }
 
-// Update handles messages and updates the model
 func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "esc":
-			// Go back to Bonus menu instead of quitting
+
 			return m, func() tea.Msg { return SubFeatureBackMsg{} }
 
 		case "ctrl+c":
-			// Force quit
+
 			return m, tea.Quit
 
 		case "?":
@@ -133,7 +128,6 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// Update viewports
 	var cmd tea.Cmd
 	if m.showHelp {
 		m.helpViewport, cmd = m.helpViewport.Update(msg)
@@ -143,8 +137,6 @@ func (m *TimeMachineModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// View renders the UI using a flat layout that fills the full terminal width.
-// No lipgloss.Place, no outer box — each section is rendered at terminal width.
 func (m *TimeMachineModel) View() string {
 	if !m.ready {
 		return "Initializing Code Time Machine..."
@@ -159,34 +151,26 @@ func (m *TimeMachineModel) View() string {
 		w = 80
 	}
 
-	// Header bar (2 lines)
 	header := m.renderHeader(w)
 
-	// Teal divider
 	divider := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#4ECDC4")).
 		Render(strings.Repeat("─", w))
 
-	// Timeline bar (1 line)
 	timeline := m.renderTimeline(w)
 
-	// Dark divider
 	divider2 := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#333333")).
 		Render(strings.Repeat("─", w))
 
-	// Blame viewport (fills remaining height)
 	blameView := m.blameViewport.View()
 
-	// Commit info bar (1 line)
 	commitBar := m.renderCommitDetailsCompact(w)
 
-	// Dark divider
 	divider3 := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#333333")).
 		Render(strings.Repeat("─", w))
 
-	// Footer (1 line)
 	footer := m.renderFooter(w)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
@@ -202,16 +186,7 @@ func (m *TimeMachineModel) View() string {
 }
 
 func (m *TimeMachineModel) setupViewports() {
-	// Flat layout line counts:
-	//   header:    2
-	//   divider:   1
-	//   timeline:  1
-	//   divider:   1
-	//   blameVP:   variable
-	//   divider:   1
-	//   commitBar: 1
-	//   footer:    1
-	//   TOTAL fixed = 9
+
 	fixedLines := 9
 
 	blameHeight := m.height - fixedLines
@@ -237,7 +212,6 @@ func (m *TimeMachineModel) updateViewports() {
 	m.detailViewport.SetContent(m.renderCommitDetails())
 }
 
-// renderHeader renders the 2-line header bar at full terminal width.
 func (m *TimeMachineModel) renderHeader(w int) string {
 	bgStyle := lipgloss.NewStyle().
 		Background(lipgloss.Color("#1A1A2E")).
@@ -269,7 +243,6 @@ func (m *TimeMachineModel) renderHeader(w int) string {
 	return lipgloss.JoinVertical(lipgloss.Left, title, fileLine)
 }
 
-// renderTimeline renders a 1-line timeline progress bar at full terminal width.
 func (m *TimeMachineModel) renderTimeline(w int) string {
 	if len(m.timeline.Commits) == 0 {
 		return strings.Repeat(" ", w)
@@ -324,7 +297,6 @@ func (m *TimeMachineModel) renderBlameView() string {
 	dateStyle := lipgloss.NewStyle().Width(13).Foreground(lipgloss.Color("#888888"))
 	codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E0E0"))
 
-	// Fixed columns: linenum(5) + " | "(3) + risk(3) + author(15) + " "(1) + date(13) + " | "(3) + trailing " | "(3) = 46
 	overhead := 46
 	availableCodeWidth := m.blameViewport.Width - overhead
 	if availableCodeWidth < 10 {
@@ -365,7 +337,6 @@ func (m *TimeMachineModel) renderBlameView() string {
 	return strings.Join(lines, "\n")
 }
 
-// renderCommitDetails creates the commit details panel
 func (m *TimeMachineModel) renderCommitDetails() string {
 	current := m.timeline.GetCurrentCommit()
 	if current == nil {
@@ -416,7 +387,6 @@ func (m *TimeMachineModel) renderCommitDetails() string {
 	return strings.Join(details, "\n")
 }
 
-// renderCommitDetailsCompact creates a compact one-line commit summary at full terminal width.
 func (m *TimeMachineModel) renderCommitDetailsCompact(w int) string {
 	current := m.timeline.GetCurrentCommit()
 	if current == nil {
@@ -430,7 +400,7 @@ func (m *TimeMachineModel) renderCommitDetailsCompact(w int) string {
 
 	msgLines := strings.Split(current.Message, "\n")
 	firstLineMsg := msgLines[0]
-	// hash ~8 + author ~15 + date ~22 + stats ~10 + separators ~6 = ~61 reserved
+
 	maxMsg := w - 61
 	if maxMsg < 10 {
 		maxMsg = 10
@@ -449,7 +419,6 @@ func (m *TimeMachineModel) renderCommitDetailsCompact(w int) string {
 		lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render(dateStr)
 }
 
-// renderFooter creates the footer with shortcuts at full terminal width.
 func (m *TimeMachineModel) renderFooter(w int) string {
 	footerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#555555")).
@@ -460,12 +429,10 @@ func (m *TimeMachineModel) renderFooter(w int) string {
 	return footerStyle.Render(shortcuts)
 }
 
-// renderHelp shows the help screen
 func (m *TimeMachineModel) renderHelp() string {
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, m.helpViewport.View())
 }
 
-// generateAuthorColors creates consistent colors for authors
 func generateAuthorColors(authors []string) map[string]lipgloss.Color {
 	colors := map[string]lipgloss.Color{}
 
@@ -486,7 +453,6 @@ func generateAuthorColors(authors []string) map[string]lipgloss.Color {
 	return colors
 }
 
-// hashToColor generates a color from a string
 func hashToColor(s string) lipgloss.Color {
 	h := fnv.New32a()
 	h.Write([]byte(s))
@@ -503,12 +469,10 @@ func hashToColor(s string) lipgloss.Color {
 	return lipgloss.Color(fmt.Sprintf("#%02X%02X%02X", r, g, b))
 }
 
-// truncate shortens a string to max valid width using go-runewidth
 func truncate(s string, max int) string {
 	return runewidth.Truncate(s, max, "...")
 }
 
-// RunTimeMachine starts the Code Time Machine TUI
 func RunTimeMachine(repoPath, filePath string) error {
 	model, err := NewTimeMachineModel(repoPath, filePath)
 	if err != nil {

@@ -10,15 +10,15 @@ import (
 )
 
 var DevCmd = &cobra.Command{
-	Use:   "dev",
-	Short: "Development tools",
-	Long:  "Local development tools for project management",
+	Use:	"dev",
+	Short:	"Development tools",
+	Long:	"Local development tools for project management",
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create [project-name]",
-	Short: "Create a new project folder",
-	Args:  cobra.ExactArgs(1),
+	Use:	"create [project-name]",
+	Short:	"Create a new project folder",
+	Args:	cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
 		if err := createProject(projectName); err != nil {
@@ -30,9 +30,9 @@ var createCmd = &cobra.Command{
 }
 
 var serverCmd = &cobra.Command{
-	Use:   "server [port]",
-	Short: "Run a development server",
-	Args:  cobra.ExactArgs(1),
+	Use:	"server [port]",
+	Short:	"Run a development server",
+	Args:	cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		port := args[0]
 		fmt.Printf("Starting development server on port %s...\n", port)
@@ -41,9 +41,9 @@ var serverCmd = &cobra.Command{
 }
 
 var boilerplateCmd = &cobra.Command{
-	Use:   "boilerplate [type]",
-	Short: "Generate boilerplate files",
-	Args:  cobra.ExactArgs(1),
+	Use:	"boilerplate [type]",
+	Short:	"Generate boilerplate files",
+	Args:	cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		boilerplateType := args[0]
 		if err := generateBoilerplate(boilerplateType); err != nil {
@@ -61,12 +61,11 @@ func init() {
 }
 
 func createProject(name string) error {
-	// Create main project directory
+
 	if err := os.MkdirAll(name, 0755); err != nil {
 		return err
 	}
 
-	// Create subdirectories
 	dirs := []string{"src", "tests", "docs", "config"}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(filepath.Join(name, dir), 0755); err != nil {
@@ -74,14 +73,12 @@ func createProject(name string) error {
 		}
 	}
 
-	// Create README.md
 	readmeContent := fmt.Sprintf("# %s\n\nProject description here.\n\n## Getting Started\n\n```bash\n# Install dependencies\nnpm install\n\n# Run development server\nnpm run dev\n```", name)
 
 	if err := os.WriteFile(filepath.Join(name, "README.md"), []byte(readmeContent), 0644); err != nil {
 		return err
 	}
 
-	// Create package.json for Node.js projects
 	packageJSON := `{
   "name": "` + name + `",
   "version": "1.0.0",
@@ -100,7 +97,7 @@ func createProject(name string) error {
 }
 
 func runDevServer(port string) {
-	// Simple HTTP server implementation
+
 	cmd := exec.Command("python3", "-m", "http.server", port)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

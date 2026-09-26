@@ -12,20 +12,20 @@ import (
 )
 
 type APIRequest struct {
-	Method  string            `json:"method"`
-	URL     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
-	Body    string            `json:"body"`
+	Method	string			`json:"method"`
+	URL	string			`json:"url"`
+	Headers	map[string]string	`json:"headers"`
+	Body	string			`json:"body"`
 }
 
 type APIResponse struct {
-	StatusCode int                 `json:"status_code"`
-	Status     string              `json:"status"`
-	LatencyMs  int64               `json:"latency_ms"`
-	Headers    http.Header         `json:"headers"`
-	Body       string              `json:"body"`
-	Formatted  string              `json:"formatted"`
-	Err        error               `json:"err"`
+	StatusCode	int		`json:"status_code"`
+	Status		string		`json:"status"`
+	LatencyMs	int64		`json:"latency_ms"`
+	Headers		http.Header	`json:"headers"`
+	Body		string		`json:"body"`
+	Formatted	string		`json:"formatted"`
+	Err		error		`json:"err"`
 }
 
 func ExecuteAPIRequest(req APIRequest) APIResponse {
@@ -54,7 +54,6 @@ func ExecuteAPIRequest(req APIRequest) APIResponse {
 		return APIResponse{Err: fmt.Errorf("invalid request: %w", err), LatencyMs: time.Since(start).Milliseconds()}
 	}
 
-	// Add headers
 	for k, v := range req.Headers {
 		if strings.TrimSpace(k) != "" {
 			httpReq.Header.Set(k, v)
@@ -81,7 +80,6 @@ func ExecuteAPIRequest(req APIRequest) APIResponse {
 	bodyStr := string(respBody)
 	formattedStr := bodyStr
 
-	// Try formatting JSON if response is JSON
 	var jsonObj interface{}
 	if err := json.Unmarshal(respBody, &jsonObj); err == nil {
 		if pretty, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
@@ -90,11 +88,11 @@ func ExecuteAPIRequest(req APIRequest) APIResponse {
 	}
 
 	return APIResponse{
-		StatusCode: resp.StatusCode,
-		Status:     resp.Status,
-		LatencyMs:  latency,
-		Headers:    resp.Header,
-		Body:       bodyStr,
-		Formatted:  formattedStr,
+		StatusCode:	resp.StatusCode,
+		Status:		resp.Status,
+		LatencyMs:	latency,
+		Headers:	resp.Header,
+		Body:		bodyStr,
+		Formatted:	formattedStr,
 	}
 }

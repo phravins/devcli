@@ -13,9 +13,9 @@ import (
 )
 
 type OllamaProvider struct {
-	BaseURL    string
-	modelName  string
-	httpClient *http.Client
+	BaseURL		string
+	modelName	string
+	httpClient	*http.Client
 }
 
 func (p *OllamaProvider) Name() string {
@@ -31,12 +31,11 @@ func (p *OllamaProvider) Configure(cfg *config.Config) error {
 	if cfg.AIBaseURL != "" {
 		p.BaseURL = cfg.AIBaseURL
 	}
-	p.modelName = "mistral" // Default
+	p.modelName = "mistral"
 	if cfg.AIModel != "" {
 		p.modelName = cfg.AIModel
 	}
 
-	// Reuse client with reasonable timeout
 	p.httpClient = &http.Client{
 		Timeout: 90 * time.Second,
 	}
@@ -49,27 +48,27 @@ func (p *OllamaProvider) IsLocal() bool {
 }
 
 type ollamaRequest struct {
-	Model    string                 `json:"model"`
-	Messages []ai.Message           `json:"messages"`
-	Stream   bool                   `json:"stream"`
-	Options  map[string]interface{} `json:"options,omitempty"`
+	Model		string			`json:"model"`
+	Messages	[]ai.Message		`json:"messages"`
+	Stream		bool			`json:"stream"`
+	Options		map[string]interface{}	`json:"options,omitempty"`
 }
 
 type ollamaResponse struct {
-	Message ai.Message `json:"message"`
-	Done    bool       `json:"done"`
+	Message	ai.Message	`json:"message"`
+	Done	bool		`json:"done"`
 }
 
 func (p *OllamaProvider) Send(messages []ai.Message) (string, error) {
 	reqBody := ollamaRequest{
-		Model:    p.modelName,
-		Messages: messages,
-		Stream:   false,
+		Model:		p.modelName,
+		Messages:	messages,
+		Stream:		false,
 		Options: map[string]interface{}{
-			"num_predict": 512,  // Limit response length for faster generation
-			"temperature": 0.7,  // Balanced creativity/speed
-			"top_p":       0.9,  // Nucleus sampling for better quality
-			"num_ctx":     2048, // Context window
+			"num_predict":	512,
+			"temperature":	0.7,
+			"top_p":	0.9,
+			"num_ctx":	2048,
 		},
 	}
 

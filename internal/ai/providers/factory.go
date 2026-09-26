@@ -8,7 +8,6 @@ import (
 	"github.com/phravins/devcli/internal/config"
 )
 
-// GetProvider returns an AI provider based on the configuration
 func GetProvider(cfg *config.Config) (ai.Provider, error) {
 	backend := strings.TrimSpace(strings.ToLower(cfg.AIBackend))
 	if backend == "" {
@@ -29,7 +28,6 @@ func GetProvider(cfg *config.Config) (ai.Provider, error) {
 	case "gemini", "google":
 		p = &GeminiProvider{}
 
-	// Pre-configured OpenAI Compatible Shortcuts
 	case "mistral":
 		p = &OpenAIProvider{BaseURL: "https://api.mistral.ai/v1"}
 	case "kimi", "moonshot":
@@ -42,7 +40,7 @@ func GetProvider(cfg *config.Config) (ai.Provider, error) {
 		p = &OpenAIProvider{}
 
 	default:
-		// Catch-all: Assume "Generic OpenAI Compatible" for any other name
+
 		p = &OpenAIProvider{}
 	}
 

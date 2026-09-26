@@ -46,15 +46,15 @@ func TestLoadAll_Success(t *testing.T) {
 
 	expected := []Snippet{
 		{
-			ID:          "test-1",
-			Title:       "Test Title",
-			Description: "Test Description",
-			Language:    "go",
-			Category:    "testing",
-			Code:        "fmt.Println(\"hello\")",
-			Tags:        []string{"go", "test"},
-			CreatedAt:   time.Now().Truncate(time.Second),
-			UpdatedAt:   time.Now().Truncate(time.Second),
+			ID:		"test-1",
+			Title:		"Test Title",
+			Description:	"Test Description",
+			Language:	"go",
+			Category:	"testing",
+			Code:		"fmt.Println(\"hello\")",
+			Tags:		[]string{"go", "test"},
+			CreatedAt:	time.Now().Truncate(time.Second),
+			UpdatedAt:	time.Now().Truncate(time.Second),
 		},
 	}
 
@@ -79,7 +79,6 @@ func TestLoadAll_Success(t *testing.T) {
 func TestLoadAll_InvalidJSON(t *testing.T) {
 	storage, _ := setupTestStorage(t)
 
-	// Write invalid JSON to filePath
 	if err := os.WriteFile(storage.filePath, []byte("{invalid json"), 0644); err != nil {
 		t.Fatalf("failed to write invalid json: %v", err)
 	}
@@ -93,7 +92,6 @@ func TestLoadAll_InvalidJSON(t *testing.T) {
 func TestLoadAll_ReadError(t *testing.T) {
 	storage, _ := setupTestStorage(t)
 
-	// Create a directory at s.filePath so os.ReadFile fails
 	if err := os.MkdirAll(storage.filePath, 0755); err != nil {
 		t.Fatalf("failed to create directory at filePath: %v", err)
 	}
@@ -107,14 +105,13 @@ func TestLoadAll_ReadError(t *testing.T) {
 func TestStorage_CRUD(t *testing.T) {
 	storage, _ := setupTestStorage(t)
 
-	// Add snippet
 	snip := Snippet{
-		Title:       "Bubble Tea App",
-		Description: "TUI app template",
-		Language:    "go",
-		Category:    "tui",
-		Code:        "tea.NewProgram(...)",
-		Tags:        []string{"charm", "tui"},
+		Title:		"Bubble Tea App",
+		Description:	"TUI app template",
+		Language:	"go",
+		Category:	"tui",
+		Code:		"tea.NewProgram(...)",
+		Tags:		[]string{"charm", "tui"},
 	}
 
 	err := storage.Add(snip)
@@ -132,7 +129,6 @@ func TestStorage_CRUD(t *testing.T) {
 		t.Error("expected non-empty snippet ID")
 	}
 
-	// Get snippet
 	retrieved, err := storage.Get(addedID)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
@@ -141,13 +137,11 @@ func TestStorage_CRUD(t *testing.T) {
 		t.Errorf("expected title 'Bubble Tea App', got '%s'", retrieved.Title)
 	}
 
-	// Get non-existent
 	_, err = storage.Get("non-existent-id")
 	if err == nil {
 		t.Error("expected error getting non-existent snippet, got nil")
 	}
 
-	// Update snippet
 	updatedSnip := *retrieved
 	updatedSnip.Title = "Updated Bubble Tea App"
 	err = storage.Update(updatedSnip)
@@ -163,13 +157,11 @@ func TestStorage_CRUD(t *testing.T) {
 		t.Errorf("expected updated title 'Updated Bubble Tea App', got '%s'", retrievedUpdated.Title)
 	}
 
-	// Update non-existent
 	badUpdate := Snippet{ID: "unknown-id", Title: "Foo"}
 	if err := storage.Update(badUpdate); err == nil {
 		t.Error("expected error updating non-existent snippet, got nil")
 	}
 
-	// Delete snippet
 	err = storage.Delete(addedID)
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
@@ -180,7 +172,6 @@ func TestStorage_CRUD(t *testing.T) {
 		t.Error("expected error getting deleted snippet, got nil")
 	}
 
-	// Delete non-existent
 	if err := storage.Delete("unknown-id"); err == nil {
 		t.Error("expected error deleting non-existent snippet, got nil")
 	}
@@ -197,7 +188,6 @@ func TestStorage_SearchAndFilter(t *testing.T) {
 	_ = storage.Add(s2)
 	_ = storage.Add(s3)
 
-	// Search
 	results, err := storage.Search("flask")
 	if err != nil || len(results) != 1 {
 		t.Fatalf("expected 1 search result for 'flask', got %d (err: %v)", len(results), err)
@@ -206,20 +196,17 @@ func TestStorage_SearchAndFilter(t *testing.T) {
 		t.Errorf("unexpected search result: %v", results[0].Title)
 	}
 
-	// Search by tag
 	results, err = storage.Search("react")
 	if err != nil || len(results) != 1 {
 		t.Fatalf("expected 1 search result for tag 'react', got %d", len(results))
 	}
 
-	// FilterByCategory
-	apiSnippets, err := storage.FilterByCategory("API") // case-insensitive check
+	apiSnippets, err := storage.FilterByCategory("API")
 	if err != nil || len(apiSnippets) != 2 {
 		t.Fatalf("expected 2 API category snippets, got %d (err: %v)", len(apiSnippets), err)
 	}
 
-	// FilterByLanguage
-	goSnippets, err := storage.FilterByLanguage("GO") // case-insensitive check
+	goSnippets, err := storage.FilterByLanguage("GO")
 	if err != nil || len(goSnippets) != 1 {
 		t.Fatalf("expected 1 Go snippet, got %d (err: %v)", len(goSnippets), err)
 	}

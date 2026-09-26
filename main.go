@@ -20,16 +20,16 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "devcli",
-	Version: "1.1.0",
-	Short:   "A comprehensive CLI for developers",
+	Use:		"devcli",
+	Version:	"1.1.0",
+	Short:		"A comprehensive CLI for developers",
 	Long: `DevCLI is a powerful command-line interface that provides:
 - Local development tools
 - File operations
 - AI chatbot integration
 - Built-in Python IDE`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Allow auth setup and status without pre-authentication
+
 		if cmd.CommandPath() == "devcli auth setup" || cmd.CommandPath() == "devcli auth status" {
 			return nil
 		}
@@ -50,12 +50,12 @@ var rootCmd = &cobra.Command{
 }
 
 var startCmd = &cobra.Command{
-	Use:   "start [name] [stack]",
-	Short: "Initialize a new project",
-	Args:  cobra.MinimumNArgs(1),
+	Use:	"start [name] [stack]",
+	Short:	"Initialize a new project",
+	Args:	cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
-		stack := "Go" // Default
+		stack := "Go"
 		if len(args) > 1 {
 			stack = args[1]
 		}
@@ -71,16 +71,20 @@ var startCmd = &cobra.Command{
 }
 
 var timemachineCmd = &cobra.Command{
-	Use:   "timemachine [file]",
-	Short: "Code Time Machine - Track code evolution and find bugs",
-	Long:  `Interactive Git blame and history viewer showing line-by-line changes, bug risks, and commit timeline.`,
-	Args:  cobra.MaximumNArgs(1),
+	Use:	"timemachine [file]",
+	Short:	"Code Time Machine - Track code evolution and find bugs",
+	Long:	`Interactive Git blame and history viewer showing line-by-line changes, bug risks, and commit timeline.`,
+	Args:	cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var filePath string
 		if len(args) > 0 {
 			filePath = args[0]
 		}
-		cwd, _ := os.Getwd()
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Printf("Error getting current directory: %v\n", err)
+			os.Exit(1)
+		}
 		if err := tui.RunTimeMachine(cwd, filePath); err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
@@ -89,9 +93,9 @@ var timemachineCmd = &cobra.Command{
 }
 
 var installCmd = &cobra.Command{
-	Use:   "install",
-	Short: "Install DevCLI globally to your system",
-	Long:  `Copies the DevCLI binary to your home directory and adds it to your system PATH.`,
+	Use:	"install",
+	Short:	"Install DevCLI globally to your system",
+	Long:	`Copies the DevCLI binary to your home directory and adds it to your system PATH.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Starting DevCLI installation...")
 
@@ -107,15 +111,12 @@ var installCmd = &cobra.Command{
 			return
 		}
 
-		// Destination Directory
 		var binDir string
 		var destPath string
 		if runtime.GOOS == "windows" {
 			binDir = filepath.Join(home, ".devcli", "bin")
 			destPath = filepath.Join(binDir, "devcli.exe")
 		} else {
-			// Unix: standard is often ~/.local/bin or just ~/go/bin, but let's stick to .devcli/bin for consistency
-			// or use /usr/local/bin if root? Let's use user-local to avoid permission issues.
 			binDir = filepath.Join(home, ".devcli", "bin")
 			destPath = filepath.Join(binDir, "devcli")
 		}
@@ -125,7 +126,6 @@ var installCmd = &cobra.Command{
 			return
 		}
 
-		// Write to destination if not already running from destination
 		evalExe, err1 := filepath.EvalSymlinks(exePath)
 		evalDest, err2 := filepath.EvalSymlinks(destPath)
 		isSame := (err1 == nil && err2 == nil && evalExe == evalDest) || (exePath == destPath)
@@ -144,7 +144,6 @@ var installCmd = &cobra.Command{
 
 		fmt.Printf("Binary deployed to: %s\n", destPath)
 
-		// Update PATH
 		if runtime.GOOS == "windows" {
 			script := fmt.Sprintf(`
 			$binPath = "%s"
@@ -172,11 +171,10 @@ var installCmd = &cobra.Command{
 				}
 			}
 		} else {
-			// Linux Desktop Integration (Icons & Launcher)
+
 			if runtime.GOOS == "linux" {
 				fmt.Println("Configuring Linux Desktop integration...")
 
-				// 1. Install Icon
 				logoBytes, err := assets.GetLogo()
 				if err == nil && len(logoBytes) > 0 {
 					iconDirs := []string{
@@ -192,7 +190,6 @@ var installCmd = &cobra.Command{
 					fmt.Println("Installed DevCLI icon to ~/.local/share/icons/")
 				}
 
-				// 2. Create Desktop Entry (.desktop file)
 				appsDir := filepath.Join(home, ".local", "share", "applications")
 				if err := os.MkdirAll(appsDir, 0755); err == nil {
 					desktopPath := filepath.Join(appsDir, "devcli.desktop")
@@ -215,33 +212,28 @@ StartupNotify=true
 					}
 				}
 
-				// 3. Refresh desktop database & icon cache if tools exist
 				exec.Command("update-desktop-database", filepath.Join(home, ".local", "share", "applications")).Run()
 				exec.Command("gtk-update-icon-cache", filepath.Join(home, ".local", "share", "icons", "hicolor")).Run()
 			}
 
-			// Check current Shell
 			shell := os.Getenv("SHELL")
 			rcFile := ""
 
-			// Detect Shell Configuration File
 			if strings.Contains(shell, "zsh") {
 				rcFile = filepath.Join(home, ".zshrc")
 			} else if strings.Contains(shell, "bash") {
 				rcFile = filepath.Join(home, ".bashrc")
 			} else if strings.Contains(shell, "fish") {
-				// Fish shell support
-				configDir, _ := os.UserConfigDir() // usually ~/.config
+
+				configDir, _ := os.UserConfigDir()
 				rcFile = filepath.Join(configDir, "fish", "config.fish")
 			}
 
-			// Check if already in PATH (rough check)
 			pathEnv := os.Getenv("PATH")
 			if !strings.Contains(pathEnv, binDir) {
 				if rcFile != "" {
 					fmt.Printf("Detecting shell: %s. Attempting to update %s...\n", shell, rcFile)
 
-					// Prepare export line based on shell
 					var exportLine string
 					if strings.Contains(shell, "fish") {
 						exportLine = fmt.Sprintf("\n# DevCLI\nset -gx PATH $PATH %s\n", binDir)
@@ -249,11 +241,10 @@ StartupNotify=true
 						exportLine = fmt.Sprintf("\n# DevCLI\nexport PATH=\"$PATH:%s\"\n", binDir)
 					}
 
-					// Check if file already has it
 					content, err := os.ReadFile(rcFile)
-					// If file doesn't exist, Create it
+
 					if os.IsNotExist(err) {
-						// For fish, ensure directory exists
+
 						if strings.Contains(shell, "fish") {
 							os.MkdirAll(filepath.Dir(rcFile), 0755)
 						}
@@ -287,9 +278,9 @@ StartupNotify=true
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update DevCLI to the latest version",
-	Long:  `Checks for the latest version of DevCLI on GitHub and updates the binary if a new version is available.`,
+	Use:	"update",
+	Short:	"Update DevCLI to the latest version",
+	Long:	`Checks for the latest version of DevCLI on GitHub and updates the binary if a new version is available.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("🔍 Checking for updates...")
 
@@ -326,7 +317,7 @@ var updateCmd = &cobra.Command{
 }
 
 func init() {
-	// Add all subcommands
+
 	rootCmd.AddCommand(auth.AuthCmd)
 	fileops.FileCmd.Run = func(cmd *cobra.Command, args []string) {
 		tui.RunFileManager("")
@@ -344,7 +335,7 @@ func init() {
 }
 
 func main() {
-	// If args were passed (CLI mode), just run once
+
 	if len(os.Args) > 1 {
 		if err := rootCmd.Execute(); err != nil {
 			fmt.Println(err)
@@ -352,6 +343,6 @@ func main() {
 		}
 		return
 	}
-	// Default TUI mode (Unified Root)
+
 	tui.RunRoot()
 }

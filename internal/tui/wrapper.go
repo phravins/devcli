@@ -4,8 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// StandaloneWrapper wraps a model to handle BackMsg/Quit
-// This allows models designed for nested use (returning BackMsg) to work standalone (Quitting on BackMsg)
 type StandaloneWrapper struct {
 	model tea.Model
 }
@@ -19,7 +17,7 @@ func (m StandaloneWrapper) Init() tea.Cmd {
 }
 
 func (m StandaloneWrapper) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Intercept BackMsg variants and Quit
+
 	switch msg.(type) {
 	case BackMsg, DevServerBackMsg, VenvBackMsg, BoilerplateBackMsg, BonusBackMsg:
 		return m, tea.Quit

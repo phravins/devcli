@@ -20,30 +20,29 @@ import (
 )
 
 type SmartFileModel struct {
-	workspace     string
-	templateList  list.Model
-	input         textinput.Model
-	languageInput textinput.Model
-	aiPromptInput textinput.Model
-	preview       viewport.Model
-	spinner       spinner.Model
-	provider      ai.Provider
-	state         int // 0: select template, 1: customize, 2: preview, 3: save
-	selectedTpl   *smartfile.FileTemplate
-	options       map[string]string
-	savePath      string
-	customPrompt  string
-	result        string
-	width         int
-	height        int
-	err           error
+	workspace	string
+	templateList	list.Model
+	input		textinput.Model
+	languageInput	textinput.Model
+	aiPromptInput	textinput.Model
+	preview		viewport.Model
+	spinner		spinner.Model
+	provider	ai.Provider
+	state		int
+	selectedTpl	*smartfile.FileTemplate
+	options		map[string]string
+	savePath	string
+	customPrompt	string
+	result		string
+	width		int
+	height		int
+	err		error
 
-	// Help
-	helpView viewport.Model
+	helpView	viewport.Model
 }
 
 const (
-	sfStateSelectTemplate = iota
+	sfStateSelectTemplate	= iota
 	sfStateCustomize
 	sfStateAIPrompt
 	sfStateFilename
@@ -55,7 +54,7 @@ const (
 )
 
 func NewSmartFileModel(workspace string) SmartFileModel {
-	// Resolve to actual CWD if workspace is empty
+
 	if workspace == "" {
 		if cwd, err := os.Getwd(); err == nil {
 			workspace = cwd
@@ -65,8 +64,8 @@ func NewSmartFileModel(workspace string) SmartFileModel {
 	items := make([]list.Item, len(smartfile.Templates))
 	for i, tpl := range smartfile.Templates {
 		items[i] = item{
-			title: tpl.Name,
-			desc:  tpl.Description,
+			title:	tpl.Name,
+			desc:	tpl.Description,
 		}
 	}
 
@@ -74,45 +73,41 @@ func NewSmartFileModel(workspace string) SmartFileModel {
 	lst.Title = "Select File Template"
 	lst.SetShowHelp(false)
 
-	// Input for customization
 	ti := textinput.New()
 	ti.Placeholder = "Enter value"
 	ti.Width = 45
 
 	langInput := textinput.New()
 	langInput.Placeholder = "e.g., Go, Python, Node.js"
-	langInput.Width = 30 // 30 is fine
+	langInput.Width = 30
 
 	aiInput := textinput.New()
 	aiInput.Placeholder = "What should this file do? (e.g., 'API client for Stripe')"
 	aiInput.Width = 45
 
-	// Preview viewport
 	vp := viewport.New(80, 20)
 
-	// Spinner for generation process
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
-	// Help Viewport
 	hv := viewport.New(80, 20)
 
 	cfg, _ := config.LoadConfig()
 	p, _ := providers.GetProvider(cfg)
 
 	return SmartFileModel{
-		workspace:     workspace,
-		templateList:  lst,
-		input:         ti,
-		languageInput: langInput,
-		aiPromptInput: aiInput,
-		preview:       vp,
-		spinner:       s,
-		provider:      p,
-		state:         sfStateSelectTemplate,
-		helpView:      hv,
-		options:       make(map[string]string),
+		workspace:	workspace,
+		templateList:	lst,
+		input:		ti,
+		languageInput:	langInput,
+		aiPromptInput:	aiInput,
+		preview:	vp,
+		spinner:	s,
+		provider:	p,
+		state:		sfStateSelectTemplate,
+		helpView:	hv,
+		options:	make(map[string]string),
 	}
 }
 
@@ -148,7 +143,6 @@ func (m SmartFileModel) Update(msg tea.Msg) (SmartFileModel, tea.Cmd) {
 						return m, textinput.Blink
 					}
 
-					// Some templates need language selection
 					needsLang := m.selectedTpl.Name == ".gitignore" ||
 						m.selectedTpl.Name == "Dockerfile" ||
 						m.selectedTpl.Name == "Makefile" ||
@@ -229,8 +223,6 @@ func (m SmartFileModel) Update(msg tea.Msg) (SmartFileModel, tea.Cmd) {
 			case "enter":
 				m.state = sfStateSave
 
-				// Logic: If Custom File, ask verify full path.
-				// If Static Template, ask for Directory only.
 				isCustom := m.selectedTpl.Name == "Custom File (AI)"
 
 				if isCustom {
@@ -241,7 +233,7 @@ func (m SmartFileModel) Update(msg tea.Msg) (SmartFileModel, tea.Cmd) {
 					m.input.SetValue(m.savePath)
 				} else {
 					m.input.Placeholder = "Enter destination folder..."
-					// Default to workspace root
+
 					m.input.SetValue(m.workspace)
 				}
 
@@ -263,12 +255,12 @@ func (m SmartFileModel) Update(msg tea.Msg) (SmartFileModel, tea.Cmd) {
 
 				if isCustom {
 					if inputVal == "" {
-						// Fallback if empty, though unlikely
+
 						inputVal = filepath.Join(m.workspace, "custom_file")
 					}
 					m.savePath = inputVal
 				} else {
-					// Static template: Input is directory
+
 					if inputVal == "" {
 						inputVal = m.workspace
 					}
@@ -283,7 +275,7 @@ func (m SmartFileModel) Update(msg tea.Msg) (SmartFileModel, tea.Cmd) {
 			return m, cmd
 
 		case sfStateGenerating:
-			// Just handle spinner updates (handled below)
+
 			return m, nil
 
 		case sfStateSuccess:
@@ -386,7 +378,7 @@ type sfPreviewReadyMsg struct{}
 
 func (m SmartFileModel) generateStandardPreviewCmd() tea.Cmd {
 	return func() tea.Msg {
-		// Small delay to simulate "building" for non-AI templates
+
 		time.Sleep(600 * time.Millisecond)
 		return sfPreviewReadyMsg{}
 	}
@@ -416,16 +408,14 @@ func (m SmartFileModel) generateAIFileCmd() tea.Cmd {
 
 func (m SmartFileModel) saveFileCmd() tea.Cmd {
 	return func() tea.Msg {
-		// Artificial delay to show the "generation" process
+
 		time.Sleep(800 * time.Millisecond)
 
-		// Ensure directory exists
 		dir := filepath.Dir(m.savePath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return sfSaveResult{err: err}
 		}
 
-		// Save file
 		content := m.selectedTpl.Generator(m.options)
 		if err := os.WriteFile(m.savePath, []byte(content), 0644); err != nil {
 			return sfSaveResult{err: err}
@@ -437,12 +427,11 @@ func (m SmartFileModel) saveFileCmd() tea.Cmd {
 func (m *SmartFileModel) generatePreview() {
 	content := m.selectedTpl.Generator(m.options)
 
-	// Syntax highlighting using Glamour
 	lang := m.selectedTpl.Extension
 	if lang != "" && lang[0] == '.' {
 		lang = lang[1:]
 	}
-	// Fallback/Special cases
+
 	if m.selectedTpl.Name == "Dockerfile" {
 		lang = "dockerfile"
 	} else if m.selectedTpl.Name == "Makefile" {
@@ -468,7 +457,7 @@ func (m *SmartFileModel) generatePreview() {
 func (m SmartFileModel) View() string {
 	switch m.state {
 	case sfStateSelectTemplate:
-		// Enhanced Menu Layout
+
 		header := lipgloss.NewStyle().
 			Foreground(colorCyan).
 			Bold(true).
@@ -484,13 +473,12 @@ func (m SmartFileModel) View() string {
 			"\n",
 			subtleStyle.Render("↑/↓: Navigate • Enter: Select • Esc: Back"),
 		)
-		// Use a container with padding for the left-aligned view
-		// We avoid lipgloss.Place here to ensuring strictly top-left positioning without centering logic interfering
+
 		return lipgloss.NewStyle().Padding(1, 2).Render(innerContent)
 
 	case sfStateCustomize:
 		step := StepStyle.Render("Configuration")
-		// Use simple bold purple instead of titleStyle to avoid double border
+
 		title := lipgloss.NewStyle().Foreground(colorPurple).Bold(true).Render(fmt.Sprintf("Customize: %s", m.selectedTpl.Name))
 		prompt := lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render("Select programming language or specialized options:")
 
@@ -541,7 +529,7 @@ func (m SmartFileModel) View() string {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, WizardCardStyle.Render(content))
 
 	case sfStatePreview:
-		// Premium Preview Window
+
 		headerText := fmt.Sprintf(" PREVIEW: %s ", filepath.Base(m.savePath))
 		if m.selectedTpl.Name != "Custom File (AI)" && m.savePath == "" {
 			headerText = fmt.Sprintf(" PREVIEW: %s ", m.selectedTpl.Name)
@@ -549,7 +537,6 @@ func (m SmartFileModel) View() string {
 
 		header := PreviewHeaderStyle.Render(headerText)
 
-		// Ensure viewport fits nicely with header
 		vp := m.preview.View()
 
 		content := lipgloss.JoinVertical(lipgloss.Left,

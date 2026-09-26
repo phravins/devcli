@@ -14,7 +14,6 @@ func TestGetLogo(t *testing.T) {
 		t.Error("Logo is empty")
 	}
 
-	// PNG files should start with PNG magic number: 89 50 4E 47
 	if len(logo) < 4 {
 		t.Error("Logo too small to be a valid PNG")
 	}
@@ -24,7 +23,7 @@ func TestGetLogo(t *testing.T) {
 }
 
 func TestGetAsset(t *testing.T) {
-	// Test getting logo via generic GetAsset function
+
 	logo, err := GetAsset("devcli_logo.png")
 	if err != nil {
 		t.Fatalf("Failed to get asset: %v", err)
@@ -37,9 +36,9 @@ func TestGetAsset(t *testing.T) {
 
 func TestAssetExists(t *testing.T) {
 	tests := []struct {
-		name     string
-		asset    string
-		expected bool
+		name		string
+		asset		string
+		expected	bool
 	}{
 		{"Logo exists", "devcli_logo.png", true},
 		{"Non-existent file", "nonexistent.txt", false},
@@ -65,7 +64,6 @@ func TestListAssets(t *testing.T) {
 		t.Error("No assets found")
 	}
 
-	// Check that devcli_logo.png is in the list
 	found := false
 	for _, asset := range assets {
 		if asset == "devcli_logo.png" {
@@ -85,14 +83,12 @@ func TestGetAssetsFS(t *testing.T) {
 		t.Fatal("GetAssetsFS returned nil")
 	}
 
-	// Try to open the logo file
 	file, err := fs.Open("devcli_logo.png")
 	if err != nil {
 		t.Fatalf("Failed to open logo from FS: %v", err)
 	}
 	defer file.Close()
 
-	// Read some bytes to verify it's accessible
 	buf := make([]byte, 4)
 	n, err := file.Read(buf)
 	if err != nil {

@@ -16,58 +16,57 @@ import (
 	"github.com/phravins/devcli/internal/boilerplate"
 )
 
-// Boilerplate States
 const (
-	StateBPMenu = iota
+	StateBPMenu	= iota
 	StateBPSnippets
-	StateBPLanguage // Select language for snippet
+	StateBPLanguage
 	StateBPTemplates
 	StateBPArchList
 	StateBPSuccess
-	StateBPSaveTemplate  // Input for saving custom template
-	StateBPSelectProject // Select folder to save as template
-	StateBPLoadTemplate  // Input for naming new project from template
-	StateBPInputPath     // Input for destination path
-	StateBPShowResult    // Show what was generated
-	StateBPHelp          // Help screen
+	StateBPSaveTemplate
+	StateBPSelectProject
+	StateBPLoadTemplate
+	StateBPInputPath
+	StateBPShowResult
+	StateBPHelp
 )
 
 type BoilerplateItemType int
 
 const (
-	ItemTypeNone BoilerplateItemType = iota
+	ItemTypeNone	BoilerplateItemType	= iota
 	ItemTypeSnippet
 	ItemTypeArchitecture
 )
 
 type BoilerplateDashboardModel struct {
-	menuList     list.Model
-	snippetList  list.Model
-	languageList list.Model // Select language
-	templateList list.Model
-	archList     list.Model
-	input        textinput.Model // For naming custom templates
-	loadInput    textinput.Model // For naming new project
-	pathInput    textinput.Model // For selecting destination
-	projectList  list.Model      // For selecting source project
-	viewport     viewport.Model  // For showing results
-	helpView     viewport.Model  // For help content
+	menuList	list.Model
+	snippetList	list.Model
+	languageList	list.Model
+	templateList	list.Model
+	archList	list.Model
+	input		textinput.Model
+	loadInput	textinput.Model
+	pathInput	textinput.Model
+	projectList	list.Model
+	viewport	viewport.Model
+	helpView	viewport.Model
 
-	state         int
-	width, height int
-	manager       *boilerplate.Manager
-	tplManager    *boilerplate.TemplateManager
+	state		int
+	width, height	int
+	manager		*boilerplate.Manager
+	tplManager	*boilerplate.TemplateManager
 
-	selectedTemplate string
-	selectedProject  string
-	selectedItem     string // Generic selection (Snippet Name or Arch Name)
-	selectedItemType BoilerplateItemType
-	targetLang       string // For snippet language
+	selectedTemplate	string
+	selectedProject		string
+	selectedItem		string
+	selectedItemType	BoilerplateItemType
+	targetLang		string
 
-	statusMsg   string
-	err         error
-	fullContent string // For streaming effect
-	streamIndex int    // Current position in stream
+	statusMsg	string
+	err		error
+	fullContent	string
+	streamIndex	int
 }
 
 type bpTickMsg time.Time
@@ -83,7 +82,6 @@ func NewBoilerplateDashboardModel(workspace string) BoilerplateDashboardModel {
 	home, _ := os.UserHomeDir()
 	tplMgr := boilerplate.NewTemplateManager(home)
 
-	// 1. Main Menu
 	menuItems := []list.Item{
 		item{title: "Code Snippet Presets", desc: "Ready-to-drop blocks (CRUD, Auth, DB Connection)"},
 		item{title: "Custom Boilerplate Templates", desc: "Save/Load your own folder structures"},
@@ -93,24 +91,21 @@ func NewBoilerplateDashboardModel(workspace string) BoilerplateDashboardModel {
 	menu.Title = "Boilerplate Generator"
 	menu.SetShowHelp(false)
 
-	// 2. Snippets List
 	var snipItems []list.Item
 	for key, s := range boilerplate.Snippets {
 		snipItems = append(snipItems, item{id: key, title: s.Name, desc: s.Description})
 	}
-	// Sort for stability
+
 	sort.Slice(snipItems, func(i, j int) bool { return snipItems[i].(item).title < snipItems[j].(item).title })
 
 	snipList := list.New(snipItems, list.NewDefaultDelegate(), 0, 0)
 	snipList.Title = "Select Snippet"
 	snipList.SetShowHelp(false)
 
-	// 2.5 Language List (Empty initially)
 	langList := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	langList.Title = "Select Language"
 	langList.SetShowHelp(false)
 
-	// 3. Architecture List
 	var archItems []list.Item
 	for key, a := range boilerplate.Architectures {
 		archItems = append(archItems, item{id: key, title: a.Name, desc: a.Description})
@@ -119,7 +114,6 @@ func NewBoilerplateDashboardModel(workspace string) BoilerplateDashboardModel {
 	archList.Title = "Select Architecture"
 	archList.SetShowHelp(false)
 
-	// 4. Template List (Dynamic, but init empty)
 	tplList := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	tplList.Title = "Custom Templates"
 	tplList.SetShowHelp(false)
@@ -136,37 +130,34 @@ func NewBoilerplateDashboardModel(workspace string) BoilerplateDashboardModel {
 
 	pi := textinput.New()
 	pi.Placeholder = "Destination Path (e.g. . or ./myfolder)"
-	pi.SetValue("./") // Default to current dir (more user friendly)
+	pi.SetValue("./")
 	pi.CharLimit = 100
 	pi.Width = 50
 
 	vp := viewport.New(80, 20)
 	vp.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62"))
 
-	// Project List for selection
 	pl := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	pl.Title = "Select Project to Save"
 	pl.SetShowHelp(false)
 
-	// Help View
 	hv := viewport.New(80, 20)
-	// Content is set dynamically using RenderHelp
 
 	return BoilerplateDashboardModel{
-		menuList:     menu,
-		snippetList:  snipList,
-		languageList: langList,
-		archList:     archList,
-		templateList: tplList,
-		input:        ti,
-		loadInput:    li,
-		pathInput:    pi,
-		projectList:  pl,
-		viewport:     vp,
-		helpView:     hv,
-		state:        StateBPMenu,
-		manager:      mgr,
-		tplManager:   tplMgr,
+		menuList:	menu,
+		snippetList:	snipList,
+		languageList:	langList,
+		archList:	archList,
+		templateList:	tplList,
+		input:		ti,
+		loadInput:	li,
+		pathInput:	pi,
+		projectList:	pl,
+		viewport:	vp,
+		helpView:	hv,
+		state:		StateBPMenu,
+		manager:	mgr,
+		tplManager:	tplMgr,
 	}
 }
 
@@ -178,7 +169,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// Global Help Toggle (unless input focused)
+
 		if msg.String() == "?" && m.state != StateBPSaveTemplate && m.state != StateBPLoadTemplate && m.state != StateBPInputPath && m.state != StateBPHelp {
 			m.state = StateBPHelp
 			m.helpView.SetContent(RenderHelp(BoilerplateHelp, m.width-4, m.height))
@@ -204,7 +195,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 					case "Code Snippet Presets":
 						m.state = StateBPSnippets
 					case "Custom Boilerplate Templates":
-						// Refresh templates before showing
+
 						m.refreshTemplates()
 						m.state = StateBPTemplates
 					case "Architecture Generator":
@@ -213,14 +204,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 					return m, nil
 				}
 			case "esc":
-				// User wants to go back to Project Tools
-				// We don't handle that here effectively, purely internal state.
-				// The parent handles "esc" if we don't catch it?
-				// We'll return a special Loop/Signal if needed,
-				// but essentially we are a sub-view.
-				// If we are at root Top Level (Menu), allow parent to take back control?
-				// Returning the model as-is lets parent see we didn't handle it?
-				// Actually standard pattern: return BackMsg
+
 				return m, func() tea.Msg { return BoilerplateBackMsg{} }
 
 			}
@@ -232,29 +216,26 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 			case "enter":
 				i, ok := m.snippetList.SelectedItem().(item)
 				if ok {
-					// 1. Store the ID (key) of the snippet
+
 					m.selectedItem = i.id
 					m.selectedItemType = ItemTypeSnippet
 
-					// 2. Fetch the snippet to get available languages
 					snip, exists := boilerplate.Snippets[i.id]
 					if !exists {
 						m.err = fmt.Errorf("snippet logic error: ID %s not found", i.id)
 						return m, nil
 					}
 
-					// 3. Populate Language List
 					var langItems []list.Item
 					for lang := range snip.Content {
 						langItems = append(langItems, item{title: lang, desc: "Generate in " + lang})
 					}
-					// Sort languages
+
 					sort.Slice(langItems, func(a, b int) bool {
 						return langItems[a].(item).title < langItems[b].(item).title
 					})
 					m.languageList.SetItems(langItems)
 
-					// 4. Transition to Language Select
 					m.state = StateBPLanguage
 					return m, nil
 				}
@@ -272,7 +253,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 				if ok {
 					m.targetLang = i.title
 					m.state = StateBPInputPath
-					m.pathInput.SetValue("./") // Default to explicit relative CWD
+					m.pathInput.SetValue("./")
 					m.pathInput.Focus()
 					return m, nil
 				}
@@ -288,7 +269,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 			case "enter":
 				i, ok := m.archList.SelectedItem().(item)
 				if ok {
-					// Go to Path Input
+
 					m.selectedItem = i.id
 					m.selectedItemType = ItemTypeArchitecture
 					m.state = StateBPInputPath
@@ -308,14 +289,14 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 			case "enter":
 				i, ok := m.templateList.SelectedItem().(item)
 				if ok {
-					if i.title == "+ Save New Template" { // Changed text slightly to match logic
-						// 1. Refresh project list
+					if i.title == "+ Save New Template" {
+
 						m.refreshProjectList()
 						m.state = StateBPSelectProject
 						return m, nil
 					} else {
-						// Load this template -> Ask for new project name
-						m.selectedTemplate = i.title // Store state
+
+						m.selectedTemplate = i.title
 						m.state = StateBPLoadTemplate
 						m.loadInput.SetValue("")
 						m.loadInput.Focus()
@@ -330,7 +311,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 						if err != nil {
 							m.err = err
 						}
-						// Refresh regardless to show updated list
+
 						m.refreshTemplates()
 						return m, nil
 					}
@@ -365,14 +346,13 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 			case "enter":
 				name := m.loadInput.Value()
 				if name != "" {
-					// Create destination path
+
 					destPath := filepath.Join(m.manager.Workspace, name)
 					if _, err := os.Stat(destPath); err == nil {
 						m.err = fmt.Errorf("directory '%s' already exists", name)
 						return m, nil
 					}
 
-					// Load
 					err := m.tplManager.LoadTemplate(m.selectedTemplate, destPath)
 					if err != nil {
 						m.err = err
@@ -394,18 +374,17 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 			switch msg.String() {
 			case "enter":
 				pathVal := m.pathInput.Value()
-				// Create dir if not exists
+
 				os.MkdirAll(pathVal, 0755)
 
-				// Determine what we were doing based on selected item type
 				switch m.selectedItemType {
 				case ItemTypeSnippet:
-					// Generating Snippet
+
 					path, err := m.manager.GenerateSnippet(m.selectedItem, m.targetLang, pathVal)
 					if err != nil {
 						m.err = err
 					} else {
-						// Read content to show
+
 						content, _ := os.ReadFile(path)
 						m.fullContent = string(content)
 						m.streamIndex = 0
@@ -416,12 +395,12 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 						return m, bpTickCmd()
 					}
 				case ItemTypeArchitecture:
-					// Generating Architecture
+
 					paths, err := m.manager.GenerateArchitecture(m.selectedItem, pathVal)
 					if err != nil {
 						m.err = err
 					} else {
-						// Build tree string
+
 						var sb strings.Builder
 						sb.WriteString(fmt.Sprintf("Generated %d files in %s:\n\n", len(paths), pathVal))
 						for _, p := range paths {
@@ -437,7 +416,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 						return m, bpTickCmd()
 					}
 				default:
-					// Only Snippet and Arch use this flow currently
+
 					m.state = StateBPMenu
 				}
 				return m, nil
@@ -493,7 +472,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 		m.height = msg.Height
 		m.resizeLists(msg.Width, msg.Height)
 	case BoilerplateBackMsg:
-		// If we get a Tick backmsg, we reset
+
 		if m.state == StateBPSuccess {
 			m.state = StateBPMenu
 		}
@@ -501,7 +480,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 
 	case bpTickMsg:
 		if m.state == StateBPShowResult && m.streamIndex < len(m.fullContent) {
-			// Speed: Add 2 chars per tick (smoother animation)
+
 			chunkSize := 2
 			end := m.streamIndex + chunkSize
 			if end > len(m.fullContent) {
@@ -516,7 +495,6 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 	case tea.MouseMsg:
 		var cmd tea.Cmd
 
-		// Manual Handling for reliability
 		if msg.Type == tea.MouseWheelUp {
 			switch m.state {
 			case StateBPMenu:
@@ -536,7 +514,7 @@ func (m BoilerplateDashboardModel) Update(msg tea.Msg) (BoilerplateDashboardMode
 			case StateBPHelp:
 				m.helpView.LineUp(3)
 			}
-			// Fallthrough to regular update just in case, but usually return
+
 			return m, nil
 		}
 		if msg.Type == tea.MouseWheelDown {
@@ -597,7 +575,7 @@ func (m *BoilerplateDashboardModel) refreshTemplates() {
 }
 
 func (m *BoilerplateDashboardModel) resizeLists(w, h int) {
-	// Simple resize logic
+
 	m.menuList.SetSize(w, h-4)
 	m.snippetList.SetSize(w, h-4)
 	m.languageList.SetSize(w, h-4)
@@ -610,7 +588,7 @@ func (m *BoilerplateDashboardModel) resizeLists(w, h int) {
 	m.helpView.Width = w
 	m.helpView.Height = h
 	if m.state == StateBPHelp {
-		m.helpView.SetContent(RenderHelp(BoilerplateHelp, m.width-2, m.height)) // Use closer width
+		m.helpView.SetContent(RenderHelp(BoilerplateHelp, m.width-2, m.height))
 	}
 }
 
@@ -696,7 +674,7 @@ func (m BoilerplateDashboardModel) View() string {
 			),
 		)
 	case StateBPShowResult:
-		// Full screen result viewer
+
 		return docStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
 			titleStyle.Render(m.statusMsg),
 			m.viewport.View(),

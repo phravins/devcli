@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 )
 
-// Manager handles all boilerplate operations
 type Manager struct {
 	Workspace string
 }
@@ -18,7 +17,6 @@ func NewManager(workspace string) *Manager {
 	return &Manager{Workspace: workspace}
 }
 
-// GenerateSnippet writes a selected snippet to a file and returns the path
 func (m *Manager) GenerateSnippet(name, language string, destDir string) (string, error) {
 	snippet, ok := Snippets[name]
 	if !ok {
@@ -27,7 +25,7 @@ func (m *Manager) GenerateSnippet(name, language string, destDir string) (string
 
 	content, ok := snippet.Content[language]
 	if !ok {
-		// Fallback or error if language not supported for this snippet
+
 		return "", fmt.Errorf("language '%s' not supported for snippet '%s'", language, name)
 	}
 
@@ -35,14 +33,13 @@ func (m *Manager) GenerateSnippet(name, language string, destDir string) (string
 	if fileName == "" {
 		fileName = "snippet"
 	} else {
-		// Strip existing extension if any
+
 		ext := filepath.Ext(fileName)
 		if ext != "" {
 			fileName = fileName[:len(fileName)-len(ext)]
 		}
 	}
 
-	// Append correct extension for the selected language
 	fileName += getExt(language)
 
 	fullPath := filepath.Join(destDir, fileName)

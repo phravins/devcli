@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 )
 
-// CreateStructure creates a new project folder with subdirectories and basic files
 func CreateStructure(name string) error {
 	if err := os.MkdirAll(name, 0755); err != nil {
 		return fmt.Errorf("failed to create project dir: %w", err)
@@ -19,13 +18,11 @@ func CreateStructure(name string) error {
 		}
 	}
 
-	// README.md
 	readme := fmt.Sprintf("# %s\n\nProject description here.\n\n## Getting Started\n\n```bash\ncd %s\nnpm install\nnpm run dev\n```", name, name)
 	if err := os.WriteFile(filepath.Join(name, "README.md"), []byte(readme), 0644); err != nil {
 		return err
 	}
 
-	// package.json stub
 	pkg := fmt.Sprintf(`{
   "name": "%s",
   "version": "1.0.0",

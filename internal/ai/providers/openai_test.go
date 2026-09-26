@@ -19,8 +19,8 @@ func TestOpenAIProvider_Send_Success(t *testing.T) {
 		}{
 			{
 				Message: openAIMessage{
-					Role:    "assistant",
-					Content: "Hello from OpenAI!",
+					Role:		"assistant",
+					Content:	"Hello from OpenAI!",
 				},
 			},
 		},
@@ -47,8 +47,8 @@ func TestOpenAIProvider_Send_Success(t *testing.T) {
 
 	p := &OpenAIProvider{}
 	cfg := &config.Config{
-		AIBaseURL: server.URL,
-		AIAPIKey:  "test-key",
+		AIBaseURL:	server.URL,
+		AIAPIKey:	"test-key",
 	}
 	if err := p.Configure(cfg); err != nil {
 		t.Fatalf("Failed to configure provider: %v", err)
@@ -67,52 +67,52 @@ func TestOpenAIProvider_Send_Success(t *testing.T) {
 
 func TestOpenAIProvider_Send_Errors(t *testing.T) {
 	tests := []struct {
-		name           string
-		statusCode     int
-		responseBody   string
-		expectedError  string
+		name		string
+		statusCode	int
+		responseBody	string
+		expectedError	string
 	}{
 		{
-			name:       "Unauthorized 401",
-			statusCode: http.StatusUnauthorized,
-			responseBody: `{"error": {"message": "Invalid API key provided."}}`,
-			expectedError: "openAI: invalid API key",
+			name:		"Unauthorized 401",
+			statusCode:	http.StatusUnauthorized,
+			responseBody:	`{"error": {"message": "Invalid API key provided."}}`,
+			expectedError:	"openAI: invalid API key",
 		},
 		{
-			name:       "Not Found 404",
-			statusCode: http.StatusNotFound,
-			responseBody: `{"error": {"message": "The model 'gpt-3.5-turbo' does not exist"}}`,
-			expectedError: "openAI: model 'gpt-3.5-turbo' not found or no access",
+			name:		"Not Found 404",
+			statusCode:	http.StatusNotFound,
+			responseBody:	`{"error": {"message": "The model 'gpt-3.5-turbo' does not exist"}}`,
+			expectedError:	"openAI: model 'gpt-3.5-turbo' not found or no access",
 		},
 		{
-			name:       "Too Many Requests 429",
-			statusCode: http.StatusTooManyRequests,
-			responseBody: `{"error": {"message": "Rate limit reached for requests"}}`,
-			expectedError: "openAI: rate limit exceeded or insufficient quota",
+			name:		"Too Many Requests 429",
+			statusCode:	http.StatusTooManyRequests,
+			responseBody:	`{"error": {"message": "Rate limit reached for requests"}}`,
+			expectedError:	"openAI: rate limit exceeded or insufficient quota",
 		},
 		{
-			name:       "Internal Server Error 500",
-			statusCode: http.StatusInternalServerError,
-			responseBody: `{"error": {"message": "The server had an error while processing your request"}}`,
-			expectedError: "openAI: server error",
+			name:		"Internal Server Error 500",
+			statusCode:	http.StatusInternalServerError,
+			responseBody:	`{"error": {"message": "The server had an error while processing your request"}}`,
+			expectedError:	"openAI: server error",
 		},
 		{
-			name:       "Other Error 400 with JSON",
-			statusCode: http.StatusBadRequest,
-			responseBody: `{"error": {"message": "Bad request format"}}`,
-			expectedError: "OpenAI error (400): Bad request format",
+			name:		"Other Error 400 with JSON",
+			statusCode:	http.StatusBadRequest,
+			responseBody:	`{"error": {"message": "Bad request format"}}`,
+			expectedError:	"OpenAI error (400): Bad request format",
 		},
 		{
-			name:       "Fallback Non-JSON Error 502",
-			statusCode: http.StatusBadGateway,
-			responseBody: "Bad Gateway",
-			expectedError: "OpenAI API error (502): Bad Gateway",
+			name:		"Fallback Non-JSON Error 502",
+			statusCode:	http.StatusBadGateway,
+			responseBody:	"Bad Gateway",
+			expectedError:	"OpenAI API error (502): Bad Gateway",
 		},
 		{
-			name:       "Empty Error Message JSON",
-			statusCode: http.StatusForbidden,
-			responseBody: `{"error": {"message": ""}}`,
-			expectedError: "OpenAI API error (403): {\"error\": {\"message\": \"\"}}",
+			name:		"Empty Error Message JSON",
+			statusCode:	http.StatusForbidden,
+			responseBody:	`{"error": {"message": ""}}`,
+			expectedError:	"OpenAI API error (403): {\"error\": {\"message\": \"\"}}",
 		},
 	}
 
@@ -126,8 +126,8 @@ func TestOpenAIProvider_Send_Errors(t *testing.T) {
 
 			p := &OpenAIProvider{}
 			cfg := &config.Config{
-				AIBaseURL: server.URL,
-				AIAPIKey:  "test-key",
+				AIBaseURL:	server.URL,
+				AIAPIKey:	"test-key",
 			}
 			if err := p.Configure(cfg); err != nil {
 				t.Fatalf("Failed to configure provider: %v", err)
@@ -209,9 +209,9 @@ func TestOpenAIProvider_Configure(t *testing.T) {
 	t.Run("Custom Overrides", func(t *testing.T) {
 		p := &OpenAIProvider{}
 		cfg := &config.Config{
-			AIAPIKey:  "key-123",
-			AIBaseURL: "https://custom.openai.proxy/v1",
-			AIModel:   "gpt-4o",
+			AIAPIKey:	"key-123",
+			AIBaseURL:	"https://custom.openai.proxy/v1",
+			AIModel:	"gpt-4o",
 		}
 
 		err := p.Configure(cfg)
@@ -230,9 +230,9 @@ func TestOpenAIProvider_Configure(t *testing.T) {
 	t.Run("LMStudio with Custom Overrides", func(t *testing.T) {
 		p := &OpenAIProvider{}
 		cfg := &config.Config{
-			AIBackend: "lmstudio",
-			AIBaseURL: "http://127.0.0.1:9999/v1",
-			AIModel:   "custom-local-model",
+			AIBackend:	"lmstudio",
+			AIBaseURL:	"http://127.0.0.1:9999/v1",
+			AIModel:	"custom-local-model",
 		}
 
 		err := p.Configure(cfg)

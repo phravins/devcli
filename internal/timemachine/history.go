@@ -9,24 +9,21 @@ import (
 	"time"
 )
 
-// Commit represents a Git commit with metadata
 type Commit struct {
-	Hash         string
-	ShortHash    string
-	Author       string
-	AuthorEmail  string
-	Date         time.Time
-	Message      string
-	FilesChanged []string
-	LinesAdded   int
-	LinesRemoved int
-	Diff         string
+	Hash		string
+	ShortHash	string
+	Author		string
+	AuthorEmail	string
+	Date		time.Time
+	Message		string
+	FilesChanged	[]string
+	LinesAdded	int
+	LinesRemoved	int
+	Diff		string
 }
 
-// GetFileHistory retrieves the complete commit history for a specific file
 func GetFileHistory(repoPath, filePath string) ([]Commit, error) {
-	// Use --follow to track file renames
-	// Format: hash|short_hash|author_name|author_email|timestamp|commit_message
+
 	cmd := exec.Command("git", "log", "--follow", "--pretty=format:%H|%h|%an|%ae|%at|%s", "--", filePath)
 	cmd.Dir = repoPath
 
@@ -52,12 +49,12 @@ func GetFileHistory(repoPath, filePath string) ([]Commit, error) {
 		timestamp, _ := strconv.ParseInt(parts[4], 10, 64)
 
 		commit := Commit{
-			Hash:        parts[0],
-			ShortHash:   parts[1],
-			Author:      parts[2],
-			AuthorEmail: parts[3],
-			Date:        time.Unix(timestamp, 0),
-			Message:     parts[5],
+			Hash:		parts[0],
+			ShortHash:	parts[1],
+			Author:		parts[2],
+			AuthorEmail:	parts[3],
+			Date:		time.Unix(timestamp, 0),
+			Message:	parts[5],
 		}
 
 		commits = append(commits, commit)
@@ -67,7 +64,6 @@ func GetFileHistory(repoPath, filePath string) ([]Commit, error) {
 		return nil, fmt.Errorf("error parsing git log: %w", err)
 	}
 
-	// Get diff stats for each commit
 	for i := range commits {
 		diff, stats, err := getCommitDiff(repoPath, commits[i].Hash, filePath)
 		if err == nil {
@@ -80,13 +76,11 @@ func GetFileHistory(repoPath, filePath string) ([]Commit, error) {
 	return commits, nil
 }
 
-// DiffStats contains statistics about changes in a commit
 type DiffStats struct {
-	Added   int
-	Removed int
+	Added	int
+	Removed	int
 }
 
-// getCommitDiff retrieves the diff for a specific commit and file
 func getCommitDiff(repoPath, commitHash, filePath string) (string, DiffStats, error) {
 	cmd := exec.Command("git", "show", "--format=", commitHash, "--", filePath)
 	cmd.Dir = repoPath
@@ -102,7 +96,6 @@ func getCommitDiff(repoPath, commitHash, filePath string) (string, DiffStats, er
 	return diff, stats, nil
 }
 
-// parseDiffStats calculates lines added/removed from a diff
 func parseDiffStats(diff string) DiffStats {
 	var stats DiffStats
 	scanner := bufio.NewScanner(strings.NewReader(diff))
@@ -128,9 +121,8 @@ func parseDiffStats(diff string) DiffStats {
 	return stats
 }
 
-// GetCommitDetails retrieves detailed information about a specific commit
 func GetCommitDetails(repoPath, commitHash string) (*Commit, error) {
-	// Get commit metadata
+
 	cmd := exec.Command("git", "show", "--format=%H|%h|%an|%ae|%at|%s|%b", "--no-patch", commitHash)
 	cmd.Dir = repoPath
 
@@ -152,20 +144,18 @@ func GetCommitDetails(repoPath, commitHash string) (*Commit, error) {
 	timestamp, _ := strconv.ParseInt(parts[4], 10, 64)
 
 	commit := &Commit{
-		Hash:        parts[0],
-		ShortHash:   parts[1],
-		Author:      parts[2],
-		AuthorEmail: parts[3],
-		Date:        time.Unix(timestamp, 0),
-		Message:     parts[5],
+		Hash:		parts[0],
+		ShortHash:	parts[1],
+		Author:		parts[2],
+		AuthorEmail:	parts[3],
+		Date:		time.Unix(timestamp, 0),
+		Message:	parts[5],
 	}
 
-	// Add full message body if exists
 	if len(parts) > 6 && parts[6] != "" {
 		commit.Message = parts[5] + "\n\n" + parts[6]
 	}
 
-	// Get files changed
 	cmd = exec.Command("git", "show", "--name-only", "--format=", commitHash)
 	cmd.Dir = repoPath
 
@@ -178,7 +168,6 @@ func GetCommitDetails(repoPath, commitHash string) (*Commit, error) {
 	return commit, nil
 }
 
-// GetDiffBetween retrieves the diff between two commits for a specific file
 func GetDiffBetween(repoPath, hash1, hash2, filePath string) (string, error) {
 	cmd := exec.Command("git", "diff", hash1, hash2, "--", filePath)
 	cmd.Dir = repoPath
@@ -191,7 +180,6 @@ func GetDiffBetween(repoPath, hash1, hash2, filePath string) (string, error) {
 	return string(output), nil
 }
 
-// GetTrackedFiles returns all files tracked by git in the given repo path.
 func GetTrackedFiles(repoPath string) ([]string, error) {
 	cmd := exec.Command("git", "ls-files")
 	cmd.Dir = repoPath
@@ -212,7 +200,6 @@ func GetTrackedFiles(repoPath string) ([]string, error) {
 	return files, scanner.Err()
 }
 
-// IsGitRepository checks if a directory is a Git repository
 func IsGitRepository(path string) bool {
 	cmd := exec.Command("git", "rev-parse", "--git-dir")
 	cmd.Dir = path
@@ -220,7 +207,6 @@ func IsGitRepository(path string) bool {
 	return cmd.Run() == nil
 }
 
-// GetRepositoryRoot finds the root directory of the Git repository
 func GetRepositoryRoot(path string) (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
 	cmd.Dir = path

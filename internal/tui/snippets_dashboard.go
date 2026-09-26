@@ -14,27 +14,25 @@ import (
 )
 
 type SnippetsModel struct {
-	storage      *snippets.Storage
-	snippetsList []snippets.Snippet
-	list         list.Model
-	viewport     viewport.Model
-	titleInput   textinput.Model
-	descInput    textinput.Model
-	langInput    textinput.Model
-	searchInput  textinput.Model
-	saveInput    textinput.Model
-	state        int
-	selectedSnip *snippets.Snippet
-	width        int
-	height       int
-	err          error
+	storage		*snippets.Storage
+	snippetsList	[]snippets.Snippet
+	list		list.Model
+	viewport	viewport.Model
+	titleInput	textinput.Model
+	descInput	textinput.Model
+	langInput	textinput.Model
+	searchInput	textinput.Model
+	saveInput	textinput.Model
+	state		int
+	selectedSnip	*snippets.Snippet
+	width		int
+	height		int
+	err		error
 
-	// Help
-	helpView viewport.Model
+	helpView	viewport.Model
 
-	// Animation
-	fullContent string
-	streamIndex int
+	fullContent	string
+	streamIndex	int
 }
 
 type snTickMsg time.Time
@@ -46,7 +44,7 @@ func snTickCmd() tea.Cmd {
 }
 
 const (
-	snStateList = iota
+	snStateList	= iota
 	snStateView
 	snStateAdd
 	snStateEdit
@@ -56,8 +54,8 @@ const (
 )
 
 type snippetsLoadedMsg struct {
-	snippets []snippets.Snippet
-	err      error
+	snippets	[]snippets.Snippet
+	err		error
 }
 
 func NewSnippetsModel() SnippetsModel {
@@ -86,16 +84,16 @@ func NewSnippetsModel() SnippetsModel {
 	vp := viewport.New(80, 20)
 
 	return SnippetsModel{
-		storage:     storage,
-		list:        list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
-		viewport:    vp,
-		titleInput:  ti,
-		descInput:   di,
-		langInput:   li,
-		searchInput: si,
-		saveInput:   savi,
-		helpView:    viewport.New(80, 20),
-		state:       snStateList,
+		storage:	storage,
+		list:		list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
+		viewport:	vp,
+		titleInput:	ti,
+		descInput:	di,
+		langInput:	li,
+		searchInput:	si,
+		saveInput:	savi,
+		helpView:	viewport.New(80, 20),
+		state:		snStateList,
 	}
 }
 
@@ -133,14 +131,14 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 				return m, func() tea.Msg { return SubFeatureBackMsg{} }
 			case "?":
 				m.state = snStateHelp
-				// Use consistent margins (like list/viewport) for help
+
 				m.helpView.SetContent(RenderHelp(SnippetLibraryHelp, m.width-4, m.height))
 				return m, nil
 
 			case "r":
 				return m, m.Init()
 			case "a":
-				// Add new snippet
+
 				m.state = snStateAdd
 				m.titleInput.SetValue("")
 				m.descInput.SetValue("")
@@ -148,16 +146,16 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 				m.titleInput.Focus()
 				return m, textinput.Blink
 			case "/":
-				// Search
+
 				m.state = snStateSearch
 				m.searchInput.Focus()
 				return m, textinput.Blink
 			case "enter":
-				// View snippet
+
 				idx := m.list.Index()
 				if idx >= 0 && idx < len(m.snippetsList) {
 					m.selectedSnip = &m.snippetsList[idx]
-					// Start animation
+
 					m.fullContent = m.selectedSnip.Code
 					m.streamIndex = 0
 					m.viewport.SetContent("")
@@ -174,9 +172,9 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 				m.state = snStateList
 				return m, nil
 			case "s":
-				// Go to save mode
+
 				m.state = snStateSave
-				m.saveInput.SetValue("./" + m.selectedSnip.ID + ".txt") // Default attempt
+				m.saveInput.SetValue("./" + m.selectedSnip.ID + ".txt")
 				switch m.selectedSnip.Language {
 				case "go":
 					m.saveInput.SetValue("./snippet.go")
@@ -190,7 +188,7 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 				m.saveInput.Focus()
 				return m, textinput.Blink
 			case "d":
-				// Delete snippet
+
 				if m.selectedSnip != nil {
 					m.storage.Delete(m.selectedSnip.ID)
 					m.state = snStateList
@@ -213,8 +211,7 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 					if err != nil {
 						m.err = err
 					} else {
-						// Success feedback by going back? or flash?
-						// For now just go back.
+
 						m.state = snStateView
 					}
 				}
@@ -281,7 +278,7 @@ func (m SnippetsModel) Update(msg tea.Msg) (SnippetsModel, tea.Cmd) {
 
 	case snTickMsg:
 		if m.state == snStateView && m.streamIndex < len(m.fullContent) {
-			// Speed: Add 3 chars per tick
+
 			chunkSize := 3
 			end := m.streamIndex + chunkSize
 			if end > len(m.fullContent) {
@@ -313,8 +310,8 @@ func (m *SnippetsModel) updateList(snips []snippets.Snippet) {
 	for i, snip := range snips {
 		desc := fmt.Sprintf("%s | %s", snip.Language, snip.Description)
 		items[i] = item{
-			title: snip.Title,
-			desc:  desc,
+			title:	snip.Title,
+			desc:	desc,
 		}
 	}
 	m.list.SetItems(items)
@@ -355,8 +352,6 @@ func (m SnippetsModel) View() string {
 		desc := lipgloss.NewStyle().Foreground(lipgloss.Color("252")).
 			Render(m.selectedSnip.Description)
 
-		// Framed Viewport
-		// Ensure viewport content has a border
 		codeView := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("62")).

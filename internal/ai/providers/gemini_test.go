@@ -25,74 +25,74 @@ func TestGeminiProvider_Metadata(t *testing.T) {
 
 func TestGeminiProvider_Configure(t *testing.T) {
 	tests := []struct {
-		name            string
-		cfg             *config.Config
-		expectedModel   string
-		expectedKey     string
-		expectedBaseURL string
+		name		string
+		cfg		*config.Config
+		expectedModel	string
+		expectedKey	string
+		expectedBaseURL	string
 	}{
 		{
-			name:            "Default values",
-			cfg:             &config.Config{},
-			expectedModel:   "gemini-1.5-flash-001",
-			expectedKey:     "",
-			expectedBaseURL: "https://generativelanguage.googleapis.com/v1beta/models",
+			name:			"Default values",
+			cfg:			&config.Config{},
+			expectedModel:		"gemini-1.5-flash-001",
+			expectedKey:		"",
+			expectedBaseURL:	"https://generativelanguage.googleapis.com/v1beta/models",
 		},
 		{
-			name: "Explicit model 'gemini'",
+			name:	"Explicit model 'gemini'",
 			cfg: &config.Config{
 				AIModel: "gemini",
 			},
-			expectedModel:   "gemini-1.5-flash-001",
-			expectedKey:     "",
-			expectedBaseURL: "https://generativelanguage.googleapis.com/v1beta/models",
+			expectedModel:		"gemini-1.5-flash-001",
+			expectedKey:		"",
+			expectedBaseURL:	"https://generativelanguage.googleapis.com/v1beta/models",
 		},
 		{
-			name: "Custom model and generic AIAPIKey",
+			name:	"Custom model and generic AIAPIKey",
 			cfg: &config.Config{
-				AIModel:  "gemini-1.5-pro",
-				AIAPIKey: "generic-key",
+				AIModel:	"gemini-1.5-pro",
+				AIAPIKey:	"generic-key",
 			},
-			expectedModel:   "gemini-1.5-pro",
-			expectedKey:     "generic-key",
-			expectedBaseURL: "https://generativelanguage.googleapis.com/v1beta/models",
+			expectedModel:		"gemini-1.5-pro",
+			expectedKey:		"generic-key",
+			expectedBaseURL:	"https://generativelanguage.googleapis.com/v1beta/models",
 		},
 		{
-			name: "GeminiAPIKey overrides AIAPIKey",
+			name:	"GeminiAPIKey overrides AIAPIKey",
 			cfg: &config.Config{
-				AIAPIKey:     "generic-key",
-				GeminiAPIKey: "gemini-specific-key",
+				AIAPIKey:	"generic-key",
+				GeminiAPIKey:	"gemini-specific-key",
 			},
-			expectedModel:   "gemini-1.5-flash-001",
-			expectedKey:     "gemini-specific-key",
-			expectedBaseURL: "https://generativelanguage.googleapis.com/v1beta/models",
+			expectedModel:		"gemini-1.5-flash-001",
+			expectedKey:		"gemini-specific-key",
+			expectedBaseURL:	"https://generativelanguage.googleapis.com/v1beta/models",
 		},
 		{
-			name: "Valid HTTP BaseURL",
+			name:	"Valid HTTP BaseURL",
 			cfg: &config.Config{
 				AIBaseURL: "http://localhost:8080/v1",
 			},
-			expectedModel:   "gemini-1.5-flash-001",
-			expectedKey:     "",
-			expectedBaseURL: "http://localhost:8080/v1",
+			expectedModel:		"gemini-1.5-flash-001",
+			expectedKey:		"",
+			expectedBaseURL:	"http://localhost:8080/v1",
 		},
 		{
-			name: "Valid HTTPS BaseURL",
+			name:	"Valid HTTPS BaseURL",
 			cfg: &config.Config{
 				AIBaseURL: "https://custom.api.com/v1",
 			},
-			expectedModel:   "gemini-1.5-flash-001",
-			expectedKey:     "",
-			expectedBaseURL: "https://custom.api.com/v1",
+			expectedModel:		"gemini-1.5-flash-001",
+			expectedKey:		"",
+			expectedBaseURL:	"https://custom.api.com/v1",
 		},
 		{
-			name: "Invalid BaseURL prefix uses default BaseURL",
+			name:	"Invalid BaseURL prefix uses default BaseURL",
 			cfg: &config.Config{
 				AIBaseURL: "invalid-url-scheme",
 			},
-			expectedModel:   "gemini-1.5-flash-001",
-			expectedKey:     "",
-			expectedBaseURL: "https://generativelanguage.googleapis.com/v1beta/models",
+			expectedModel:		"gemini-1.5-flash-001",
+			expectedKey:		"",
+			expectedBaseURL:	"https://generativelanguage.googleapis.com/v1beta/models",
 		},
 	}
 
@@ -173,8 +173,8 @@ func TestGeminiProvider_Send_Success(t *testing.T) {
 
 	p := &GeminiProvider{}
 	cfg := &config.Config{
-		AIBaseURL:    server.URL,
-		GeminiAPIKey: "test-key",
+		AIBaseURL:	server.URL,
+		GeminiAPIKey:	"test-key",
 	}
 	if err := p.Configure(cfg); err != nil {
 		t.Fatalf("Configure failed: %v", err)
@@ -197,46 +197,46 @@ func TestGeminiProvider_Send_Success(t *testing.T) {
 
 func TestGeminiProvider_Send_Errors(t *testing.T) {
 	tests := []struct {
-		name          string
-		statusCode    int
-		responseBody  string
-		expectedError string
+		name		string
+		statusCode	int
+		responseBody	string
+		expectedError	string
 	}{
 		{
-			name:          "Unauthorized 401",
-			statusCode:    http.StatusUnauthorized,
-			responseBody:  `{"error": "unauthorized"}`,
-			expectedError: "gemini: invalid API Key or access denied",
+			name:		"Unauthorized 401",
+			statusCode:	http.StatusUnauthorized,
+			responseBody:	`{"error": "unauthorized"}`,
+			expectedError:	"gemini: invalid API Key or access denied",
 		},
 		{
-			name:          "Forbidden 403",
-			statusCode:    http.StatusForbidden,
-			responseBody:  `{"error": "forbidden"}`,
-			expectedError: "gemini: invalid API Key or access denied",
+			name:		"Forbidden 403",
+			statusCode:	http.StatusForbidden,
+			responseBody:	`{"error": "forbidden"}`,
+			expectedError:	"gemini: invalid API Key or access denied",
 		},
 		{
-			name:          "Not Found 404",
-			statusCode:    http.StatusNotFound,
-			responseBody:  `{"error": "not found"}`,
-			expectedError: "gemini: model 'gemini-1.5-flash-001' not found or API endpoint incorrect",
+			name:		"Not Found 404",
+			statusCode:	http.StatusNotFound,
+			responseBody:	`{"error": "not found"}`,
+			expectedError:	"gemini: model 'gemini-1.5-flash-001' not found or API endpoint incorrect",
 		},
 		{
-			name:          "Too Many Requests 429",
-			statusCode:    http.StatusTooManyRequests,
-			responseBody:  `{"error": "rate limit"}`,
-			expectedError: "gemini: rate limit exceeded or insufficient quota",
+			name:		"Too Many Requests 429",
+			statusCode:	http.StatusTooManyRequests,
+			responseBody:	`{"error": "rate limit"}`,
+			expectedError:	"gemini: rate limit exceeded or insufficient quota",
 		},
 		{
-			name:          "Internal Server Error 500",
-			statusCode:    http.StatusInternalServerError,
-			responseBody:  `{"error": "internal error"}`,
-			expectedError: "gemini: server error",
+			name:		"Internal Server Error 500",
+			statusCode:	http.StatusInternalServerError,
+			responseBody:	`{"error": "internal error"}`,
+			expectedError:	"gemini: server error",
 		},
 		{
-			name:          "Bad Request 400",
-			statusCode:    http.StatusBadRequest,
-			responseBody:  "invalid prompt",
-			expectedError: "gemini API error (400) at",
+			name:		"Bad Request 400",
+			statusCode:	http.StatusBadRequest,
+			responseBody:	"invalid prompt",
+			expectedError:	"gemini API error (400) at",
 		},
 	}
 
@@ -250,8 +250,8 @@ func TestGeminiProvider_Send_Errors(t *testing.T) {
 
 			p := &GeminiProvider{}
 			cfg := &config.Config{
-				AIBaseURL:    server.URL,
-				GeminiAPIKey: "test-key",
+				AIBaseURL:	server.URL,
+				GeminiAPIKey:	"test-key",
 			}
 			if err := p.Configure(cfg); err != nil {
 				t.Fatalf("Configure failed: %v", err)

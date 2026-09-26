@@ -13,23 +13,22 @@ import (
 )
 
 type AIAssistantModel struct {
-	input       textarea.Model
-	output      viewport.Model
-	spinner     spinner.Model
-	provider    ai.Provider
-	state       int // 0: input, 1: generating, 2: result
-	activeAgent int // 0: CodeGen, 1: Architect, 2: Debugger
-	prompt      string
-	result      string
-	width       int
-	height      int
+	input		textarea.Model
+	output		viewport.Model
+	spinner		spinner.Model
+	provider	ai.Provider
+	state		int
+	activeAgent	int
+	prompt		string
+	result		string
+	width		int
+	height		int
 
-	// Help
-	helpView viewport.Model
+	helpView	viewport.Model
 }
 
 const (
-	aiStateInput = iota
+	aiStateInput	= iota
 	aiStateGenerating
 	aiStateResult
 	aiStateHelp
@@ -52,12 +51,12 @@ func NewAIAssistantModel() AIAssistantModel {
 	p, _ := providers.GetProvider(cfg)
 
 	return AIAssistantModel{
-		input:    ta,
-		output:   vp,
-		spinner:  s,
-		provider: p,
-		helpView: viewport.New(80, 20),
-		state:    aiStateInput,
+		input:		ta,
+		output:		vp,
+		spinner:	s,
+		provider:	p,
+		helpView:	viewport.New(80, 20),
+		state:		aiStateInput,
 	}
 }
 
@@ -70,7 +69,7 @@ func (m AIAssistantModel) Update(msg tea.Msg) (AIAssistantModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// Global Agent Switching (Always works in any state)
+
 		switch msg.String() {
 		case "tab", "[", "ctrl+n":
 			m.activeAgent = (m.activeAgent + 1) % 3
@@ -108,7 +107,7 @@ func (m AIAssistantModel) Update(msg tea.Msg) (AIAssistantModel, tea.Cmd) {
 				m.input.SetValue("")
 				return m, nil
 			case "ctrl+d":
-				// Send prompt
+
 				m.prompt = m.input.Value()
 				if m.prompt != "" && m.provider != nil {
 					m.state = aiStateGenerating
@@ -130,7 +129,7 @@ func (m AIAssistantModel) Update(msg tea.Msg) (AIAssistantModel, tea.Cmd) {
 				m.input.Focus()
 				return m, textarea.Blink
 			case "n":
-				// New prompt
+
 				m.state = aiStateInput
 				m.input.SetValue("")
 				m.input.Focus()
@@ -148,7 +147,6 @@ func (m AIAssistantModel) Update(msg tea.Msg) (AIAssistantModel, tea.Cmd) {
 	case aiResponseMsg:
 		m.result = string(msg)
 
-		// Render results with Glamour for premium look
 		renderer, _ := glamour.NewTermRenderer(
 			glamour.WithAutoStyle(),
 			glamour.WithWordWrap(m.output.Width-4),
@@ -193,7 +191,6 @@ func (m AIAssistantModel) View() string {
 	sidebarWidth := 20
 	mainAreaWidth := m.width - sidebarWidth - 4
 
-	// Sync heights to ensure the vertical boundary reaches the bottom
 	workspaceHeight := m.height
 
 	sidebarStyle := lipgloss.NewStyle().
@@ -203,7 +200,6 @@ func (m AIAssistantModel) View() string {
 		BorderForeground(lipgloss.Color("240")).
 		Padding(0, 1)
 
-	// Sidebar Content
 	agentNames := []string{"CodeGen-v1", "Architect", "Debugger"}
 	var agentItems []string
 	for i, name := range agentNames {
@@ -228,7 +224,6 @@ func (m AIAssistantModel) View() string {
 		agentItems = append(agentItems, item)
 	}
 
-	// Correctly render sidebar once
 	sidebar := sidebarStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
 		"\n",
 		lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7D56F4")).Render(" AGENTS"),

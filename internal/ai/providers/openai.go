@@ -13,11 +13,11 @@ import (
 )
 
 type OpenAIProvider struct {
-	BaseURL    string
-	APIKey     string
-	modelName  string
-	IsLMStudio bool
-	httpClient *http.Client
+	BaseURL		string
+	APIKey		string
+	modelName	string
+	IsLMStudio	bool
+	httpClient	*http.Client
 }
 
 func (p *OpenAIProvider) Name() string {
@@ -32,7 +32,7 @@ func (p *OpenAIProvider) Model() string {
 }
 
 func (p *OpenAIProvider) Configure(cfg *config.Config) error {
-	// Defaults for OpenAI (only if not already set by Factory)
+
 	if p.BaseURL == "" {
 		p.BaseURL = "https://api.openai.com/v1"
 	}
@@ -41,11 +41,10 @@ func (p *OpenAIProvider) Configure(cfg *config.Config) error {
 
 	if cfg.AIBackend == "lmstudio" {
 		p.IsLMStudio = true
-		p.BaseURL = "http://localhost:1234/v1" // LM Studio default
+		p.BaseURL = "http://localhost:1234/v1"
 		p.modelName = "local-model"
 	}
 
-	// Overrides
 	if cfg.AIBaseURL != "" {
 		p.BaseURL = cfg.AIBaseURL
 	}
@@ -54,7 +53,7 @@ func (p *OpenAIProvider) Configure(cfg *config.Config) error {
 	}
 
 	p.httpClient = &http.Client{
-		Timeout: 90 * time.Second, // Global timeout
+		Timeout: 90 * time.Second,
 	}
 
 	return nil
@@ -65,13 +64,13 @@ func (p *OpenAIProvider) IsLocal() bool {
 }
 
 type openAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role	string	`json:"role"`
+	Content	string	`json:"content"`
 }
 
 type openAIRequest struct {
-	Model    string          `json:"model"`
-	Messages []openAIMessage `json:"messages"`
+	Model		string		`json:"model"`
+	Messages	[]openAIMessage	`json:"messages"`
 }
 
 type openAIResponse struct {
@@ -82,22 +81,22 @@ type openAIResponse struct {
 
 type openAIErrorResponse struct {
 	Error struct {
-		Message string `json:"message"`
-		Type    string `json:"type"`
-		Code    string `json:"code"`
+		Message	string	`json:"message"`
+		Type	string	`json:"type"`
+		Code	string	`json:"code"`
 	} `json:"error"`
 }
 
 func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
-	// Convert internal messages to OpenAI struct
+
 	var apiMessages []openAIMessage
 	for _, m := range messages {
 		apiMessages = append(apiMessages, openAIMessage{Role: m.Role, Content: m.Content})
 	}
 
 	reqBody := openAIRequest{
-		Model:    p.modelName,
-		Messages: apiMessages,
+		Model:		p.modelName,
+		Messages:	apiMessages,
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -142,7 +141,7 @@ func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
 				return "", fmt.Errorf("OpenAI error (%d): %s", resp.StatusCode, errResp.Error.Message)
 			}
 		}
-		// Fallback for non-JSON or unexpected error format
+
 		return "", fmt.Errorf("OpenAI API error (%d): %s", resp.StatusCode, string(body))
 	}
 

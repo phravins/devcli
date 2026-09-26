@@ -10,50 +10,49 @@ import (
 func TestDetectGoTasks(t *testing.T) {
 	tempDir := t.TempDir()
 
-	// Base tasks expected for any Go project
 	baseTasks := []Task{
 		{
-			Name:        "Build Go Project",
-			Type:        TaskBuild,
-			Command:     "go build ./...",
-			Description: "Build Go project",
-			Icon:        "",
+			Name:		"Build Go Project",
+			Type:		TaskBuild,
+			Command:	"go build ./...",
+			Description:	"Build Go project",
+			Icon:		"",
 		},
 		{
-			Name:        "Run Tests",
-			Type:        TaskTest,
-			Command:     "go test ./...",
-			Description: "Run all Go tests",
-			Icon:        "",
+			Name:		"Run Tests",
+			Type:		TaskTest,
+			Command:	"go test ./...",
+			Description:	"Run all Go tests",
+			Icon:		"",
 		},
 		{
-			Name:        "Format Code (gofmt)",
-			Type:        TaskFormat,
-			Command:     "gofmt -w .",
-			Description: "Format Go code",
-			Icon:        "",
+			Name:		"Format Code (gofmt)",
+			Type:		TaskFormat,
+			Command:	"gofmt -w .",
+			Description:	"Format Go code",
+			Icon:		"",
 		},
 		{
-			Name:        "Run Go Vet",
-			Type:        TaskLint,
-			Command:     "go vet ./...",
-			Description: "Check Go code for issues",
-			Icon:        "",
+			Name:		"Run Go Vet",
+			Type:		TaskLint,
+			Command:	"go vet ./...",
+			Description:	"Check Go code for issues",
+			Icon:		"",
 		},
 	}
 
 	tests := []struct {
-		name          string
-		setup         func(string)
-		expectedTasks []Task
+		name		string
+		setup		func(string)
+		expectedTasks	[]Task
 	}{
 		{
-			name:          "Without main.go",
-			setup:         func(dir string) {}, // No setup needed
-			expectedTasks: baseTasks,
+			name:		"Without main.go",
+			setup:		func(dir string) {},
+			expectedTasks:	baseTasks,
 		},
 		{
-			name: "With main.go",
+			name:	"With main.go",
 			setup: func(dir string) {
 				file, err := os.Create(filepath.Join(dir, "main.go"))
 				if err != nil {
@@ -62,18 +61,18 @@ func TestDetectGoTasks(t *testing.T) {
 				file.Close()
 			},
 			expectedTasks: append(append([]Task(nil), baseTasks...), Task{
-				Name:        "Run main.go",
-				Type:        TaskRun,
-				Command:     "go run main.go",
-				Description: "Execute main.go",
-				Icon:        "",
+				Name:		"Run main.go",
+				Type:		TaskRun,
+				Command:	"go run main.go",
+				Description:	"Execute main.go",
+				Icon:		"",
 			}),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a specific sub-directory for this test case to avoid interference
+
 			testDir := filepath.Join(tempDir, tt.name)
 			err := os.Mkdir(testDir, 0755)
 			if err != nil {

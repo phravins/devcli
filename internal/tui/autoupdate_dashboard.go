@@ -33,12 +33,12 @@ var autoUpdateMenuItems = []list.Item{
 }
 
 const (
-	StateAutoUpdateMenu = iota
+	StateAutoUpdateMenu	= iota
 	StateAutoUpdateLanguages
 	StateAutoUpdateKeys
-	StateAutoUpdateCheck       // Checking git
-	StateAutoUpdateSummarizing // Generating AI summary
-	StateAutoUpdateReview      // Reviewing AI Summary
+	StateAutoUpdateCheck
+	StateAutoUpdateSummarizing
+	StateAutoUpdateReview
 	StateAutoUpdateInstalling
 	StateAutoUpdateKeyInput
 	StateAutoUpdateDone
@@ -46,36 +46,32 @@ const (
 )
 
 type AutoUpdateModel struct {
-	state         int
-	list          list.Model
-	width, height int
-	spinner       spinner.Model
-	input         textinput.Model
-	keyProvider   string
+	state		int
+	list		list.Model
+	width, height	int
+	spinner		spinner.Model
+	input		textinput.Model
+	keyProvider	string
 
-	// Review / Output View
-	outputView viewport.Model
+	outputView	viewport.Model
 
-	// Internal data
-	updateLog     string // Raw git log
-	updateSummary string // The AI generated summary
-	provider      ai.Provider
+	updateLog	string
+	updateSummary	string
+	provider	ai.Provider
 
-	// Error handling
-	err       error
-	statusMsg string
+	err		error
+	statusMsg	string
 }
 
-// Msg types
 type updateCheckMsg struct {
-	hasUpdates bool
-	log        string
-	err        error
+	hasUpdates	bool
+	log		string
+	err		error
 }
 
 type summaryMsg struct {
-	content string
-	err     error
+	content	string
+	err	error
 }
 
 type installMsg struct {
@@ -127,7 +123,6 @@ func NewAutoUpdateModel() AutoUpdateModel {
 		BorderForeground(lipgloss.Color("62")).
 		Padding(1, 2)
 
-	// Initialize provider (Copied from ChatModel)
 	cfg, _ := config.LoadConfig()
 	var p ai.Provider
 
@@ -166,12 +161,12 @@ func NewAutoUpdateModel() AutoUpdateModel {
 	}
 
 	return AutoUpdateModel{
-		state:      StateAutoUpdateMenu,
-		list:       l,
-		spinner:    s,
-		outputView: vp,
-		provider:   p,
-		input:      ti,
+		state:		StateAutoUpdateMenu,
+		list:		l,
+		spinner:	s,
+		outputView:	vp,
+		provider:	p,
+		input:		ti,
 	}
 }
 
@@ -188,9 +183,8 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v-10) // Leave space for header/footer
+		m.list.SetSize(msg.Width-h, msg.Height-v-10)
 
-		// Resize Output View
 		m.outputView.Width = msg.Width - 4
 		m.outputView.Height = msg.Height - 10
 
@@ -263,7 +257,7 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				key := m.input.Value()
 				m.input.Blur()
-				// Save key
+
 				saveKeyCmd(m.keyProvider, key)
 				m.statusMsg = fmt.Sprintf("Updated key for %s!", m.keyProvider)
 				m.state = StateAutoUpdateDone
@@ -274,7 +268,7 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 
 		} else if m.state == StateAutoUpdateReview {
-			// In review mode, handle confirmation or cancel
+
 			switch msg.String() {
 			case "y", "Y":
 				m.state = StateAutoUpdateInstalling
@@ -297,7 +291,7 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		} else {
-			// Helper to cancel any operation (e.g. Languages check)
+
 			if msg.String() == "esc" {
 				m.state = StateAutoUpdateMenu
 				return m, nil
@@ -312,7 +306,7 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case updateCheckMsg:
 		if msg.err != nil {
 			m.err = msg.err
-			m.state = StateAutoUpdateDone // Show error state
+			m.state = StateAutoUpdateDone
 		} else if !msg.hasUpdates {
 			m.statusMsg = "DevCLI is up to date!"
 			m.state = StateAutoUpdateDone
@@ -326,16 +320,15 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case summaryMsg:
 		switch m.state {
 		case StateAutoUpdateCheck, StateAutoUpdateSummarizing:
-			// This was from the AI summary
+
 			if msg.err != nil {
-				// Fallback to raw log if AI fails
+
 				m.updateSummary = "Failed to generate AI summary. Raw logs:\n" + m.updateLog
 			} else {
 				m.updateSummary = msg.content
 			}
 			m.state = StateAutoUpdateReview
 
-			// Render markdown
 			renderer, _ := glamour.NewTermRenderer(
 				glamour.WithAutoStyle(),
 				glamour.WithWordWrap(m.width-10),
@@ -347,9 +340,9 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.outputView.SetContent(out)
 
 		case StateAutoUpdateLanguages:
-			// This was from language check
+
 			m.updateSummary = msg.content
-			// We manually styled this with lipgloss, so bypass glamour
+
 			m.outputView.SetContent(m.updateSummary)
 		}
 
@@ -362,13 +355,11 @@ func (m AutoUpdateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = StateAutoUpdateDone
 	}
 
-	// Update list only in menu or keys select
 	if m.state == StateAutoUpdateMenu || m.state == StateAutoUpdateKeys {
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
-	// Update viewport in review/done/langs/help
 	if m.state == StateAutoUpdateReview || m.state == StateAutoUpdateDone || m.state == StateAutoUpdateLanguages || m.state == StateAutoUpdateHelp {
 		m.outputView, cmd = m.outputView.Update(msg)
 		cmds = append(cmds, cmd)
@@ -487,7 +478,6 @@ func showHelp(m *AutoUpdateModel) {
 
 	m.updateSummary = sb.String()
 
-	// Render markdown
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(m.width-12),
@@ -497,11 +487,9 @@ func showHelp(m *AutoUpdateModel) {
 		out = m.updateSummary
 	}
 	m.outputView.SetContent(out)
-	m.outputView.YOffset = 0 // Reset scroll
+	m.outputView.YOffset = 0
 	m.state = StateAutoUpdateHelp
 }
-
-// Commands
 
 func checkLanguageVersionsCmd() tea.Cmd {
 	return func() tea.Msg {
@@ -521,7 +509,6 @@ func checkLanguageVersionsCmd() tea.Cmd {
 				pathStr = "Not Found (Install or add to PATH)"
 			}
 
-			// Add Language Name Header
 			nameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("45")).Bold(true)
 			sb.WriteString(fmt.Sprintf("%s\n", nameStyle.Render("## "+name)))
 
@@ -529,7 +516,7 @@ func checkLanguageVersionsCmd() tea.Cmd {
 				vCmd := exec.Command(path, args...)
 				vOut, err := vCmd.CombinedOutput()
 				if err == nil {
-					// Clean version string
+
 					outStr := string(vOut)
 					lines := strings.Split(outStr, "\n")
 					version := strings.TrimSpace(lines[0])
@@ -544,45 +531,37 @@ func checkLanguageVersionsCmd() tea.Cmd {
 			sb.WriteString("\n")
 		}
 
-		// Fallback Definitions
 		userHome, _ := os.UserHomeDir()
 
-		// 1. Go
 		check("Go", "go", []string{"version"}, []string{
 			`C:\Program Files\Go\bin\go.exe`,
 			`C:\Go\bin\go.exe`,
 		})
 
-		// 2. Python
 		check("Python", "python", []string{"--version"}, []string{
 			`C:\Python*\python.exe`,
 			`C:\Program Files\Python*\python.exe`,
 			filepath.Join(userHome, `AppData\Local\Programs\Python\Python*\python.exe`),
 		})
 
-		// 3. Node.js
 		check("Node.js", "node", []string{"--version"}, []string{
 			`C:\Program Files\nodejs\node.exe`,
 		})
 
-		// 4. Java
 		check("Java", "java", []string{"-version"}, []string{
 			`C:\Program Files\Java\jdk*\bin\java.exe`,
 			`C:\Program Files\Eclipse Adoptium\jdk*\bin\java.exe`,
 		})
 
-		// 5. Rust
 		check("Rust", "rustc", []string{"--version"}, []string{
 			filepath.Join(userHome, `.cargo\bin\rustc.exe`),
 		})
 
-		// 6. Zig
 		check("Zig", "zig", []string{"version"}, []string{
 			`C:\Program Files\Zig*\zig.exe`,
 			`C:\zig*\zig.exe`,
 		})
 
-		// 7. C/C++ (GCC) - Special focus on Code::Blocks/MinGW
 		gccFallbacks := []string{
 			`C:\Program Files\CodeBlocks\MinGW\bin\gcc.exe`,
 			`C:\Program Files (x86)\CodeBlocks\MinGW\bin\gcc.exe`,
@@ -591,7 +570,6 @@ func checkLanguageVersionsCmd() tea.Cmd {
 		}
 		check("C (GCC)", "gcc", []string{"--version"}, gccFallbacks)
 
-		// G++ usually in same place as gcc, reuse fallbacks looking for g++
 		gppFallbacks := make([]string, len(gccFallbacks))
 		for i, p := range gccFallbacks {
 			gppFallbacks[i] = strings.Replace(p, "gcc.exe", "g++.exe", 1)
@@ -607,9 +585,9 @@ func checkLanguageVersionsCmd() tea.Cmd {
 
 func checkDevCLIUpdatesCmd() tea.Cmd {
 	return func() tea.Msg {
-		// Try local git first if we are inside the devcli repository
+
 		if _, err := exec.Command("git", "rev-parse", "--is-inside-work-tree").Output(); err == nil {
-			// 1. Fetch with 10s timeout
+
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
@@ -628,7 +606,6 @@ func checkDevCLIUpdatesCmd() tea.Cmd {
 			}
 			branch := strings.TrimSpace(string(branchOut))
 
-			// Log
 			logCmd := exec.Command("git", "log", fmt.Sprintf("HEAD..origin/%s", branch), "--oneline")
 			out, err := logCmd.Output()
 			if err != nil {
@@ -643,7 +620,6 @@ func checkDevCLIUpdatesCmd() tea.Cmd {
 			return updateCheckMsg{hasUpdates: true, log: logStr}
 		}
 
-		// Fallback: Check via GitHub API with 10s HTTP timeout
 		client := &http.Client{Timeout: 10 * time.Second}
 		resp, err := client.Get("https://api.github.com/repos/phravins/devcli/commits?per_page=5")
 		if err != nil {
@@ -656,10 +632,10 @@ func checkDevCLIUpdatesCmd() tea.Cmd {
 		}
 
 		var commits []struct {
-			Sha    string `json:"sha"`
-			Commit struct {
+			Sha	string	`json:"sha"`
+			Commit	struct {
 				Message string `json:"message"`
-			} `json:"commit"`
+			}	`json:"commit"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&commits); err != nil {
 			return updateCheckMsg{err: fmt.Errorf("failed to parse github response: %v", err)}
@@ -691,10 +667,9 @@ func summarizeUpdatesCmd(p ai.Provider, log string) tea.Cmd {
 			return summaryMsg{err: fmt.Errorf("no AI provider configured")}
 		}
 
-		// Run AI call with an 8-second timeout so TUI never gets stuck
 		type result struct {
-			content string
-			err     error
+			content	string
+			err	error
 		}
 		resChan := make(chan result, 1)
 
@@ -716,9 +691,9 @@ func summarizeUpdatesCmd(p ai.Provider, log string) tea.Cmd {
 
 func installDevCLIUpdatesCmd() tea.Cmd {
 	return func() tea.Msg {
-		// Try local git first if we are inside the repository
+
 		if _, err := exec.Command("git", "rev-parse", "--is-inside-work-tree").Output(); err == nil {
-			// Get current branch
+
 			branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 			branchOut, err := branchCmd.Output()
 			if err != nil {
@@ -726,12 +701,10 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 			}
 			branch := strings.TrimSpace(string(branchOut))
 
-			// Check if there are uncommitted changes
 			statusCmd := exec.Command("git", "status", "--porcelain")
 			statusOut, err := statusCmd.Output()
 			hasChanges := err == nil && len(statusOut) > 0
 
-			// Stash changes if any exist
 			if hasChanges {
 				stash := exec.Command("git", "stash", "push", "-m", "DevCLI auto-update backup")
 				if output, err := stash.CombinedOutput(); err != nil {
@@ -739,26 +712,23 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 				}
 			}
 
-			// git pull with explicit remote and branch
 			pull := exec.Command("git", "pull", "origin", branch)
 			if output, err := pull.CombinedOutput(); err != nil {
-				// If pull fails, restore stashed changes
+
 				if hasChanges {
 					exec.Command("git", "stash", "pop").Run()
 				}
 				return installMsg{err: fmt.Errorf("git pull failed: %s", string(output))}
 			}
 
-			// Restore stashed changes after successful pull
 			if hasChanges {
 				pop := exec.Command("git", "stash", "pop")
 				if output, err := pop.CombinedOutput(); err != nil {
-					// Don't fail the update if stash pop has conflicts, just warn
+
 					return installMsg{err: fmt.Errorf("update succeeded but stash restore had conflicts: %s\nYour changes are in 'git stash list'", string(output))}
 				}
 			}
 
-			// go install
 			build := exec.Command("go", "install", ".")
 			if output, err := build.CombinedOutput(); err != nil {
 				return installMsg{err: fmt.Errorf("go install failed: %s", string(output))}
@@ -768,7 +738,6 @@ func installDevCLIUpdatesCmd() tea.Cmd {
 			return installMsg{err: nil}
 		}
 
-		// Fallback: update globally via go install
 		cmd := exec.Command("go", "install", "github.com/phravins/devcli@latest")
 		cmd.Env = append(os.Environ(), "GOPROXY=direct")
 		if output, err := cmd.CombinedOutput(); err != nil {
@@ -814,20 +783,20 @@ func syncDevCLIBin() {
 }
 
 func saveKeyCmd(provider, key string) {
-	// We run this synchronously as it is fast
+
 	key = strings.TrimSpace(key)
 
 	switch strings.ToLower(provider) {
 	case "google gemini":
 		config.Set("gemini_api_key", key)
 	case "openai":
-		config.Set("ai_api_key", key) // Default usually
+		config.Set("ai_api_key", key)
 	case "anthropic claude":
 		config.Set("anthropic_api_key", key)
 	case "huggingface":
 		config.Set("hf_access_token", key)
 	}
-	// Also set the main key if generic
+
 	if strings.ToLower(provider) == "openai" {
 		config.Set("ai_api_key", key)
 	}

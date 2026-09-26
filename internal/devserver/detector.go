@@ -10,36 +10,36 @@ import (
 type ProjectType string
 
 const (
-	TypeNode      ProjectType = "Node.js"
-	TypeExpress   ProjectType = "Express"
-	TypeNextJS    ProjectType = "Next.js"
-	TypeNestJS    ProjectType = "Nest.js"
-	TypeAngular   ProjectType = "Angular"
-	TypeVue       ProjectType = "Vue.js"
-	TypePython    ProjectType = "Python"
-	TypeGo        ProjectType = "Go"
-	TypeDjango    ProjectType = "Django"
-	TypeFastAPI   ProjectType = "FastAPI"
-	TypeFlask     ProjectType = "Flask"
-	TypeReact     ProjectType = "React"
-	TypeVite      ProjectType = "Vite"
-	TypeWebpack   ProjectType = "Webpack"
-	TypeSpring    ProjectType = "Spring Boot"
-	TypeFullstack ProjectType = "Fullstack"
-	TypeUnknown   ProjectType = "Unknown"
+	TypeNode	ProjectType	= "Node.js"
+	TypeExpress	ProjectType	= "Express"
+	TypeNextJS	ProjectType	= "Next.js"
+	TypeNestJS	ProjectType	= "Nest.js"
+	TypeAngular	ProjectType	= "Angular"
+	TypeVue		ProjectType	= "Vue.js"
+	TypePython	ProjectType	= "Python"
+	TypeGo		ProjectType	= "Go"
+	TypeDjango	ProjectType	= "Django"
+	TypeFastAPI	ProjectType	= "FastAPI"
+	TypeFlask	ProjectType	= "Flask"
+	TypeReact	ProjectType	= "React"
+	TypeVite	ProjectType	= "Vite"
+	TypeWebpack	ProjectType	= "Webpack"
+	TypeSpring	ProjectType	= "Spring Boot"
+	TypeFullstack	ProjectType	= "Fullstack"
+	TypeUnknown	ProjectType	= "Unknown"
 )
 
 type ServerConfig struct {
-	Name string // "Backend", "Frontend", or "Server"
-	Type ProjectType
-	Cmd  string
-	Args []string
-	Dir  string // Working directory for this server
+	Name	string
+	Type	ProjectType
+	Cmd	string
+	Args	[]string
+	Dir	string
 }
 
 type ProjectInfo struct {
-	Type    ProjectType
-	Servers []ServerConfig
+	Type	ProjectType
+	Servers	[]ServerConfig
 }
 
 func Detect(path string) ProjectInfo {
@@ -50,19 +50,17 @@ func Detect(path string) ProjectInfo {
 	var servers []ServerConfig
 	detectedType := TypeUnknown
 
-	// Check for Django (manage.py)
 	if exists(filepath.Join(path, "manage.py")) {
 		servers = append(servers, ServerConfig{
-			Name: "Django Server",
-			Type: TypeDjango,
-			Cmd:  "python",
-			Args: []string{"manage.py", "runserver"},
-			Dir:  path,
+			Name:	"Django Server",
+			Type:	TypeDjango,
+			Cmd:	"python",
+			Args:	[]string{"manage.py", "runserver"},
+			Dir:	path,
 		})
 		detectedType = TypeDjango
 	}
 
-	// Check for FastAPI (main.py or app.py with fastapi import)
 	if isFastAPI(path) {
 		entrypoint := "main.py"
 		if !exists(filepath.Join(path, "main.py")) && exists(filepath.Join(path, "app.py")) {
@@ -70,64 +68,59 @@ func Detect(path string) ProjectInfo {
 		}
 		appName := strings.TrimSuffix(entrypoint, ".py") + ":app"
 		servers = append(servers, ServerConfig{
-			Name: "FastAPI Server",
-			Type: TypeFastAPI,
-			Cmd:  "uvicorn",
-			Args: []string{appName, "--reload"},
-			Dir:  path,
+			Name:	"FastAPI Server",
+			Type:	TypeFastAPI,
+			Cmd:	"uvicorn",
+			Args:	[]string{appName, "--reload"},
+			Dir:	path,
 		})
 		detectedType = TypeFastAPI
 	}
 
-	// Check for Spring Boot (pom.xml)
 	if exists(filepath.Join(path, "pom.xml")) {
 		servers = append(servers, ServerConfig{
-			Name: "Spring Boot",
-			Type: TypeSpring,
-			Cmd:  "mvn",
-			Args: []string{"spring-boot:run"},
-			Dir:  path,
+			Name:	"Spring Boot",
+			Type:	TypeSpring,
+			Cmd:	"mvn",
+			Args:	[]string{"spring-boot:run"},
+			Dir:	path,
 		})
 		detectedType = TypeSpring
 	}
 
-	// Check for Next.js (next.config.js or pages/ directory)
 	if exists(filepath.Join(path, "next.config.js")) || exists(filepath.Join(path, "next.config.mjs")) || exists(filepath.Join(path, "pages")) || exists(filepath.Join(path, "app")) {
 		servers = append(servers, ServerConfig{
-			Name: "Next.js Dev Server",
-			Type: TypeNextJS,
-			Cmd:  "npm",
-			Args: []string{"run", "dev"},
-			Dir:  path,
+			Name:	"Next.js Dev Server",
+			Type:	TypeNextJS,
+			Cmd:	"npm",
+			Args:	[]string{"run", "dev"},
+			Dir:	path,
 		})
 		detectedType = TypeNextJS
 	}
 
-	// Check for Nest.js (nest-cli.json)
 	if exists(filepath.Join(path, "nest-cli.json")) {
 		servers = append(servers, ServerConfig{
-			Name: "Nest.js Dev Server",
-			Type: TypeNestJS,
-			Cmd:  "npm",
-			Args: []string{"run", "start:dev"},
-			Dir:  path,
+			Name:	"Nest.js Dev Server",
+			Type:	TypeNestJS,
+			Cmd:	"npm",
+			Args:	[]string{"run", "start:dev"},
+			Dir:	path,
 		})
 		detectedType = TypeNestJS
 	}
 
-	// Check for Angular (angular.json)
 	if exists(filepath.Join(path, "angular.json")) {
 		servers = append(servers, ServerConfig{
-			Name: "Angular Dev Server",
-			Type: TypeAngular,
-			Cmd:  "npm",
-			Args: []string{"start"},
-			Dir:  path,
+			Name:	"Angular Dev Server",
+			Type:	TypeAngular,
+			Cmd:	"npm",
+			Args:	[]string{"start"},
+			Dir:	path,
 		})
 		detectedType = TypeAngular
 	}
 
-	// Cache package.json content to avoid multiple reads
 	var pkgJsonContent []byte
 	var pkgJsonRead bool
 	var pkgJsonExists bool
@@ -144,94 +137,86 @@ func Detect(path string) ProjectInfo {
 		return pkgJsonContent, pkgJsonExists
 	}
 
-	// Check for Vue.js (vue.config.js or vite.config with vue)
 	if isVue(path, getPkgJson) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
-			Name: "Vue Dev Server",
-			Type: TypeVue,
-			Cmd:  "npm",
-			Args: []string{"run", "dev"},
-			Dir:  path,
+			Name:	"Vue Dev Server",
+			Type:	TypeVue,
+			Cmd:	"npm",
+			Args:	[]string{"run", "dev"},
+			Dir:	path,
 		})
 		detectedType = TypeVue
 	}
 
-	// Check for Vite (vite.config.js or vite.config.ts)
 	if exists(filepath.Join(path, "vite.config.js")) || exists(filepath.Join(path, "vite.config.ts")) {
 		if len(servers) == 0 {
 			servers = append(servers, ServerConfig{
-				Name: "Vite Dev Server",
-				Type: TypeVite,
-				Cmd:  "npm",
-				Args: []string{"run", "dev"},
-				Dir:  path,
+				Name:	"Vite Dev Server",
+				Type:	TypeVite,
+				Cmd:	"npm",
+				Args:	[]string{"run", "dev"},
+				Dir:	path,
 			})
 			detectedType = TypeVite
 		}
 	}
 
-	// Check for Webpack (webpack.config.js)
 	if exists(filepath.Join(path, "webpack.config.js")) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
-			Name: "Webpack Dev Server",
-			Type: TypeWebpack,
-			Cmd:  "npm",
-			Args: []string{"run", "dev"},
-			Dir:  path,
+			Name:	"Webpack Dev Server",
+			Type:	TypeWebpack,
+			Cmd:	"npm",
+			Args:	[]string{"run", "dev"},
+			Dir:	path,
 		})
 		detectedType = TypeWebpack
 	}
 
-	// Check for React (package.json with react)
 	if isReact(getPkgJson) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
-			Name: "React Dev Server",
-			Type: TypeReact,
-			Cmd:  "npm",
-			Args: []string{"start"},
-			Dir:  path,
+			Name:	"React Dev Server",
+			Type:	TypeReact,
+			Cmd:	"npm",
+			Args:	[]string{"start"},
+			Dir:	path,
 		})
 		detectedType = TypeReact
 	}
 
-	// Check for Express.js (package.json with express)
 	if isExpress(getPkgJson) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
-			Name: "Express Server",
-			Type: TypeExpress,
-			Cmd:  "npm",
-			Args: []string{"start"},
-			Dir:  path,
+			Name:	"Express Server",
+			Type:	TypeExpress,
+			Cmd:	"npm",
+			Args:	[]string{"start"},
+			Dir:	path,
 		})
 		detectedType = TypeExpress
 	}
 
-	// Check for generic Node.js (package.json)
 	_, pkgExists := getPkgJson()
 	if pkgExists && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
-			Name: "Node.js Server",
-			Type: TypeNode,
-			Cmd:  "npm",
-			Args: []string{"start"},
-			Dir:  path,
+			Name:	"Node.js Server",
+			Type:	TypeNode,
+			Cmd:	"npm",
+			Args:	[]string{"start"},
+			Dir:	path,
 		})
 		detectedType = TypeNode
 	}
 
-	// Check for Flask (app.py with flask import)
 	if isFlask(path) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
-			Name: "Flask Server",
-			Type: TypeFlask,
-			Cmd:  "flask",
-			Args: []string{"run", "--debug"},
-			Dir:  path,
+			Name:	"Flask Server",
+			Type:	TypeFlask,
+			Cmd:	"flask",
+			Args:	[]string{"run", "--debug"},
+			Dir:	path,
 		})
 		detectedType = TypeFlask
 	}
 
-	// Check for generic Python (requirements.txt or main.py/app.py without FastAPI/Flask)
 	if (exists(filepath.Join(path, "requirements.txt")) || exists(filepath.Join(path, "main.py")) || exists(filepath.Join(path, "app.py"))) && len(servers) == 0 {
 		cmd := "python"
 		args := []string{}
@@ -241,31 +226,29 @@ func Detect(path string) ProjectInfo {
 			args = append(args, "app.py")
 		}
 		servers = append(servers, ServerConfig{
-			Name: "Python Server",
-			Type: TypePython,
-			Cmd:  cmd,
-			Args: args,
-			Dir:  path,
+			Name:	"Python Server",
+			Type:	TypePython,
+			Cmd:	cmd,
+			Args:	args,
+			Dir:	path,
 		})
 		detectedType = TypePython
 	}
 
-	// Check for Go (go.mod)
 	if exists(filepath.Join(path, "go.mod")) && len(servers) == 0 {
 		servers = append(servers, ServerConfig{
-			Name: "Go Server",
-			Type: TypeGo,
-			Cmd:  "go",
-			Args: []string{"run", "."},
-			Dir:  path,
+			Name:	"Go Server",
+			Type:	TypeGo,
+			Cmd:	"go",
+			Args:	[]string{"run", "."},
+			Dir:	path,
 		})
 		detectedType = TypeGo
 	}
 
-	// Check for fullstack projects (multiple folder patterns)
 	fullstackPatterns := []struct {
-		backend  string
-		frontend string
+		backend		string
+		frontend	string
 	}{
 		{"backend", "frontend"},
 		{"server", "client"},
@@ -299,14 +282,13 @@ func Detect(path string) ProjectInfo {
 		}
 	}
 
-	// If multiple servers detected, mark as fullstack
 	if len(servers) > 1 && detectedType != TypeFullstack {
 		detectedType = TypeFullstack
 	}
 
 	return ProjectInfo{
-		Type:    detectedType,
-		Servers: servers,
+		Type:		detectedType,
+		Servers:	servers,
 	}
 }
 

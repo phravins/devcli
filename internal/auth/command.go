@@ -12,15 +12,15 @@ import (
 )
 
 var AuthCmd = &cobra.Command{
-	Use:   "auth",
-	Short: "Manage DevCLI security, user credentials, and authentication",
+	Use:	"auth",
+	Short:	"Manage DevCLI security, user credentials, and authentication",
 	Long: `DevCLI security suite for setting up master credentials, checking security status,
 authenticating, and managing account credentials.`,
 }
 
 var setupCmd = &cobra.Command{
-	Use:   "setup",
-	Short: "Perform post-installation user account setup (Username & Password)",
+	Use:	"setup",
+	Short:	"Perform post-installation user account setup (Username & Password)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if IsSetup() {
 			fmt.Println("🔒 Account setup already exists for DevCLI.")
@@ -83,8 +83,8 @@ var setupCmd = &cobra.Command{
 }
 
 var loginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Authenticate DevCLI session with your password",
+	Use:	"login",
+	Short:	"Authenticate DevCLI session with your password",
 	Run: func(cmd *cobra.Command, args []string) {
 		if !IsSetup() {
 			fmt.Println("⚠️  No account setup found. Please run 'devcli auth setup' first.")
@@ -117,8 +117,8 @@ var loginCmd = &cobra.Command{
 }
 
 var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Check DevCLI security status and storage permissions",
+	Use:	"status",
+	Short:	"Check DevCLI security status and storage permissions",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("==================================================")
 		fmt.Println("           DevCLI Security & Auth Status          ")
@@ -160,8 +160,8 @@ var statusCmd = &cobra.Command{
 }
 
 var changePasswordCmd = &cobra.Command{
-	Use:   "change-password",
-	Short: "Update your account password",
+	Use:	"change-password",
+	Short:	"Update your account password",
 	Run: func(cmd *cobra.Command, args []string) {
 		if !IsSetup() {
 			fmt.Println("⚠️ No account setup found. Please run 'devcli auth setup' first.")

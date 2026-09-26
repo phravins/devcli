@@ -16,19 +16,19 @@ import (
 )
 
 type User struct {
-	Email    string `json:"email"`
-	Password string `json:"password"` // Hashed
+	Email		string	`json:"email"`
+	Password	string	`json:"password"`
 }
 
 type Session struct {
-	Email     string
-	ExpiresAt time.Time
+	Email		string
+	ExpiresAt	time.Time
 }
 
 var (
-	users    = make(map[string]User)
-	sessions = make(map[string]Session)
-	authMu   sync.RWMutex
+	users		= make(map[string]User)
+	sessions	= make(map[string]Session)
+	authMu		sync.RWMutex
 )
 
 func init() {
@@ -41,7 +41,9 @@ func getUsersFilePath() string {
 		return "web_users.json"
 	}
 	dir := filepath.Join(home, ".devcli")
-	_ = os.MkdirAll(dir, 0700)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return "web_users.json"
+	}
 	return filepath.Join(dir, "web_users.json")
 }
 
@@ -51,12 +53,17 @@ func loadUsers() {
 	if err != nil {
 		return
 	}
-	json.Unmarshal(data, &users)
+	if err := json.Unmarshal(data, &users); err != nil {
+		users = make(map[string]User)
+	}
 }
 
 func saveUsers() {
 	path := getUsersFilePath()
-	data, _ := json.MarshalIndent(users, "", "  ")
+	data, err := json.MarshalIndent(users, "", "  ")
+	if err != nil {
+		return
+	}
 	if err := os.WriteFile(path, data, 0600); err == nil {
 		_ = os.Chmod(path, 0600)
 	}
@@ -64,8 +71,8 @@ func saveUsers() {
 
 func handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email		string	`json:"email"`
+		Password	string	`json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -102,8 +109,8 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email		string	`json:"email"`
+		Password	string	`json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -119,21 +126,20 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create session
 	sessionID := generateSessionID()
 	authMu.Lock()
 	sessions[sessionID] = Session{
-		Email:     req.Email,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		Email:		req.Email,
+		ExpiresAt:	time.Now().Add(24 * time.Hour),
 	}
 	authMu.Unlock()
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session_id",
-		Value:    sessionID,
-		Path:     "/",
-		Expires:  time.Now().Add(24 * time.Hour),
-		HttpOnly: true,
+		Name:		"session_id",
+		Value:		sessionID,
+		Path:		"/",
+		Expires:	time.Now().Add(24 * time.Hour),
+		HttpOnly:	true,
 	})
 
 	msg := "User logged in: " + req.Email
@@ -174,11 +180,11 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		authMu.Unlock()
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session_id",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
+		Name:		"session_id",
+		Value:		"",
+		Path:		"/",
+		MaxAge:		-1,
+		HttpOnly:	true,
 	})
 	w.WriteHeader(http.StatusOK)
 }
@@ -197,13 +203,13 @@ func handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	authMu.RUnlock()
 
 	if !exists {
-		// Don't leak exists status, just return OK
+
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	token := generateSessionID()
-	fmt.Printf("\n[MOCK EMAIL] Password reset for %s: http://127.0.0.1:8080/reset-password?token=%s\n", req.Email, token)
+	_ = token
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -215,11 +221,7 @@ func handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authMu.Lock()
-	defer authMu.Unlock()
-
-	// Find user by token (mock)
-	fmt.Fprintf(w, "Email verified successfully! You can now login.")
+	http.Error(w, "Email verification is not yet implemented", http.StatusNotImplemented)
 }
 
 func handleDriveSave(w http.ResponseWriter, r *http.Request) {
@@ -228,34 +230,5 @@ func handleDriveSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Filename string `json:"filename"`
-		Content  string `json:"content"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	// Security check: prevent path traversal attacks (e.g. "../" or absolute paths)
-	filename := filepath.Clean(req.Filename)
-	if req.Filename == "" || !filepath.IsLocal(filename) {
-		http.Error(w, "Invalid filename or path traversal detected", http.StatusBadRequest)
-		return
-	}
-
-	// Mock Drive Integration
-	msg := fmt.Sprintf("Uploading file '%s' (%d bytes) to Google Drive...", filename, len(req.Content))
-	fmt.Printf("\n[MOCK DRIVE] %s\n", msg)
-	
-	if logChan != nil {
-		logChan <- msg
-		logChan <- "Drive Status: SUCCESS (File ID: mock_id_123)"
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Saved to Google Drive!",
-		"fileId":  "mock_id_123",
-	})
+	http.Error(w, "Google Drive save is not yet implemented", http.StatusNotImplemented)
 }

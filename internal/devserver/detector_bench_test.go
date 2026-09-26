@@ -7,7 +7,7 @@ import (
 )
 
 func BenchmarkDetect_FullStack(b *testing.B) {
-	// Create a dummy project structure
+
 	tmpDir := b.TempDir()
 
 	backendDir := filepath.Join(tmpDir, "backend")

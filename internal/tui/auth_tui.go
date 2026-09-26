@@ -15,22 +15,17 @@ type AuthSuccessMsg struct {
 	Username string
 }
 
-// ----------------------------------------------------
-// 1. Auth Setup Model (First-Run Account Creation)
-// ----------------------------------------------------
-
 type AuthSetupModel struct {
-	inputs     []textinput.Model
-	focusedIdx int
-	err        error
-	width      int
-	height     int
+	inputs		[]textinput.Model
+	focusedIdx	int
+	err		error
+	width		int
+	height		int
 }
 
 func NewAuthSetupModel() AuthSetupModel {
 	inputs := make([]textinput.Model, 3)
 
-	// Username
 	inputs[0] = textinput.New()
 	inputs[0].Placeholder = "e.g. dev_user"
 	inputs[0].Prompt = "Username         : "
@@ -38,7 +33,6 @@ func NewAuthSetupModel() AuthSetupModel {
 	inputs[0].CharLimit = 32
 	inputs[0].Width = 30
 
-	// Password
 	inputs[1] = textinput.New()
 	inputs[1].Placeholder = "Min 8 chars (Upper, Lower, Number)"
 	inputs[1].Prompt = "Master Password  : "
@@ -46,7 +40,6 @@ func NewAuthSetupModel() AuthSetupModel {
 	inputs[1].CharLimit = 64
 	inputs[1].Width = 30
 
-	// Confirm Password
 	inputs[2] = textinput.New()
 	inputs[2].Placeholder = "Re-enter password"
 	inputs[2].Prompt = "Confirm Password : "
@@ -55,10 +48,10 @@ func NewAuthSetupModel() AuthSetupModel {
 	inputs[2].Width = 30
 
 	return AuthSetupModel{
-		inputs:     inputs,
-		focusedIdx: 0,
-		width:      80,
-		height:     24,
+		inputs:		inputs,
+		focusedIdx:	0,
+		width:		80,
+		height:		24,
 	}
 }
 
@@ -114,7 +107,6 @@ func (m AuthSetupModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// Submit
 			username := strings.TrimSpace(m.inputs[0].Value())
 			password := m.inputs[1].Value()
 			confirm := m.inputs[2].Value()
@@ -205,16 +197,12 @@ func (m AuthSetupModel) View() string {
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, card.Render(b.String()))
 }
 
-// ----------------------------------------------------
-// 2. Auth Login Model (Password Lock Screen)
-// ----------------------------------------------------
-
 type AuthLoginModel struct {
-	passwordInput textinput.Model
-	err           error
-	username      string
-	width         int
-	height        int
+	passwordInput	textinput.Model
+	err		error
+	username	string
+	width		int
+	height		int
 }
 
 func NewAuthLoginModel() AuthLoginModel {
@@ -233,10 +221,10 @@ func NewAuthLoginModel() AuthLoginModel {
 	ti.Width = 30
 
 	return AuthLoginModel{
-		passwordInput: ti,
-		username:      username,
-		width:         80,
-		height:        24,
+		passwordInput:	ti,
+		username:	username,
+		width:		80,
+		height:		24,
 	}
 }
 

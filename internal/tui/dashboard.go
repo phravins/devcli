@@ -15,19 +15,18 @@ import (
 )
 
 type item struct {
-	id, title, desc string // Added id field
+	id, title, desc string
 }
 
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.desc }
-func (i item) FilterValue() string { return i.title }
+func (i item) Title() string		{ return i.title }
+func (i item) Description() string	{ return i.desc }
+func (i item) FilterValue() string	{ return i.title }
 
-// Custom delegate to match the exact design in the image
 type customItemDelegate struct{}
 
-func (d customItemDelegate) Height() int                               { return 2 }
-func (d customItemDelegate) Spacing() int                              { return 1 }
-func (d customItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d customItemDelegate) Height() int				{ return 2 }
+func (d customItemDelegate) Spacing() int				{ return 1 }
+func (d customItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd	{ return nil }
 func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
 	i, ok := listItem.(item)
 	if !ok {
@@ -39,7 +38,7 @@ func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 	var bar, title, desc string
 
 	if isSelected {
-		barStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true) // Pink/Purple vertical line
+		barStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
 		titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
 		descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
 
@@ -63,15 +62,15 @@ func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 }
 
 type DashboardModel struct {
-	list         list.Model
-	settings     SettingsModel
-	choice       string
-	quitting     bool
-	showCommands bool
-	showSettings bool
-	width        int
-	height       int
-	commandView  viewport.Model
+	list		list.Model
+	settings	SettingsModel
+	choice		string
+	quitting	bool
+	showCommands	bool
+	showSettings	bool
+	width		int
+	height		int
+	commandView	viewport.Model
 }
 
 func NewDashboard() DashboardModel {
@@ -93,17 +92,15 @@ func NewDashboard() DashboardModel {
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(true)
 
-	// Custom list styles to match dark theme cleanly
 	l.Styles.Title = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#888888")).
 		Padding(0, 0, 1, 0)
 
 	m := DashboardModel{
-		list:     l,
-		settings: NewSettingsModel(),
+		list:		l,
+		settings:	NewSettingsModel(),
 	}
 
-	// Initialize viewport
 	m.commandView = viewport.New(0, 0)
 	m.commandView.SetContent(generateCommandsHelp())
 
@@ -134,7 +131,7 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.settings.quitting {
 				m.showSettings = false
-				m.settings.quitting = false // Reset for next time
+				m.settings.quitting = false
 				return m, nil
 			}
 			return m, cmd
@@ -155,9 +152,9 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if strings.Contains(i.title, "Settings / Configuration") {
 					m.showSettings = true
-					// Re-init settings to read fresh config
+
 					m.settings = NewSettingsModel()
-					// Immediately resize to current dimensions
+
 					if m.width > 0 && m.height > 0 {
 						updatedSettings, _ := m.settings.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
 						m.settings = updatedSettings.(SettingsModel)
@@ -199,7 +196,7 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.choice = i.title
 				m.quitting = true
-				return m, tea.Quit // Exit for ".." option or unknown
+				return m, tea.Quit
 			}
 		}
 	case tea.MouseMsg:
@@ -229,7 +226,6 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v-16)
 
-		// Resize Settings
 		if m.showSettings {
 			updatedSettings, _ := m.settings.Update(msg)
 			m.settings = updatedSettings.(SettingsModel)
@@ -261,7 +257,7 @@ func (m DashboardModel) View() string {
 		Align(lipgloss.Center)
 
 	logo := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#0F9E99")). // Tropical Teal
+		Foreground(lipgloss.Color("#0F9E99")).
 		Bold(true).
 		Render(`|---| /---| \   /   /---| |   |
 |   | |---|  \ /    |     |   |
@@ -269,13 +265,13 @@ func (m DashboardModel) View() string {
 
 	title := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("#EFE9E0")). // Soft Ivory
+		Foreground(lipgloss.Color("#EFE9E0")).
 		Render("Developer's CLI")
 
 	footer := lipgloss.NewStyle().
 		Width(m.width).
 		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("#666666")). // Grey
+		Foreground(lipgloss.Color("#666666")).
 		Render("OPENDEV TOOLKIT")
 
 	version := lipgloss.NewStyle().
@@ -285,7 +281,6 @@ func (m DashboardModel) View() string {
 
 	centeredHeader := headerStyle.Render(logo + "\n" + title + "\n" + version)
 
-	// --- COMMANDS VIEW ---
 	if m.showCommands {
 		commandsTitle := lipgloss.NewStyle().
 			Width(m.width).

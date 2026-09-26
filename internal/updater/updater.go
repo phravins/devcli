@@ -11,22 +11,19 @@ import (
 )
 
 const (
-	// GitHub repository for updates
-	githubRepo = "phravins/devcli"
-	// Current version of DevCLI
-	currentVersion = "1.1.0"
+	githubRepo	= "phravins/devcli"
+
+	currentVersion	= "1.1.0"
 )
 
-// UpdateInfo contains information about available updates
 type UpdateInfo struct {
-	CurrentVersion    string
-	LatestVersion     string
-	IsUpdateAvailable bool
-	ReleaseURL        string
-	ReleaseNotes      string
+	CurrentVersion		string
+	LatestVersion		string
+	IsUpdateAvailable	bool
+	ReleaseURL		string
+	ReleaseNotes		string
 }
 
-// CheckForUpdates checks if a new version is available on GitHub
 func CheckForUpdates() (*UpdateInfo, error) {
 	latest, found, err := selfupdate.DetectLatest(context.Background(), selfupdate.ParseSlug(githubRepo))
 	if err != nil {
@@ -48,17 +45,16 @@ func CheckForUpdates() (*UpdateInfo, error) {
 	}
 
 	info := &UpdateInfo{
-		CurrentVersion:    currentVersion,
-		LatestVersion:     latest.Version(),
-		IsUpdateAvailable: latestVer.GreaterThan(currentVer),
-		ReleaseURL:        latest.URL,
-		ReleaseNotes:      latest.ReleaseNotes,
+		CurrentVersion:		currentVersion,
+		LatestVersion:		latest.Version(),
+		IsUpdateAvailable:	latestVer.GreaterThan(currentVer),
+		ReleaseURL:		latest.URL,
+		ReleaseNotes:		latest.ReleaseNotes,
 	}
 
 	return info, nil
 }
 
-// PerformUpdate downloads and installs the latest version
 func PerformUpdate() error {
 	latest, found, err := selfupdate.DetectLatest(context.Background(), selfupdate.ParseSlug(githubRepo))
 	if err != nil {
@@ -83,7 +79,6 @@ func PerformUpdate() error {
 		return fmt.Errorf("already running the latest version (%s)", currentVersion)
 	}
 
-	// Configure the updater
 	config := selfupdate.Config{
 		Validator: &selfupdate.ChecksumValidator{
 			UniqueFilename: getAssetName(),
@@ -95,7 +90,6 @@ func PerformUpdate() error {
 		return fmt.Errorf("failed to create updater: %w", err)
 	}
 
-	// Perform the update with a timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -106,7 +100,6 @@ func PerformUpdate() error {
 	return nil
 }
 
-// getAssetName returns the expected asset name for the current platform
 func getAssetName() string {
 	osName := runtime.GOOS
 	arch := runtime.GOARCH
@@ -123,7 +116,6 @@ func getAssetName() string {
 	}
 }
 
-// GetCurrentVersion returns the current version of DevCLI
 func GetCurrentVersion() string {
 	return currentVersion
 }

@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// TemplateManager handles saving/restoring custom user templates
 type TemplateManager struct {
 	TemplatesDir string
 }
@@ -19,14 +18,12 @@ func NewTemplateManager(baseDir string) *TemplateManager {
 	}
 }
 
-// CustomTemplate represents a saved user template
 type CustomTemplate struct {
-	Name      string
-	Path      string
-	CreatedAt time.Time
+	Name		string
+	Path		string
+	CreatedAt	time.Time
 }
 
-// SaveAsTemplate saves the sourceDir as a new template
 func (tm *TemplateManager) SaveAsTemplate(name, sourceDir string) error {
 	destDir := filepath.Join(tm.TemplatesDir, name)
 	if _, err := os.Stat(destDir); err == nil {
@@ -36,10 +33,9 @@ func (tm *TemplateManager) SaveAsTemplate(name, sourceDir string) error {
 	return copyDir(sourceDir, destDir)
 }
 
-// ListTemplates returns all custom saved templates
 func (tm *TemplateManager) ListTemplates() ([]CustomTemplate, error) {
 	if _, err := os.Stat(tm.TemplatesDir); os.IsNotExist(err) {
-		return []CustomTemplate{}, nil // No templates yet
+		return []CustomTemplate{}, nil
 	}
 
 	entries, err := os.ReadDir(tm.TemplatesDir)
@@ -52,16 +48,15 @@ func (tm *TemplateManager) ListTemplates() ([]CustomTemplate, error) {
 		if e.IsDir() {
 			info, _ := e.Info()
 			templates = append(templates, CustomTemplate{
-				Name:      e.Name(),
-				Path:      filepath.Join(tm.TemplatesDir, e.Name()),
-				CreatedAt: info.ModTime(),
+				Name:		e.Name(),
+				Path:		filepath.Join(tm.TemplatesDir, e.Name()),
+				CreatedAt:	info.ModTime(),
 			})
 		}
 	}
 	return templates, nil
 }
 
-// LoadTemplate restores a template to the destDir
 func (tm *TemplateManager) LoadTemplate(templateName, destDir string) error {
 	srcPath := filepath.Join(tm.TemplatesDir, templateName)
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
@@ -70,7 +65,6 @@ func (tm *TemplateManager) LoadTemplate(templateName, destDir string) error {
 	return copyDir(srcPath, destDir)
 }
 
-// DeleteTemplate permanently removes a custom template
 func (tm *TemplateManager) DeleteTemplate(templateName string) error {
 	path := filepath.Join(tm.TemplatesDir, templateName)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -79,7 +73,6 @@ func (tm *TemplateManager) DeleteTemplate(templateName string) error {
 	return os.RemoveAll(path)
 }
 
-// Helper to copy simple directories recursively
 func copyDir(src, dst string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -90,8 +83,7 @@ func copyDir(src, dst string) error {
 		destPath := filepath.Join(dst, relPath)
 
 		if info.IsDir() {
-			// Skip things like .git, node_modules, etc if we want to be smart?
-			// For now, raw copy.
+
 			if info.Name() == ".git" || info.Name() == "node_modules" || info.Name() == "venv" || info.Name() == ".venv" || info.Name() == "__pycache__" || info.Name() == "bin" || info.Name() == "obj" || info.Name() == ".idea" || info.Name() == ".vscode" {
 				return filepath.SkipDir
 			}

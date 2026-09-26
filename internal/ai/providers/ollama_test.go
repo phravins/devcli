@@ -11,17 +11,17 @@ import (
 )
 
 func TestOllamaProvider_Send(t *testing.T) {
-	// Mock Ollama Server
+
 	mockResponse := ollamaResponse{
 		Message: ai.Message{
-			Role:    "assistant",
-			Content: "Hello from Ollama!",
+			Role:		"assistant",
+			Content:	"Hello from Ollama!",
 		},
-		Done: true,
+		Done:	true,
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify Request
+
 		if r.URL.Path != "/api/chat" {
 			t.Errorf("Expected path /api/chat, got %s", r.URL.Path)
 		}
@@ -35,23 +35,20 @@ func TestOllamaProvider_Send(t *testing.T) {
 			t.Errorf("Expected model 'test-model', got '%s'", req.Model)
 		}
 
-		// Send Response
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(mockResponse)
 	}))
 	defer server.Close()
 
-	// Configure Provider
 	p := &OllamaProvider{}
 	cfg := &config.Config{
-		AIBaseURL: server.URL,
-		AIModel:   "test-model",
+		AIBaseURL:	server.URL,
+		AIModel:	"test-model",
 	}
 	if err := p.Configure(cfg); err != nil {
 		t.Fatalf("Failed to configure provider: %v", err)
 	}
 
-	// Test Send
 	messages := []ai.Message{{Role: "user", Content: "Hello"}}
 	resp, err := p.Send(messages)
 	if err != nil {

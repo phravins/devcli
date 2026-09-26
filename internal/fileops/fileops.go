@@ -13,15 +13,15 @@ import (
 )
 
 var FileCmd = &cobra.Command{
-	Use:   "file",
-	Short: "File operations",
-	Long:  "File handling operations including read/write, copy/move, search, and processing",
+	Use:	"file",
+	Short:	"File operations",
+	Long:	"File handling operations including read/write, copy/move, search, and processing",
 }
 
 var readCmd = &cobra.Command{
-	Use:   "read [file]",
-	Short: "Read a file",
-	Args:  cobra.ExactArgs(1),
+	Use:	"read [file]",
+	Short:	"Read a file",
+	Args:	cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		content, err := os.ReadFile(args[0])
 		if err != nil {
@@ -33,9 +33,9 @@ var readCmd = &cobra.Command{
 }
 
 var writeCmd = &cobra.Command{
-	Use:   "write [file] [content]",
-	Short: "Write to a file",
-	Args:  cobra.ExactArgs(2),
+	Use:	"write [file] [content]",
+	Short:	"Write to a file",
+	Args:	cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := args[0]
 		content := args[1]
@@ -49,9 +49,9 @@ var writeCmd = &cobra.Command{
 }
 
 var copyCmd = &cobra.Command{
-	Use:   "copy [source] [destination]",
-	Short: "Copy a file or directory",
-	Args:  cobra.ExactArgs(2),
+	Use:	"copy [source] [destination]",
+	Short:	"Copy a file or directory",
+	Args:	cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		source := args[0]
 		dest := args[1]
@@ -65,9 +65,9 @@ var copyCmd = &cobra.Command{
 }
 
 var moveCmd = &cobra.Command{
-	Use:   "move [source] [destination]",
-	Short: "Move a file or directory",
-	Args:  cobra.ExactArgs(2),
+	Use:	"move [source] [destination]",
+	Short:	"Move a file or directory",
+	Args:	cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		source := args[0]
 		dest := args[1]
@@ -81,9 +81,9 @@ var moveCmd = &cobra.Command{
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [file]",
-	Short: "Delete a file or directory",
-	Args:  cobra.ExactArgs(1),
+	Use:	"delete [file]",
+	Short:	"Delete a file or directory",
+	Args:	cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		file := args[0]
 
@@ -96,9 +96,9 @@ var deleteCmd = &cobra.Command{
 }
 
 var searchCmd = &cobra.Command{
-	Use:   "search [pattern] [directory]",
-	Short: "Search for content in files",
-	Args:  cobra.ExactArgs(2),
+	Use:	"search [pattern] [directory]",
+	Short:	"Search for content in files",
+	Args:	cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		pattern := args[0]
 		directory := args[1]
@@ -116,9 +116,9 @@ var searchCmd = &cobra.Command{
 }
 
 var jsonCmd = &cobra.Command{
-	Use:   "json [action] [file]",
-	Short: "Process JSON files",
-	Args:  cobra.MinimumNArgs(1),
+	Use:	"json [action] [file]",
+	Short:	"Process JSON files",
+	Args:	cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
 
@@ -148,9 +148,9 @@ var jsonCmd = &cobra.Command{
 }
 
 var yamlCmd = &cobra.Command{
-	Use:   "yaml [action] [file]",
-	Short: "Process YAML files",
-	Args:  cobra.MinimumNArgs(1),
+	Use:	"yaml [action] [file]",
+	Short:	"Process YAML files",
+	Args:	cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
 
@@ -180,9 +180,9 @@ var yamlCmd = &cobra.Command{
 }
 
 var renameCmd = &cobra.Command{
-	Use:   "rename [pattern] [replacement] [directory]",
-	Short: "Bulk rename files",
-	Args:  cobra.ExactArgs(3),
+	Use:	"rename [pattern] [replacement] [directory]",
+	Short:	"Bulk rename files",
+	Args:	cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
 		pattern := args[0]
 		replacement := args[1]
@@ -270,7 +270,7 @@ func searchFiles(pattern, directory string) ([]string, error) {
 
 		content, err := os.ReadFile(path)
 		if err != nil {
-			return nil // Skip files we can't read
+			return nil
 		}
 
 		if strings.Contains(string(content), pattern) {

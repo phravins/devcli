@@ -24,62 +24,57 @@ import (
 )
 
 type ProjectDashboardModel struct {
-	menuList     list.Model // Top Level Menu
-	projectList  list.Model // Project List (Sub Menu)
-	templateList list.Model // Wizard Step 1
-	input        textinput.Model
-	pathInput    textinput.Model // New Input for Path
-	spinner      spinner.Model
-	historyList  list.Model // New History List
+	menuList	list.Model
+	projectList	list.Model
+	templateList	list.Model
+	input		textinput.Model
+	pathInput	textinput.Model
+	spinner		spinner.Model
+	historyList	list.Model
 
-	// State
-	state         int
-	previousState int // Track where we came from
-	width, height int
+	state		int
+	previousState	int
+	width, height	int
 
-	// Data
-	manager *project.Manager
+	manager	*project.Manager
 
-	// Sub-Models
-	venvModel        VenvDashboardModel // Embedded Venv Model
-	devServerModel   DevServerDashboardModel
-	boilerplateModel BoilerplateDashboardModel
-	bonusModel       BonusDashboardModel
+	venvModel		VenvDashboardModel
+	devServerModel		DevServerDashboardModel
+	boilerplateModel	BoilerplateDashboardModel
+	bonusModel		BonusDashboardModel
 
-	selectedTpl string
-	err         error
-	statusMsg   string
+	selectedTpl	string
+	err		error
+	statusMsg	string
 
-	// Installation Logging
-	installOutput *strings.Builder
-	installView   viewport.Model
-	helpView      viewport.Model // New
+	installOutput	*strings.Builder
+	installView	viewport.Model
+	helpView	viewport.Model
 }
 
 const (
-	StateMenu           = iota // Top level: "Project Creation & Management", etc.
-	StateProjectList           // Spec: "My Projects" list with "+ New Project"
-	StateSelectTemplate        // Wizard Step 1
-	StateNameProject           // Wizard Step 2
-	StateSelectPath            // New State
-	StateCreating              // Wizard Step 3 (Processing)
-	StateSuccess               // Completion Screen
-	StateBackupInput           // New Backup State
-	StateCleanupPrompt         // New: Ask to delete old logs
-	StateHistoryList           // New: View History
-	StateConfirmDelete         // New: Confirm Deletion
-	StateProjectHelp           // Help screen
+	StateMenu	= iota
+	StateProjectList
+	StateSelectTemplate
+	StateNameProject
+	StateSelectPath
+	StateCreating
+	StateSuccess
+	StateBackupInput
+	StateCleanupPrompt
+	StateHistoryList
+	StateConfirmDelete
+	StateProjectHelp
 
-	StateVenvWizard  // Sub-feature 2 (Delegated to venvModel)
-	StateDevServer   // Sub-feature 3 (Dev Server Launcher)
-	StateBoilerplate // Sub-feature 4 (Boilerplate Generator)
-	StateBonus       // Sub-feature 5 (Bonus Features)
+	StateVenvWizard
+	StateDevServer
+	StateBoilerplate
+	StateBonus
 )
 
 func NewProjectDashboardModel() ProjectDashboardModel {
 	mgr := project.NewManager("")
 
-	// 1. Top Level Menu
 	menuItems := []list.Item{
 		item{title: "Project Creation & Management", desc: "Create, list, and manage local projects"},
 		item{title: "Virtual Environment Wizard", desc: "Manage Python/Node environments, sync packages, etc."},
@@ -93,58 +88,47 @@ func NewProjectDashboardModel() ProjectDashboardModel {
 	menu.SetShowHelp(false)
 	menu.SetShowTitle(false)
 
-	// 2. Project List (Sub-feature)
-	// items := loadProjects(mgr.Workspace) // Removed blocking call
 	items := []list.Item{item{title: "Loading projects...", desc: "Please wait"}}
 	items = append([]list.Item{item{title: "+ New Project", desc: "Create a new project from template"}}, items...)
 	pl := list.New(items, list.NewDefaultDelegate(), 0, 0)
 	pl.Title = "My Projects"
 	pl.SetShowHelp(false)
 
-	// 3. Template List (Wizard)
 	var tplItems []list.Item
 	for _, t := range templates.List() {
 		tplItems = append(tplItems, item{title: t.Name, desc: t.Description})
 	}
 	tplList := list.New(tplItems, list.NewDefaultDelegate(), 0, 0)
-	tplList.Title = "Select a Template"
 	tplList.Title = "Select Project Template (v2)"
 	tplList.SetShowHelp(false)
 
-	// 4. History List
 	histList := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	histList.Title = "Project History"
 	histList.SetShowHelp(false)
 	histList.SetShowTitle(false)
 
-	// Input
 	ti := textinput.New()
 	ti.Placeholder = "Project Name"
 	ti.CharLimit = 50
 	ti.Width = 40
 
-	// Path Input
 	pi := textinput.New()
 	pi.Placeholder = "Parent Directory (e.g. C:\\Projects or ~)"
-	// Default to current Workspace
+
 	pi.SetValue(mgr.Workspace)
 	pi.CharLimit = 100
 	pi.Width = 50
 
-	// Spinner
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
-	// Viewport for logs
 	vp := viewport.New(80, 20)
-	vp.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")) // Purple border
+	vp.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62"))
 
-	// Help Viewport
 	hv := viewport.New(80, 20)
 	hv.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(1, 2)
 
-	// Render Markdown Help
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(80),
@@ -156,22 +140,22 @@ func NewProjectDashboardModel() ProjectDashboardModel {
 	hv.SetContent(out)
 
 	return ProjectDashboardModel{
-		menuList:         menu,
-		projectList:      pl,
-		templateList:     tplList,
-		historyList:      histList,
-		input:            ti,
-		pathInput:        pi, // Add to struct
-		spinner:          s,
-		manager:          mgr,
-		venvModel:        NewVenvDashboardModel(),                     // Init Venv Model
-		devServerModel:   NewDevServerDashboardModel(mgr.Workspace),   // Init Dev Server Model
-		boilerplateModel: NewBoilerplateDashboardModel(mgr.Workspace), // Init Boilerplate Model
-		bonusModel:       NewBonusDashboardModel(mgr.Workspace),       // Init Bonus Model
-		state:            StateMenu,                                   // Start at Top Level
-		installOutput:    &strings.Builder{},
-		installView:      vp,
-		helpView:         hv,
+		menuList:		menu,
+		projectList:		pl,
+		templateList:		tplList,
+		historyList:		histList,
+		input:			ti,
+		pathInput:		pi,
+		spinner:		s,
+		manager:		mgr,
+		venvModel:		NewVenvDashboardModel(),
+		devServerModel:		NewDevServerDashboardModel(mgr.Workspace),
+		boilerplateModel:	NewBoilerplateDashboardModel(mgr.Workspace),
+		bonusModel:		NewBonusDashboardModel(mgr.Workspace),
+		state:			StateMenu,
+		installOutput:		&strings.Builder{},
+		installView:		vp,
+		helpView:		hv,
 	}
 }
 
@@ -183,7 +167,7 @@ func loadProjects(workspace string) []list.Item {
 	var items []list.Item
 	for _, e := range entries {
 		if e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
-			// Smart Filtering: Only list if it looks like a project
+
 			fullPath := filepath.Join(workspace, e.Name())
 			if isProject(fullPath) {
 				info, err := e.Info()
@@ -199,7 +183,6 @@ func loadProjects(workspace string) []list.Item {
 	return items
 }
 
-// isProject checks if a directory contains common project markers
 func isProject(dir string) bool {
 	markers := []string{
 		"go.mod",
@@ -220,7 +203,7 @@ func isProject(dir string) bool {
 }
 
 func (m ProjectDashboardModel) Init() tea.Cmd {
-	// Check for old history on startup
+
 	old := history.GetOldEntries(30)
 	if len(old) > 0 {
 		return tea.Batch(
@@ -242,9 +225,9 @@ func (m ProjectDashboardModel) Init() tea.Cmd {
 type cleanupPromptMsg struct{}
 
 type projectCreatedMsg struct {
-	installCmd string
-	path       string
-	err        error
+	installCmd	string
+	path		string
+	err		error
 }
 
 type delayedSuccessMsg struct{}
@@ -253,23 +236,22 @@ type loadProjectsMsg []list.Item
 
 type installDoneMsg struct{ err error }
 
-// Actual implementation using "Next Line" command pattern
 type cmdProcess struct {
-	cmd    *exec.Cmd
-	reader *bufio.Reader
+	cmd	*exec.Cmd
+	reader	*bufio.Reader
 }
 
 type installStartedMsg struct {
 	proc *cmdProcess
 }
 type installOutputMsg struct {
-	line string
-	proc *cmdProcess
+	line	string
+	proc	*cmdProcess
 }
 
 func createProjectCmd(mgr *project.Manager, name, stack, path string) tea.Cmd {
 	return func() tea.Msg {
-		// Step 1: Generate Files (Fast)
+
 		cmdStr, resolvedPath, err := mgr.CreateProject(name, stack, path)
 		return projectCreatedMsg{installCmd: cmdStr, path: resolvedPath, err: err}
 	}
@@ -277,21 +259,20 @@ func createProjectCmd(mgr *project.Manager, name, stack, path string) tea.Cmd {
 
 func startInstallCmd(dir, cmdStr string) tea.Cmd {
 	return func() tea.Msg {
-		// Use explicit echoes to force output
-		// We use 'call' to ensure batch files work.
+
 		var c *exec.Cmd
 		if runtime.GOOS == "windows" {
 			fullCmd := fmt.Sprintf("@echo on & echo [DevCLI] Starting installation process... & echo [DevCLI] Directory: %s & echo [DevCLI] Running: %s & echo ---------------------------------------- & call %s & echo. & echo ---------------------------------------- & echo [DevCLI] Process Completed.", dir, cmdStr, cmdStr)
 			c = exec.Command("cmd", "/c", fullCmd)
 		} else {
-			// Unix/Linux/Mac Buffer-friendly command chain
+
 			fullCmd := fmt.Sprintf("echo '[DevCLI] Starting installation process...' && echo '[DevCLI] Directory: %s' && echo '[DevCLI] Running: %s' && echo '----------------------------------------' && %s && echo '' && echo '----------------------------------------' && echo '[DevCLI] Process Completed.'", dir, cmdStr, cmdStr)
 			c = exec.Command("sh", "-c", fullCmd)
 		}
 		c.Dir = dir
 
 		outPipe, _ := c.StdoutPipe()
-		c.Stderr = c.Stdout // Merge stderr
+		c.Stderr = c.Stdout
 
 		if err := c.Start(); err != nil {
 			return installDoneMsg{err: err}
@@ -299,8 +280,8 @@ func startInstallCmd(dir, cmdStr string) tea.Cmd {
 
 		return installStartedMsg{
 			proc: &cmdProcess{
-				cmd:    c,
-				reader: bufio.NewReader(outPipe),
+				cmd:	c,
+				reader:	bufio.NewReader(outPipe),
 			},
 		}
 	}
@@ -313,7 +294,7 @@ func readNextLine(proc *cmdProcess) tea.Cmd {
 		}
 		line, err := proc.reader.ReadString('\n')
 		if err != nil {
-			proc.cmd.Wait() // Cleanup
+			proc.cmd.Wait()
 			if err == io.EOF {
 				return installDoneMsg{err: nil}
 			}
@@ -326,15 +307,13 @@ func readNextLine(proc *cmdProcess) tea.Cmd {
 func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	// Handle project loading
 	if items, ok := msg.(loadProjectsMsg); ok {
-		// Prepend New Project button
+
 		finalItems := append([]list.Item{item{title: "+ New Project", desc: "Create a new project from template"}}, items...)
 		m.projectList.SetItems(finalItems)
 		return m, nil
 	}
 
-	// --- Navigation Messages ---
 	switch msg.(type) {
 	case VenvBackMsg, DevServerBackMsg, BoilerplateBackMsg, BonusBackMsg:
 		m.state = StateMenu
@@ -344,13 +323,10 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// --- State Delegation ---
-	// Check delegation first to ensure sub-models receive all events (including Mouse & Keys)
-
 	if m.state == StateDevServer {
 		var devCmd tea.Cmd
 		var devModel tea.Model
-		// Intercept WindowSizeMsg to pass inner dimensions
+
 		if wMsg, ok := msg.(tea.WindowSizeMsg); ok {
 			h, v := AppBorderStyle.GetFrameSize()
 			innerMsg := tea.WindowSizeMsg{Width: wMsg.Width - h, Height: wMsg.Height - v}
@@ -364,7 +340,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.state == StateVenvWizard {
 		var venvCmd tea.Cmd
-		// Intercept WindowSizeMsg to pass inner dimensions
+
 		if wMsg, ok := msg.(tea.WindowSizeMsg); ok {
 			h, v := AppBorderStyle.GetFrameSize()
 			innerMsg := tea.WindowSizeMsg{Width: wMsg.Width - h, Height: wMsg.Height - v}
@@ -377,7 +353,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.state == StateBoilerplate {
 		var bpCmd tea.Cmd
-		// Intercept WindowSizeMsg to pass inner dimensions
+
 		if wMsg, ok := msg.(tea.WindowSizeMsg); ok {
 			h, v := AppBorderStyle.GetFrameSize()
 			innerMsg := tea.WindowSizeMsg{Width: wMsg.Width - h, Height: wMsg.Height - v}
@@ -390,7 +366,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.state == StateBonus {
 		var bonusCmd tea.Cmd
-		// Intercept WindowSizeMsg to pass inner dimensions
+
 		if wMsg, ok := msg.(tea.WindowSizeMsg); ok {
 			m.bonusModel, bonusCmd = m.bonusModel.Update(wMsg)
 		} else {
@@ -399,12 +375,10 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, bonusCmd
 	}
 
-	// --- Main Logic ---
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if m.state == StateCreating {
-			return m, nil // Block input while creating
+			return m, nil
 		}
 
 		switch msg.String() {
@@ -417,7 +391,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case StateMenu:
-			// Manual scroll handling for reliability
+
 			if msg.Type == tea.MouseWheelUp {
 				m.menuList.CursorUp()
 				return m, nil
@@ -428,7 +402,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.menuList, cmd = m.menuList.Update(msg)
 		case StateProjectList:
-			// Manual scroll for Project List
+
 			if msg.Type == tea.MouseWheelUp {
 				m.projectList.CursorUp()
 				return m, nil
@@ -461,7 +435,6 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// --- State Machine ---
 
 		switch m.state {
 		case StateSuccess:
@@ -482,7 +455,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if ok {
 					if i.title == "Project Creation & Management" {
 						m.state = StateProjectList
-						// Refresh projects?
+
 						items := loadProjects(m.manager.Workspace)
 						items = append([]list.Item{item{title: "+ New Project", desc: "Create a new project from template"}}, items...)
 						m.projectList.SetItems(items)
@@ -491,7 +464,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if i.title == "Virtual Environment Wizard" {
 						m.state = StateVenvWizard
 						m.venvModel = NewVenvDashboardModel()
-						// Initialize with current dimensions
+
 						h, v := AppBorderStyle.GetFrameSize()
 						innerW := m.width - h - 2
 						innerH := m.height - v
@@ -501,7 +474,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if i.title == "Dev Server" {
 						m.state = StateDevServer
 						m.devServerModel = NewDevServerDashboardModel(m.manager.Workspace)
-						// Initialize with current dimensions to ensure correct layout (centering)
+
 						h, v := AppBorderStyle.GetFrameSize()
 						innerW := m.width - h - 2
 						innerH := m.height - v
@@ -512,7 +485,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if i.title == "Boilerplate Generator" {
 						m.state = StateBoilerplate
 						m.boilerplateModel = NewBoilerplateDashboardModel(m.manager.Workspace)
-						// Pass dimensions
+
 						h, v := AppBorderStyle.GetFrameSize()
 						innerW := m.width - h - 2
 						innerH := m.height - v
@@ -521,13 +494,13 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					if i.title == "Bonus Features" {
 						m.state = StateBonus
-						// Always re-capture CWD so globally-installed devcli works from any directory
+
 						cwd, err := os.Getwd()
 						if err != nil || cwd == "" {
-							cwd = m.manager.Workspace // fallback
+							cwd = m.manager.Workspace
 						}
 						m.bonusModel = NewBonusDashboardModel(cwd)
-						// Initialize with current dimensions
+
 						h, v := AppBorderStyle.GetFrameSize()
 						innerW := m.width - h - 2
 						innerH := m.height - v
@@ -536,7 +509,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					if i.title == "Project History" {
 						m.state = StateHistoryList
-						// Load History items
+
 						entries, _ := history.Load()
 						var items []list.Item
 						for _, e := range entries {
@@ -555,7 +528,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case StateCleanupPrompt:
 			if msg.String() == "enter" {
-				// Delete
+
 				history.DeleteOld(30)
 				m.state = StateMenu
 			} else if msg.String() == "esc" {
@@ -569,7 +542,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = StateMenu
 				return m, nil
 			case "d":
-				// Confirm Delete
+
 				if len(m.historyList.Items()) > 0 {
 					m.state = StateConfirmDelete
 				}
@@ -584,11 +557,11 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = StateHistoryList
 				return m, nil
 			case "enter", "y":
-				// Delete selected
+
 				idx := m.historyList.Index()
 				if idx >= 0 && len(m.historyList.Items()) > 0 {
 					history.DeleteOne(idx)
-					// Reload
+
 					entries, _ := history.Load()
 					var items []list.Item
 					for _, e := range entries {
@@ -625,9 +598,9 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.templateList.ResetSelected()
 					return m, nil
 				}
-			case "b": // Backup
-				if len(m.projectList.Items()) > 1 { // Assuming + New Project is item 0
-					// Check if valid project selected
+			case "b":
+				if len(m.projectList.Items()) > 1 {
+
 					i, ok := m.projectList.SelectedItem().(item)
 					if ok && i.title != "+ New Project" && i.desc == "Existing Project" {
 						m.state = StateBackupInput
@@ -638,7 +611,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			case "esc":
-				// Back to Top Menu
+
 				m.state = StateMenu
 				return m, nil
 			}
@@ -652,24 +625,23 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				dest := m.pathInput.Value()
 				if dest != "" {
-					// Perform Backup
+
 					i, _ := m.projectList.SelectedItem().(item)
 					projectName := i.title
 					srcPath := filepath.Join(m.manager.Workspace, projectName)
 
-					m.state = StateCreating // Reuse creating screen for logs
+					m.state = StateCreating
 					m.statusMsg = "Backing up project..."
 					m.installOutput.Reset()
 					m.installOutput.WriteString(fmt.Sprintf("Backing up '%s' to '%s'...\n", srcPath, dest))
 					m.installView.SetContent(m.installOutput.String())
 
-					// Run in goroutine/cmd
 					return m, func() tea.Msg {
 						err := m.manager.BackupProject(srcPath, dest)
 						if err != nil {
 							return installDoneMsg{err: err}
 						}
-						// Artificial delay
+
 						time.Sleep(1 * time.Second)
 						return installDoneMsg{err: nil}
 					}
@@ -684,7 +656,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				i, ok := m.templateList.SelectedItem().(item)
 				if ok {
 					m.selectedTpl = i.title
-					// Smart Naming
+
 					suggestion := m.manager.SuggestProjectName(m.selectedTpl)
 					m.input.SetValue(suggestion)
 
@@ -703,12 +675,11 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "enter":
 				if m.input.Value() != "" {
-					// Go to Next Step: Path Selection
+
 					m.state = StateSelectPath
-					// Ensure path input has latest workspace if they haven't edited it?
-					// Or keep sticky. Let's keep sticky or default.
+
 					m.pathInput.Focus()
-					// Start blinking cursor
+
 					return m, textinput.Blink
 				}
 			case "esc":
@@ -721,31 +692,28 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case StateSelectPath:
 			switch msg.String() {
 			case "enter":
-				// Validate Path
+
 				pathVal := m.pathInput.Value()
 				_, err := m.manager.ValidateParentDir(pathVal)
 				if err != nil {
-					m.pathInput.SetValue(pathVal)                                                 // Keep value
-					m.pathInput.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
+					m.pathInput.SetValue(pathVal)
+					m.pathInput.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 					m.err = err
 					return m, nil
 				}
-				m.err = nil                                 // Clear error
-				m.pathInput.TextStyle = lipgloss.NewStyle() // Reset style
+				m.err = nil
+				m.pathInput.TextStyle = lipgloss.NewStyle()
 
-				// Create!
 				m.state = StateCreating
 				m.statusMsg = "Initializing Project..."
 				m.installOutput.Reset()
 
-				// Customizable Log Header
 				timestamp := time.Now().Format("2006-01-02 15:04:05")
 				header := fmt.Sprintf("PROJECT CREATION LOG\n========================\nName : %s\nPath : %s\nTime : %s\n========================\n\n", m.input.Value(), pathVal, timestamp)
 				m.installOutput.WriteString(header)
 				m.installOutput.WriteString("Starting Project Generation...\n")
 				m.installView.SetContent(m.installOutput.String())
 
-				// Record History
 				history.Add(m.input.Value(), pathVal)
 				return m, createProjectCmd(m.manager, m.input.Value(), m.selectedTpl, pathVal)
 			case "esc":
@@ -767,7 +735,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = StateSelectPath
 			return m, nil
 		}
-		// Append to existing logs
+
 		m.installOutput.WriteString(fmt.Sprintf("Project files generated at %s\n", msg.path))
 		m.installOutput.WriteString("Preparing to install dependencies...\n")
 		m.installView.SetContent(m.installOutput.String())
@@ -782,22 +750,22 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case installStartedMsg:
 		m.statusMsg = "Installing packages..."
-		// Start reading loop
+
 		return m, readNextLine(msg.proc)
 
 	case installOutputMsg:
 		m.installOutput.WriteString(msg.line)
 		m.installView.SetContent(m.installOutput.String())
 		m.installView.GotoBottom()
-		// Chain next read using the process reference passed from previous msg
+
 		return m, readNextLine(msg.proc)
 
 	case installDoneMsg:
 		if msg.err != nil {
 			m.err = msg.err
-			// Don't fail completely, just show error?
+
 			m.installOutput.WriteString(fmt.Sprintf("\n\nError: %v", msg.err))
-			// Wait a bit so they see it?
+
 			return m, tea.Tick(5*time.Second, func(_ time.Time) tea.Msg { return delayedSuccessMsg{} })
 		}
 		m.statusMsg = "Project Created Successfully!"
@@ -816,19 +784,17 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case tea.WindowSizeMsg:
-		// Use AppBorderStyle to determine available inner space
+
 		h, v := AppBorderStyle.GetFrameSize()
-		// Subtract 2 explicitly to match View() and avoid overflow
+
 		innerW := msg.Width - h - 2
 		innerH := msg.Height - v
 
-		// Resize Lists with appropriate offsets for headers/footers
-		m.menuList.SetSize(innerW, innerH-14)    // Reserve space for Big Header + Spacing
-		m.projectList.SetSize(innerW, innerH-4)  // Reserve space for Footer
-		m.templateList.SetSize(innerW, innerH-4) // Reserve space for Header
-		m.historyList.SetSize(innerW, innerH-4)  // Reserve space for Footer
+		m.menuList.SetSize(innerW, innerH-14)
+		m.projectList.SetSize(innerW, innerH-4)
+		m.templateList.SetSize(innerW, innerH-4)
+		m.historyList.SetSize(innerW, innerH-4)
 
-		// Also update venvModel so it's consistent if we switch to it
 		m.venvModel, _ = m.venvModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
 		m.boilerplateModel, _ = m.boilerplateModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
 		devModel, _ := m.devServerModel.Update(tea.WindowSizeMsg{Width: innerW, Height: innerH})
@@ -837,12 +803,11 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.width = msg.Width
 		m.height = msg.Height
-		// Resize viewport
+
 		m.installView.Width = innerW
-		// Calculate available height: Total - Header (~3 lines) - Padding
+
 		m.installView.Height = innerH - 3
 
-		// Resize Help View
 		m.helpView.Width = innerW
 		m.helpView.Height = innerH - 3
 	}
@@ -851,14 +816,9 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m ProjectDashboardModel) View() string {
-	// Calculate content size inside the global border
-	// Border(1) + Padding(1) on each side -> 2 chars horizontal per side = 4 chars total?
-	// Vertical: Border(1) + Padding(1) top/bottom = ?
 
-	// Lipgloss GetFrameSize return horizontal, vertical usage.
 	h, v := AppBorderStyle.GetFrameSize()
 
-	// Subtract 2 explicitly to avoid Windows auto-wrapping issues at the exact edge
 	contentWidth := m.width - h - 2
 	contentHeight := m.height - v
 
@@ -866,10 +826,7 @@ func (m ProjectDashboardModel) View() string {
 
 	switch m.state {
 	case StateMenu:
-		// Standard List View (Like Dashboard)
-		// We want the header centered, then the list below.
 
-		// Header
 		header := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center).Render(
 			titleStyle.Render("Project Tools"),
 		)
@@ -878,7 +835,6 @@ func (m ProjectDashboardModel) View() string {
 			subtleStyle.Render("Use ↑/↓ to Navigate • Enter to Select • ? Help • Q to Quit"),
 		)
 
-		// Join vertically
 		innerContent = lipgloss.JoinVertical(lipgloss.Left,
 			header,
 			"\n",
@@ -888,12 +844,11 @@ func (m ProjectDashboardModel) View() string {
 		)
 
 	case StateDevServer:
-		// Dev Server dashboard
+
 		innerContent = m.devServerModel.View()
 
 	case StateVenvWizard:
-		// Venv Wizard is already resized to fit inner content in Update()
-		// So we just render it. It will be wrapped by valid border below.
+
 		innerContent = m.venvModel.View()
 
 	case StateBoilerplate:
@@ -903,8 +858,7 @@ func (m ProjectDashboardModel) View() string {
 		innerContent = m.bonusModel.View()
 
 	case StateCreating:
-		// Full Screen Installation View
-		// Use almost full screen for logs, with a styled header
+
 		header := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center).Render(
 			titleStyle.Render("Project Creation & Management"),
 		)
@@ -920,7 +874,7 @@ func (m ProjectDashboardModel) View() string {
 		)
 
 	case StateNameProject, StateSelectPath, StateBackupInput:
-		// Centered Card Layout for Inputs
+
 		var title, inputView, footer string
 
 		switch m.state {
@@ -938,7 +892,6 @@ func (m ProjectDashboardModel) View() string {
 			footer = "(Enter Path to Backup, Esc to Cancel)"
 		}
 
-		// Calculate vertical center
 		content := lipgloss.JoinVertical(lipgloss.Center,
 			titleStyle.Render(title),
 			"\n",
@@ -972,7 +925,7 @@ func (m ProjectDashboardModel) View() string {
 		innerContent = lipgloss.Place(contentWidth, contentHeight, lipgloss.Center, lipgloss.Center, content)
 
 	case StateConfirmDelete:
-		// Confirmation Dialog
+
 		content := lipgloss.JoinVertical(lipgloss.Center,
 			titleStyle.Render("Confirm Deletion"),
 			"\n",
@@ -989,11 +942,10 @@ func (m ProjectDashboardModel) View() string {
 		listContent := m.historyList.View()
 		footer := subtleStyle.Render("\n [d] Delete Entry • [?] Help • [Esc] Back")
 
-		// Align with other list views style if needed, or simple render
 		innerContent = docStyle.Render(lipgloss.JoinVertical(lipgloss.Left, header, listContent, footer))
 
 	case StateProjectHelp:
-		// Render help content
+
 		innerContent = lipgloss.Place(contentWidth, contentHeight, lipgloss.Center, lipgloss.Center,
 			lipgloss.JoinVertical(lipgloss.Center,
 				lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).MarginBottom(1).Render("Project Tools Help"),
@@ -1003,7 +955,7 @@ func (m ProjectDashboardModel) View() string {
 		)
 
 	default:
-		// Default List View (Select Template)
+
 		listContent := m.projectList.View()
 		footer := subtleStyle.Render("\n [Enter] Select • [b] Backup Project • [?] Help • [Esc] Back")
 		innerContent = docStyle.Render(lipgloss.JoinVertical(lipgloss.Left, listContent, footer))

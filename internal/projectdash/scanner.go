@@ -14,7 +14,7 @@ import (
 type ProjectStatus int
 
 const (
-	StatusActive ProjectStatus = iota
+	StatusActive	ProjectStatus	= iota
 	StatusBroken
 	StatusArchived
 )
@@ -46,22 +46,20 @@ func (s ProjectStatus) Icon() string {
 }
 
 type ProjectInfo struct {
-	Name         string
-	Path         string
-	TechStack    []string
-	Status       ProjectStatus
-	LastModified time.Time
-	HasErrors    bool
-	Size         int64 // in bytes
+	Name		string
+	Path		string
+	TechStack	[]string
+	Status		ProjectStatus
+	LastModified	time.Time
+	HasErrors	bool
+	Size		int64
 }
 
-// DetectTechStack analyzes a project directory and identifies technologies used
 func DetectTechStack(projectPath string) []string {
 	var stack []string
 	seen := make(map[string]bool)
 	var mu sync.Mutex
 
-	// Helper to add unique items
 	add := func(tech string) {
 		mu.Lock()
 		defer mu.Unlock()
@@ -71,21 +69,20 @@ func DetectTechStack(projectPath string) []string {
 		}
 	}
 
-	// Check for project markers
 	markers := map[string][]string{
-		"go.mod":             {"Go"},
-		"package.json":       {"Node.js"},
-		"requirements.txt":   {"Python"},
-		"Pipfile":            {"Python", "Pipenv"},
-		"poetry.lock":        {"Python", "Poetry"},
-		"Cargo.toml":         {"Rust"},
-		"pom.xml":            {"Java", "Maven"},
-		"build.gradle":       {"Java", "Gradle"},
-		"Gemfile":            {"Ruby"},
-		"composer.json":      {"PHP"},
-		"Dockerfile":         {"Docker"},
-		"docker-compose.yml": {"Docker Compose"},
-		".git":               {"Git"},
+		"go.mod":		{"Go"},
+		"package.json":		{"Node.js"},
+		"requirements.txt":	{"Python"},
+		"Pipfile":		{"Python", "Pipenv"},
+		"poetry.lock":		{"Python", "Poetry"},
+		"Cargo.toml":		{"Rust"},
+		"pom.xml":		{"Java", "Maven"},
+		"build.gradle":		{"Java", "Gradle"},
+		"Gemfile":		{"Ruby"},
+		"composer.json":	{"PHP"},
+		"Dockerfile":		{"Docker"},
+		"docker-compose.yml":	{"Docker Compose"},
+		".git":			{"Git"},
 	}
 
 	for marker, techs := range markers {
@@ -98,20 +95,19 @@ func DetectTechStack(projectPath string) []string {
 
 	var eg errgroup.Group
 
-	// Check package.json for frameworks
 	eg.Go(func() error {
 		pkgPath := filepath.Join(projectPath, "package.json")
 		if data, err := os.ReadFile(pkgPath); err == nil {
 			content := string(data)
 			frameworks := map[string]string{
-				"react":      "React",
-				"vue":        "Vue",
-				"angular":    "Angular",
-				"next":       "Next.js",
-				"express":    "Express",
-				"fastify":    "Fastify",
-				"typescript": "TypeScript",
-				"vite":       "Vite",
+				"react":	"React",
+				"vue":		"Vue",
+				"angular":	"Angular",
+				"next":		"Next.js",
+				"express":	"Express",
+				"fastify":	"Fastify",
+				"typescript":	"TypeScript",
+				"vite":		"Vite",
 			}
 			for pkg, name := range frameworks {
 				if strings.Contains(content, `"`+pkg+`"`) {
@@ -122,20 +118,19 @@ func DetectTechStack(projectPath string) []string {
 		return nil
 	})
 
-	// Check requirements.txt for frameworks
 	eg.Go(func() error {
 		reqPath := filepath.Join(projectPath, "requirements.txt")
 		if data, err := os.ReadFile(reqPath); err == nil {
 			content := strings.ToLower(string(data))
 			frameworks := map[string]string{
-				"django":     "Django",
-				"flask":      "Flask",
-				"fastapi":    "FastAPI",
-				"pytest":     "Pytest",
-				"numpy":      "NumPy",
-				"pandas":     "Pandas",
-				"pytorch":    "PyTorch",
-				"tensorflow": "TensorFlow",
+				"django":	"Django",
+				"flask":	"Flask",
+				"fastapi":	"FastAPI",
+				"pytest":	"Pytest",
+				"numpy":	"NumPy",
+				"pandas":	"Pandas",
+				"pytorch":	"PyTorch",
+				"tensorflow":	"TensorFlow",
 			}
 			for pkg, name := range frameworks {
 				if strings.Contains(content, pkg) {
@@ -148,12 +143,10 @@ func DetectTechStack(projectPath string) []string {
 
 	eg.Wait()
 
-	// Check for Kotlin
 	if hasExtension(projectPath, ".kt") {
 		add("Kotlin")
 	}
 
-	// Check for C/C++
 	if hasExtension(projectPath, ".c") {
 		add("C")
 	}
@@ -161,12 +154,10 @@ func DetectTechStack(projectPath string) []string {
 		add("C++")
 	}
 
-	// Check for C#
 	if hasExtension(projectPath, ".cs") {
 		add("C#")
 	}
 
-	// Check for Zig
 	if hasExtension(projectPath, ".zig") {
 		add("Zig")
 	}
@@ -174,7 +165,6 @@ func DetectTechStack(projectPath string) []string {
 	return stack
 }
 
-// hasExtension checks if directory contains files with given extension
 func hasExtension(dir, ext string) bool {
 	found := false
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -190,38 +180,22 @@ func hasExtension(dir, ext string) bool {
 	return found
 }
 
-// AnalyzeProjectStatus determines if a project is Active, Broken, or Archived
 func AnalyzeProjectStatus(projectPath string) ProjectStatus {
 	info, err := os.Stat(projectPath)
 	if err != nil {
 		return StatusBroken
 	}
 
-	// Check if archived (not modified in 90+ days)
 	if time.Since(info.ModTime()) > 90*24*time.Hour {
 		return StatusArchived
-	}
-
-	// Check for common error indicators
-	errorMarkers := []string{
-		"node_modules/.package-lock.json", // Broken npm install
-		"__pycache__",
-	}
-
-	for _, marker := range errorMarkers {
-		if _, err := os.Stat(filepath.Join(projectPath, marker)); err == nil {
-			// Just presence doesn't mean broken
-		}
 	}
 
 	return StatusActive
 }
 
-// GetProjectLastModified returns the most recent modification time
 func GetProjectLastModified(projectPath string) time.Time {
 	var latest time.Time
 
-	// Check common files that indicate recent activity
 	activityFiles := []string{
 		"package.json",
 		"go.mod",
@@ -241,7 +215,6 @@ func GetProjectLastModified(projectPath string) time.Time {
 		}
 	}
 
-	// Fallback to directory modification time
 	if latest.IsZero() {
 		if info, err := os.Stat(projectPath); err == nil {
 			latest = info.ModTime()
@@ -251,14 +224,13 @@ func GetProjectLastModified(projectPath string) time.Time {
 	return latest
 }
 
-// GetProjectSize calculates the total size of a project directory
 func GetProjectSize(projectPath string) int64 {
 	var size int64
 	filepath.Walk(projectPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
-		// Skip certain directories to speed up calculation
+
 		if info.IsDir() {
 			name := info.Name()
 			if name == "node_modules" || name == ".git" || name == "__pycache__" || name == "venv" || name == ".venv" {
@@ -273,7 +245,6 @@ func GetProjectSize(projectPath string) int64 {
 	return size
 }
 
-// ScanWorkspace scans a workspace directory for projects
 func ScanWorkspace(workspacePath string) ([]ProjectInfo, error) {
 	var projects []ProjectInfo
 
@@ -289,18 +260,17 @@ func ScanWorkspace(workspacePath string) ([]ProjectInfo, error) {
 
 		projectPath := filepath.Join(workspacePath, entry.Name())
 
-		// Check if it's actually a project
 		if !isProject(projectPath) {
 			continue
 		}
 
 		info := ProjectInfo{
-			Name:         entry.Name(),
-			Path:         projectPath,
-			TechStack:    DetectTechStack(projectPath),
-			Status:       AnalyzeProjectStatus(projectPath),
-			LastModified: GetProjectLastModified(projectPath),
-			Size:         GetProjectSize(projectPath),
+			Name:		entry.Name(),
+			Path:		projectPath,
+			TechStack:	DetectTechStack(projectPath),
+			Status:		AnalyzeProjectStatus(projectPath),
+			LastModified:	GetProjectLastModified(projectPath),
+			Size:		GetProjectSize(projectPath),
 		}
 
 		projects = append(projects, info)
@@ -309,7 +279,6 @@ func ScanWorkspace(workspacePath string) ([]ProjectInfo, error) {
 	return projects, nil
 }
 
-// isProject checks if a directory is a project
 func isProject(dir string) bool {
 	markers := []string{
 		"go.mod",
@@ -331,7 +300,6 @@ func isProject(dir string) bool {
 	return false
 }
 
-// FormatSize formats bytes into human-readable string
 func FormatSize(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {

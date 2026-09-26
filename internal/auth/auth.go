@@ -13,26 +13,25 @@ import (
 )
 
 const (
-	BcryptCost      = 12
-	SecurityVersion = "1.0"
+	BcryptCost	= 12
+	SecurityVersion	= "1.0"
 )
 
 type AuthData struct {
-	Username        string    `json:"username"`
-	PasswordHash    string    `json:"password_hash"`
-	CreatedAt       time.Time `json:"created_at"`
-	LastLogin       time.Time `json:"last_login"`
-	SecurityVersion string    `json:"security_version"`
-	RequireAuth     bool      `json:"require_auth"`
+	Username	string		`json:"username"`
+	PasswordHash	string		`json:"password_hash"`
+	CreatedAt	time.Time	`json:"created_at"`
+	LastLogin	time.Time	`json:"last_login"`
+	SecurityVersion	string		`json:"security_version"`
+	RequireAuth	bool		`json:"require_auth"`
 }
 
 var (
-	sessionUnlocked bool
-	sessionUser     string
-	sessionMu       sync.RWMutex
+	sessionUnlocked	bool
+	sessionUser	string
+	sessionMu	sync.RWMutex
 )
 
-// GetAuthDir returns the path to the ~/.devcli directory and ensures it exists with 0700 permissions.
 func GetAuthDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -44,12 +43,10 @@ func GetAuthDir() (string, error) {
 		return "", fmt.Errorf("failed to create secure config directory: %w", err)
 	}
 
-	// Enforce 0700 permissions on existing directory
 	_ = os.Chmod(dir, 0700)
 	return dir, nil
 }
 
-// GetAuthFilePath returns the absolute path to ~/.devcli/auth.json
 func GetAuthFilePath() (string, error) {
 	dir, err := GetAuthDir()
 	if err != nil {
@@ -58,7 +55,6 @@ func GetAuthFilePath() (string, error) {
 	return filepath.Join(dir, "auth.json"), nil
 }
 
-// IsSetup checks if a valid auth.json exists with configured credentials.
 func IsSetup() bool {
 	path, err := GetAuthFilePath()
 	if err != nil {
@@ -78,7 +74,6 @@ func IsSetup() bool {
 	return data.Username != "" && data.PasswordHash != ""
 }
 
-// GetAuthData reads and parses the credentials file.
 func GetAuthData() (*AuthData, error) {
 	path, err := GetAuthFilePath()
 	if err != nil {
@@ -101,7 +96,6 @@ func GetAuthData() (*AuthData, error) {
 	return &data, nil
 }
 
-// SaveAuthData writes credentials to ~/.devcli/auth.json with strict 0600 permissions.
 func SaveAuthData(data *AuthData) error {
 	path, err := GetAuthFilePath()
 	if err != nil {
@@ -117,21 +111,19 @@ func SaveAuthData(data *AuthData) error {
 		return fmt.Errorf("failed to write auth file: %w", err)
 	}
 
-	// Enforce 0600 explicitly
 	_ = os.Chmod(path, 0600)
 	return nil
 }
 
-// ValidatePasswordStrength checks if password meets production grade security rules.
 func ValidatePasswordStrength(password string) error {
 	if len(password) < 8 {
 		return errors.New("password must be at least 8 characters long")
 	}
 
 	var (
-		hasUpper  bool
-		hasLower  bool
-		hasNumber bool
+		hasUpper	bool
+		hasLower	bool
+		hasNumber	bool
 	)
 
 	for _, ch := range password {
@@ -158,7 +150,6 @@ func ValidatePasswordStrength(password string) error {
 	return nil
 }
 
-// SetupUser creates the initial user credentials.
 func SetupUser(username, password string) error {
 	if username == "" {
 		return errors.New("username cannot be empty")
@@ -174,12 +165,12 @@ func SetupUser(username, password string) error {
 	}
 
 	data := &AuthData{
-		Username:        username,
-		PasswordHash:    string(hashed),
-		CreatedAt:       time.Now(),
-		LastLogin:       time.Now(),
-		SecurityVersion: SecurityVersion,
-		RequireAuth:     true,
+		Username:		username,
+		PasswordHash:		string(hashed),
+		CreatedAt:		time.Now(),
+		LastLogin:		time.Now(),
+		SecurityVersion:	SecurityVersion,
+		RequireAuth:		true,
 	}
 
 	if err := SaveAuthData(data); err != nil {
@@ -190,7 +181,6 @@ func SetupUser(username, password string) error {
 	return nil
 }
 
-// VerifyPassword validates the provided password against stored credentials.
 func VerifyPassword(password string) (bool, error) {
 	data, err := GetAuthData()
 	if err != nil || data == nil {
@@ -202,7 +192,6 @@ func VerifyPassword(password string) (bool, error) {
 		return false, nil
 	}
 
-	// Update last login
 	data.LastLogin = time.Now()
 	_ = SaveAuthData(data)
 
@@ -210,7 +199,6 @@ func VerifyPassword(password string) (bool, error) {
 	return true, nil
 }
 
-// ChangePassword updates existing password with a new strong password.
 func ChangePassword(currentPassword, newPassword string) error {
 	valid, err := VerifyPassword(currentPassword)
 	if err != nil {
@@ -237,8 +225,6 @@ func ChangePassword(currentPassword, newPassword string) error {
 	data.PasswordHash = string(hashed)
 	return SaveAuthData(data)
 }
-
-// Session Management
 
 func UnlockSession(username string) {
 	sessionMu.Lock()

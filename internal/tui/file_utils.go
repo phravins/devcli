@@ -5,7 +5,6 @@ import (
 	"os"
 )
 
-// Helper for Copying Files
 func copyFile(src, dst string) error {
 	sourceFile, err := os.Open(src)
 	if err != nil {
@@ -13,7 +12,6 @@ func copyFile(src, dst string) error {
 	}
 	defer sourceFile.Close()
 
-	// Create dest
 	destFile, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -25,10 +23,11 @@ func copyFile(src, dst string) error {
 		return err
 	}
 
-	// Try to sync permissions
 	info, err := os.Stat(src)
 	if err == nil {
-		os.Chmod(dst, info.Mode())
+		if chmodErr := os.Chmod(dst, info.Mode()); chmodErr != nil {
+			return chmodErr
+		}
 	}
 
 	return nil

@@ -14,7 +14,6 @@ func TestCheckPrerequisites_Success(t *testing.T) {
 		t.Run(candidate, func(t *testing.T) {
 			tempDir := t.TempDir()
 
-			// Create a dummy executable for the specific candidate
 			dummyName := candidate
 			if runtime.GOOS == "windows" {
 				dummyName += ".exe"
@@ -26,7 +25,6 @@ func TestCheckPrerequisites_Success(t *testing.T) {
 				t.Fatalf("failed to create dummy %s: %v", candidate, err)
 			}
 
-			// Change PATH to only include our temp dir
 			t.Setenv("PATH", tempDir)
 
 			m := NewManager("")
@@ -45,7 +43,6 @@ func TestCheckPrerequisites_Success(t *testing.T) {
 func TestCheckPrerequisites_Failure(t *testing.T) {
 	tempDir := t.TempDir()
 
-	// Change PATH to an empty dir
 	t.Setenv("PATH", tempDir)
 
 	m := NewManager("")

@@ -9,13 +9,10 @@ import (
 )
 
 func TestLoadConfig_NoHomeDir(t *testing.T) {
-	// Save original env vars
 
-	// Unset env vars to simulate missing home directory
 	t.Setenv("HOME", "")
 	t.Setenv("USERPROFILE", "")
 
-	// Reset viper to clear any cached states
 	viper.Reset()
 
 	_, err := LoadConfig()
@@ -25,12 +22,11 @@ func TestLoadConfig_NoHomeDir(t *testing.T) {
 }
 
 func TestLoadConfig_Success(t *testing.T) {
-	// Create a temporary home directory
+
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
 
-	// Create a dummy config file testing all fields and string cleaning
 	configContent := []byte(`
 ai_backend: "openai"
 ai_model: "gpt-4"
@@ -90,7 +86,6 @@ func TestLoadConfig_InvalidYAML(t *testing.T) {
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
 
-	// Create an invalid yaml file
 	configContent := []byte(`
 ai_backend: "openai"
 	invalid_yaml: { [ :
@@ -115,7 +110,6 @@ func TestLoadConfig_FileNotFound(t *testing.T) {
 
 	viper.Reset()
 
-	// Should not error if file is not found, should use defaults
 	cfg, err := LoadConfig()
 	if err != nil {
 		t.Fatalf("LoadConfig failed: %v", err)
@@ -134,7 +128,6 @@ func TestLoadConfig_UnmarshalError(t *testing.T) {
 	t.Setenv("HOME", tmpHome)
 	t.Setenv("USERPROFILE", tmpHome)
 
-	// Create a yaml file with type mismatch to trigger Unmarshal error
 	configContent := []byte(`
 ai_backend:
   - "openai"
@@ -154,8 +147,8 @@ ai_backend:
 
 func TestCleanString(t *testing.T) {
 	cases := []struct {
-		input    string
-		expected string
+		input		string
+		expected	string
 	}{
 		{"", ""},
 		{"normal string", "normal string"},
@@ -190,7 +183,6 @@ func TestSaveConfigAndWrite(t *testing.T) {
 		t.Errorf("expected 'test_value', got '%s'", val)
 	}
 
-	// Test Set with non-string
 	Set("test_int_key", 42)
 	intVal := viper.GetInt("test_int_key")
 	if intVal != 42 {
@@ -218,13 +210,11 @@ func TestWrite_ExistingFile(t *testing.T) {
 
 	viper.Reset()
 
-	// Write first time
 	err := Write()
 	if err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 
-	// Write second time (existing file path)
 	err = Write()
 	if err != nil {
 		t.Fatalf("Write failed on existing file: %v", err)

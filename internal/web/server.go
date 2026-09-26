@@ -15,29 +15,24 @@ import (
 	"unicode"
 )
 
-//go:embed static/*
 var staticAssets embed.FS
 
-// Global state for the web server
 var (
-	serverStarted bool       // Tracks if the server is currently running
-	serverPort    string     // The port number the server is listening on
-	currentDir    string     // The working directory for terminal commands
-	activeCmd     *exec.Cmd  // Currently running command (for cancellation)
-	activeMu      sync.Mutex // Protects access to activeCmd from multiple threads
-	logChan       chan string // Channel to send logs to the TUI
+	serverStarted	bool
+	serverPort	string
+	currentDir	string
+	activeCmd	*exec.Cmd
+	activeMu	sync.Mutex
+	logChan		chan string
 )
 
-// setupRoutes configures all the HTTP routes for the web server
 func setupRoutes(mux *http.ServeMux) {
-	// Serve static files from embedded FS
+
 	fileServer := http.FileServer(http.FS(staticAssets))
 	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
 
-	// Redirect root to index.html in static
 	mux.HandleFunc("/", handleRoot)
 
-	// Auth Routes
 	mux.HandleFunc("/auth/login", handleLogin)
 	mux.HandleFunc("/auth/register", handleRegister)
 	mux.HandleFunc("/auth/logout", handleLogout)
@@ -45,10 +40,8 @@ func setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/verify-email", handleVerifyEmail)
 	mux.HandleFunc("/auth/google", handleGoogleOAuth)
 
-	// Storage Routes
 	mux.HandleFunc("/drive/save", handleDriveSave)
 
-	// Web terminal and execution routes
 	mux.HandleFunc("/logs", handleLogs)
 	mux.HandleFunc("/cancel", handleCancel)
 	mux.HandleFunc("/save", handleSave)
@@ -68,7 +61,6 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Serve other static files directly if they exist in static/
 	filePath := "static" + r.URL.Path
 	data, err := staticAssets.ReadFile(filePath)
 	if err == nil {
@@ -90,8 +82,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGoogleOAuth(w http.ResponseWriter, r *http.Request) {
-	// Mock Google OAuth redirect
-	fmt.Fprintf(w, "Google OAuth redirect would happen here.")
+	http.Error(w, "Google OAuth is not yet implemented", http.StatusNotImplemented)
 }
 
 func handleLogs(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +95,7 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
 		return
 	}
-	// Sanitize log body to prevent Log Injection / CRLF injection attacks
+
 	sanitizedBody := strings.ReplaceAll(string(body), "\r", "\\r")
 	sanitizedBody = strings.ReplaceAll(sanitizedBody, "\n", "\\n")
 
@@ -137,8 +128,8 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload struct {
-		Filename string `json:"filename"`
-		Content  string `json:"content"`
+		Filename	string	`json:"filename"`
+		Content		string	`json:"content"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -146,14 +137,12 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Security check: prevent path traversal attacks (e.g. "../" or absolute paths)
 	filename := filepath.Clean(payload.Filename)
 	if payload.Filename == "" || !filepath.IsLocal(filename) {
 		http.Error(w, "Invalid filename or path traversal detected", http.StatusBadRequest)
 		return
 	}
 
-	// Create parent directories if they don't exist
 	dir := filepath.Dir(filename)
 	if dir != "." && dir != "/" {
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -203,10 +192,9 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 	language := "python"
 	code := string(bodyBytes)
 
-	// Try parsing JSON payload if present
 	var reqPayload struct {
-		Language string `json:"language"`
-		Code     string `json:"code"`
+		Language	string	`json:"language"`
+		Code		string	`json:"code"`
 	}
 	if err := json.Unmarshal(bodyBytes, &reqPayload); err == nil && reqPayload.Code != "" {
 		code = reqPayload.Code
@@ -267,12 +255,11 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// StartServer launches the web-based Python compiler on the specified port
 func StartServer(port string, logs chan string) error {
 	logChan = logs
 	if serverStarted {
 		if serverPort == port {
-			return nil // Server already running on the correct port, nothing to do
+			return nil
 		}
 		return fmt.Errorf("server already running on port %s", serverPort)
 	}
@@ -301,7 +288,6 @@ func StartServer(port string, logs chan string) error {
 	return err
 }
 
-// runCode executes code in the requested programming language
 func runCode(lang, code string) (string, error) {
 	lang = strings.ToLower(strings.TrimSpace(lang))
 
@@ -370,7 +356,7 @@ func runCode(lang, code string) (string, error) {
 		}
 		cmd = exec.Command(binPath)
 
-	default: // Python
+	default:
 		cmdName := "python"
 		if _, err := exec.LookPath("python"); err != nil {
 			cmdName = "python3"
@@ -398,7 +384,6 @@ func runCode(lang, code string) (string, error) {
 	return outStr, err
 }
 
-// parseCommand parses a shell command string into arguments, handling basic quoting and escaping
 func parseCommand(command string) []string {
 	var args []string
 	var current strings.Builder
@@ -446,24 +431,22 @@ func parseCommand(command string) []string {
 	return args
 }
 
-// allowedCommands is a list of safe commands that can be executed
 var allowedCommands = map[string]bool{
-	"ls":     true,
-	"pwd":    true,
-	"cat":    true,
-	"echo":   true,
-	"go":     true,
-	"python": true,
-	"python3": true,
-	"node":   true,
-	"git":    true,
-	"grep":   true,
-	"head":   true,
-	"tail":   true,
-	"npm":    true,
+	"ls":		true,
+	"pwd":		true,
+	"cat":		true,
+	"echo":		true,
+	"go":		true,
+	"python":	true,
+	"python3":	true,
+	"node":		true,
+	"git":		true,
+	"grep":		true,
+	"head":		true,
+	"tail":		true,
+	"npm":		true,
 }
 
-// runShell executes shell commands in the web terminal securely
 func runShell(command string) (string, error) {
 	if currentDir == "" {
 		currentDir, _ = os.Getwd()
@@ -474,7 +457,6 @@ func runShell(command string) (string, error) {
 		return "", nil
 	}
 
-	// Handle the 'cd' command specially to change directories
 	if strings.HasPrefix(command, "cd ") || command == "cd" {
 		path := ""
 		if len(command) > 3 {
@@ -489,13 +471,11 @@ func runShell(command string) (string, error) {
 			path = homeDir
 		}
 
-		// Convert relative paths to absolute paths
 		newDir := filepath.Join(currentDir, path)
 		if filepath.IsAbs(path) {
 			newDir = path
 		}
 
-		// Make sure the directory actually exists
 		info, err := os.Stat(newDir)
 		if err != nil {
 			return "", fmt.Errorf("directory not found: %s", path)
@@ -526,9 +506,8 @@ func runShell(command string) (string, error) {
 	}
 
 	cmd.Dir = currentDir
-	cmd.Env = os.Environ() // Pass environment variables
+	cmd.Env = os.Environ()
 
-	// Register this command so it can be cancelled with Ctrl+C
 	activeMu.Lock()
 	activeCmd = cmd
 	activeMu.Unlock()

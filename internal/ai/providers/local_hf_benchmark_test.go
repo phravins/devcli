@@ -11,8 +11,8 @@ func BenchmarkLocalHFProvider_StringConcat(b *testing.B) {
 	messages := make([]ai.Message, 1000)
 	for i := 0; i < 1000; i++ {
 		messages[i] = ai.Message{
-			Role:    "user",
-			Content: "This is a slightly longer test message for testing string concatenation efficiency.",
+			Role:		"user",
+			Content:	"This is a slightly longer test message for testing string concatenation efficiency.",
 		}
 	}
 
@@ -31,8 +31,8 @@ func BenchmarkLocalHFProvider_StringsBuilder(b *testing.B) {
 	messages := make([]ai.Message, 1000)
 	for i := 0; i < 1000; i++ {
 		messages[i] = ai.Message{
-			Role:    "user",
-			Content: "This is a slightly longer test message for testing string concatenation efficiency.",
+			Role:		"user",
+			Content:	"This is a slightly longer test message for testing string concatenation efficiency.",
 		}
 	}
 

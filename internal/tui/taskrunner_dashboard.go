@@ -16,24 +16,24 @@ import (
 )
 
 type TaskRunnerModel struct {
-	workspace   string
-	tasks       []taskrunner.Task
-	list        list.Model
-	running     bool
-	output      *strings.Builder
-	outputView  viewport.Model
-	helpView    viewport.Model
-	currentTask *taskrunner.Task
-	ctx         context.Context
-	cancel      context.CancelFunc
-	spinner     spinner.Model // New spinner
-	width       int
-	height      int
-	state       int // 0: list, 1: running, 2: completed, 3: help
+	workspace	string
+	tasks		[]taskrunner.Task
+	list		list.Model
+	running		bool
+	output		*strings.Builder
+	outputView	viewport.Model
+	helpView	viewport.Model
+	currentTask	*taskrunner.Task
+	ctx		context.Context
+	cancel		context.CancelFunc
+	spinner		spinner.Model
+	width		int
+	height		int
+	state		int
 }
 
 const (
-	trStateList = iota
+	trStateList	= iota
 	trStateRunning
 	trStateCompleted
 	trStateHelp
@@ -49,7 +49,7 @@ type taskCompleteMsg struct {
 }
 
 func NewTaskRunnerModel(workspace string) TaskRunnerModel {
-	// Resolve to actual CWD if workspace is empty
+
 	if workspace == "" {
 		if cwd, err := os.Getwd(); err == nil {
 			workspace = cwd
@@ -61,13 +61,13 @@ func NewTaskRunnerModel(workspace string) TaskRunnerModel {
 	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return TaskRunnerModel{
-		workspace:  workspace,
-		list:       list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
-		output:     &strings.Builder{},
-		outputView: viewport.New(80, 20),
-		helpView:   viewport.New(80, 20),
-		spinner:    sp,
-		state:      trStateList,
+		workspace:	workspace,
+		list:		list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
+		output:		&strings.Builder{},
+		outputView:	viewport.New(80, 20),
+		helpView:	viewport.New(80, 20),
+		spinner:	sp,
+		state:		trStateList,
 	}
 }
 
@@ -95,21 +95,21 @@ func (m TaskRunnerModel) Update(msg tea.Msg) (TaskRunnerModel, tea.Cmd) {
 		items := make([]list.Item, len(m.tasks))
 		for i, task := range m.tasks {
 			items[i] = item{
-				title: fmt.Sprintf("%s %s", task.Icon, task.Name),
-				desc:  task.Description,
+				title:	fmt.Sprintf("%s %s", task.Icon, task.Name),
+				desc:	task.Description,
 			}
 		}
 		m.list.SetItems(items)
 		return m, nil
 
 	case taskOutputMsg:
-		// Limit buffer size to prevent memory issues with long processes
-		const maxOutputLen = 50000 // characters
+
+		const maxOutputLen = 50000
 
 		newStr := string(msg) + "\n"
 
 		if m.output.Len()+len(newStr) > maxOutputLen {
-			// Truncate old output
+
 			fullStr := m.output.String() + newStr
 			keepStart := len(fullStr) - maxOutputLen
 			if keepStart < 0 {
@@ -318,7 +318,6 @@ func (m TaskRunnerModel) View() string {
 			PaddingTop(1).
 			Render(subtleStyle.Render("↑/↓: Navigate • Enter: Run • R: Refresh • ?: Help • Esc: Back"))
 
-		// Styled List Container
 		listView := lipgloss.NewStyle().
 			Padding(1, 2).
 			Width(contentWidth).
@@ -402,14 +401,13 @@ func (m TaskRunnerModel) View() string {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 
 	case trStateHelp:
-		// Markdown Render
+
 		renderer, _ := glamour.NewTermRenderer(
 			glamour.WithAutoStyle(),
 			glamour.WithWordWrap(m.width-10),
 		)
 		helpText, _ := renderer.Render(TaskRunnerHelp)
 
-		// Reuse Help Viewport but set content
 		m.helpView.SetContent(helpText)
 
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,

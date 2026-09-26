@@ -12,40 +12,38 @@ import (
 )
 
 type BonusDashboardModel struct {
-	menuList list.Model
-	state    int
-	width    int
-	height   int
+	menuList	list.Model
+	state		int
+	width		int
+	height		int
 
-	// Sub-features
-	taskRunnerModel  TaskRunnerModel
-	smartFileModel   SmartFileModel
-	snippetsModel    SnippetsModel
-	projectDashModel ProjectDashModel
-	aiAssistantModel AIAssistantModel
-	timeMachineModel interface{} // Will hold *TimeMachineModel
-	helpView         viewport.Model
+	taskRunnerModel		TaskRunnerModel
+	smartFileModel		SmartFileModel
+	snippetsModel		SnippetsModel
+	projectDashModel	ProjectDashModel
+	aiAssistantModel	AIAssistantModel
+	timeMachineModel	interface{}
+	helpView		viewport.Model
 
-	// File picker for Code Time Machine
-	filePickerList  list.Model
-	filePickerReady bool
-	filePickerCwd   string
+	filePickerList	list.Model
+	filePickerReady	bool
+	filePickerCwd	string
 }
 
 const (
-	StateBonusMenu = iota
+	StateBonusMenu	= iota
 	StateBonusTaskRunner
 	StateBonusSmartFile
 	StateBonusSnippets
 	StateBonusProjectDash
 	StateBonusAIAssistant
-	StateBonusTimeMachinePicker // NEW: file picker screen
+	StateBonusTimeMachinePicker
 	StateBonusTimeMachine
-	StateBonusHelp // Help Screen
+	StateBonusHelp
 )
 
 func NewBonusDashboardModel(workspace string) BonusDashboardModel {
-	// Always resolve to actual CWD if workspace is empty (e.g. globally installed binary)
+
 	if workspace == "" {
 		if cwd, err := os.Getwd(); err == nil {
 			workspace = cwd
@@ -66,14 +64,14 @@ func NewBonusDashboardModel(workspace string) BonusDashboardModel {
 	menu.SetShowTitle(true)
 
 	return BonusDashboardModel{
-		menuList:         menu,
-		state:            StateBonusMenu,
-		taskRunnerModel:  NewTaskRunnerModel(workspace),
-		smartFileModel:   NewSmartFileModel(workspace),
-		snippetsModel:    NewSnippetsModel(),
-		projectDashModel: NewProjectDashModel(workspace),
-		aiAssistantModel: NewAIAssistantModel(),
-		helpView:         viewport.New(80, 20),
+		menuList:		menu,
+		state:			StateBonusMenu,
+		taskRunnerModel:	NewTaskRunnerModel(workspace),
+		smartFileModel:		NewSmartFileModel(workspace),
+		snippetsModel:		NewSnippetsModel(),
+		projectDashModel:	NewProjectDashModel(workspace),
+		aiAssistantModel:	NewAIAssistantModel(),
+		helpView:		viewport.New(80, 20),
 	}
 }
 
@@ -81,7 +79,6 @@ func (m BonusDashboardModel) Init() tea.Cmd {
 	return nil
 }
 
-// buildFilePicker creates list.Model with all git-tracked files in cwd.
 func buildFilePicker(cwd string, w, h int) (list.Model, bool) {
 	files, err := timemachine.GetTrackedFiles(cwd)
 	if err != nil || len(files) == 0 {
@@ -107,13 +104,12 @@ func buildFilePicker(cwd string, w, h int) (list.Model, bool) {
 func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) {
 	var cmd tea.Cmd
 
-	// Priority: Handle global messages like "back" regardless of state
 	switch msg.(type) {
 	case BonusBackMsg:
 		m.state = StateBonusMenu
 		return m, nil
 	case SubFeatureBackMsg:
-		// Coming back from Time Machine — go back to the file picker, not the menu
+
 		if m.state == StateBonusTimeMachine && m.filePickerReady {
 			m.state = StateBonusTimeMachinePicker
 			return m, nil
@@ -122,7 +118,6 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		return m, nil
 	}
 
-	// Global Help Toggle
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		if keyMsg.String() == "?" && m.state == StateBonusMenu {
 			m.state = StateBonusHelp
@@ -131,7 +126,6 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		}
 	}
 
-	// Handle delegation to sub-features based on current state
 	switch m.state {
 	case StateBonusTaskRunner:
 		var trCmd tea.Cmd
@@ -176,7 +170,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		case tea.KeyMsg:
 			switch msg.String() {
 			case "esc", "q":
-				// Back to bonus menu
+
 				m.state = StateBonusMenu
 				return m, nil
 			case "enter":
@@ -188,7 +182,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 						m.state = StateBonusTimeMachine
 						return m, tm.Init()
 					} else {
-						// Stay in picker; show error in title
+
 						m.filePickerList.Title = fmt.Sprintf("❌ No history for %s — pick another", filePath)
 						return m, nil
 					}
@@ -200,7 +194,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 			m.filePickerList.SetWidth(msg.Width - 4)
 			m.filePickerList.SetHeight(msg.Height - 10)
 		}
-		// Forward everything else (typing filter, scrolling) to the file picker list
+
 		m.filePickerList, cmd = m.filePickerList.Update(msg)
 		return m, cmd
 
@@ -211,7 +205,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 				m.state = StateBonusMenu
 				return m, nil
 			}
-		// Mouse wheel
+
 		case tea.MouseMsg:
 			if msg.Type == tea.MouseWheelUp {
 				m.helpView.LineUp(3)
@@ -225,7 +219,6 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		return m, cmd
 	}
 
-	// Handle menu navigation
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch m.state {
@@ -254,7 +247,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 						m.state = StateBonusAIAssistant
 						return m, m.aiAssistantModel.Init()
 					case "Code Time Machine":
-						// Show file picker for all git-tracked files
+
 						cwd := m.taskRunnerModel.workspace
 						if cwd == "" {
 							if c, err := os.Getwd(); err == nil {
@@ -277,7 +270,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 							m.filePickerCwd = cwd
 							m.state = StateBonusTimeMachinePicker
 						}
-						// If not a git repo or no files — stay in menu
+
 						return m, nil
 					}
 				}
@@ -287,7 +280,7 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		}
 
 	case tea.MouseMsg:
-		// Forward to active sub-models first
+
 		switch m.state {
 		case StateBonusTaskRunner:
 			m.taskRunnerModel, cmd = m.taskRunnerModel.Update(msg)
@@ -306,7 +299,6 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 			return m, cmd
 		}
 
-		// If we are in Menu state, handle list scroll
 		if m.state == StateBonusMenu {
 			if msg.Type == tea.MouseWheelUp {
 				m.menuList.CursorUp()
@@ -325,7 +317,6 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 		m.height = msg.Height
 		m.menuList.SetSize(msg.Width-4, msg.Height-8)
 
-		// Resize sub-models
 		m.taskRunnerModel, _ = m.taskRunnerModel.Update(msg)
 		m.smartFileModel, _ = m.smartFileModel.Update(msg)
 		m.snippetsModel, _ = m.snippetsModel.Update(msg)
@@ -338,7 +329,6 @@ func (m BonusDashboardModel) Update(msg tea.Msg) (BonusDashboardModel, tea.Cmd) 
 			m.helpView.SetContent(RenderHelp(BonusFeaturesHelp, m.width-2, m.height))
 		}
 
-		// Resize file picker too
 		if m.filePickerReady {
 			m.filePickerList.SetWidth(msg.Width - 4)
 			m.filePickerList.SetHeight(msg.Height - 10)
@@ -398,13 +388,11 @@ func (m BonusDashboardModel) View() string {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, helpWithBorder)
 	}
 
-	// Menu view
 	footer := lipgloss.NewStyle().
 		Align(lipgloss.Center).
 		Width(m.width).
 		Render(subtleStyle.Render("↑/↓: Navigate • Enter: Select • Q/Esc: Back"))
 
-	// Header
 	header := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Render(
 		titleStyle.Render("Bonus Features"),
 	)

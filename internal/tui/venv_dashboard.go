@@ -16,46 +16,42 @@ import (
 )
 
 type VenvDashboardModel struct {
-	list    list.Model
-	spinner spinner.Model
-	manager *venv.Manager
+	list	list.Model
+	spinner	spinner.Model
+	manager	*venv.Manager
 
-	// State
-	state         int
-	width, height int
+	state		int
+	width, height	int
 
-	message     string
-	err         error // Global error state
-	input       textinput.Model
-	selectedEnv venv.Environment
+	message		string
+	err		error
+	input		textinput.Model
+	selectedEnv	venv.Environment
 
-	// Logging
-	logView    viewport.Model
-	logBuf     *strings.Builder
-	targetPath string
-	countdown  int            // Countdown timer for success screen
-	helpView   viewport.Model // New
+	logView		viewport.Model
+	logBuf		*strings.Builder
+	targetPath	string
+	countdown	int
+	helpView	viewport.Model
 }
 
 const (
-	StateVenvList          = iota
-	StateVenvActionMenu    // Activate, Sync, Delete, Clone
-	StateVenvCloneInput    // Enter destination path
-	StateVenvCreateInput   // Enter new venv path
-	StateVenvSyncInput     // Enter path for requirements.txt (NEW)
-	StateVenvScanInput     // Enter path to scan
-	StateVenvDeleteConfirm // Confirm deletion
+	StateVenvList	= iota
+	StateVenvActionMenu
+	StateVenvCloneInput
+	StateVenvCreateInput
+	StateVenvSyncInput
+	StateVenvScanInput
+	StateVenvDeleteConfirm
 	StateVenvProcessing
-	StateVenvCreating // Active logging state
-	StateVenvSuccess  // Final success screen
-	StateVenvHelp     // Educational screen
+	StateVenvCreating
+	StateVenvSuccess
+	StateVenvHelp
 )
 
 func NewVenvDashboardModel() VenvDashboardModel {
 	mgr := venv.NewManager("")
 
-	// Initial List - Delegate handles styling
-	// items := loadVenvs(mgr) // Removed blocking call
 	items := []list.Item{item{title: "Loading environments...", desc: "Please wait"}}
 	delegate := list.NewDefaultDelegate()
 	delegate.Styles.SelectedTitle = venvSelectedStyle
@@ -63,7 +59,7 @@ func NewVenvDashboardModel() VenvDashboardModel {
 
 	l := list.New(items, delegate, 0, 0)
 	l.Title = "Virtual Environment Wizard (v2.0 Recursive)"
-	l.SetShowTitle(false) // We render our own fancy title
+	l.SetShowTitle(false)
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -76,27 +72,25 @@ func NewVenvDashboardModel() VenvDashboardModel {
 	vp := viewport.New(60, 10)
 	vp.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1)
 
-	// Help Viewport
 	hv := viewport.New(0, 0)
 	hv.Style = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("#0F9E99")).Padding(1, 2)
 	hv.SetContent(VenvWizardHelp)
 
-	// Check requirements immediately
 	var initErr error
 	if err := mgr.CheckPrerequisites(); err != nil {
 		initErr = err
 	}
 
 	return VenvDashboardModel{
-		list:     l,
-		spinner:  s,
-		manager:  mgr,
-		input:    ti,
-		state:    StateVenvList,
-		err:      initErr,
-		logView:  vp,
-		logBuf:   &strings.Builder{},
-		helpView: hv,
+		list:		l,
+		spinner:	s,
+		manager:	mgr,
+		input:		ti,
+		state:		StateVenvList,
+		err:		initErr,
+		logView:	vp,
+		logBuf:		&strings.Builder{},
+		helpView:	hv,
 	}
 }
 
@@ -116,10 +110,9 @@ func loadVenvs(mgr *venv.Manager) []list.Item {
 			icon = ""
 		}
 
-		// Check if this is a cloned environment
 		envName := e.Name
 		parentDir := filepath.Base(filepath.Dir(e.Path))
-		// If parent directory contains "copy" or "clone", mark it as cloned
+
 		if strings.Contains(strings.ToLower(parentDir), "copy") ||
 			strings.Contains(strings.ToLower(parentDir), "clone") {
 			envName = e.Name + " (cloned)"
@@ -149,11 +142,9 @@ func (m VenvDashboardModel) Init() tea.Cmd {
 type loadVenvsMsg []list.Item
 
 type venvMsg struct {
-	err error
-	msg string
+	err	error
+	msg	string
 }
-
-// Feature-specific Back Messages are now defined in root.go
 
 func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 	var cmd tea.Cmd
@@ -165,17 +156,12 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 		}
 
 		if m.state == StateVenvSuccess {
-			// Require explicit Enter/Esc to dismiss, not just any key
+
 			if msg.String() == "enter" || msg.String() == "esc" {
 				m.state = StateVenvList
-				// Auto-Switch to the new environment's parent directory
-				// m.targetPath is the full path to the environment.
-				// If we created C:\Proj\venv, we want to look at C:\Proj
+
 				if m.targetPath != "" {
-					// For venv creation, targetPath IS the venv folder.
-					// Workspace should be the parent to see it in the list (usually).
-					// OR if targetPath is C:\Proj and we made C:\Proj\venv (standard CreateVenv behavior creates dirs if needed).
-					// Wait, CreateVenv(target) makes target. So target is the venv.
+
 					m.manager.Workspace = filepath.Dir(m.targetPath)
 				}
 				m.list.SetItems(loadVenvs(m.manager))
@@ -195,7 +181,6 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			}
 		}
 
-		// Error Dismissal
 		if m.err != nil {
 			if msg.String() == "esc" || msg.String() == "enter" {
 				m.err = nil
@@ -206,45 +191,44 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 		if m.state == StateVenvList {
 			switch msg.String() {
 			case "q", "esc":
-				// SIGNAL PARENT TO GO BACK
+
 				return m, func() tea.Msg { return VenvBackMsg{} }
 			case "?":
 				m.state = StateVenvHelp
-				m.message = "" // Clear message
+				m.message = ""
 				m.helpView.GotoTop()
 				return m, nil
 			case "n":
 				m.state = StateVenvCreateInput
 				m.input.Placeholder = "New Environment Path (e.g. ./my-venv)"
-				m.input.SetValue("") // Clear previous
+				m.input.SetValue("")
 				m.input.Focus()
-				m.message = "" // Clear message
+				m.message = ""
 				return m, nil
-			case "s": // Scan (was 'o')
+			case "s":
 				m.state = StateVenvScanInput
 				m.input.Placeholder = "Scan Folder Path"
 				m.input.SetValue("")
 				m.input.Focus()
-				m.message = "" // Clear message
+				m.message = ""
 				return m, nil
-			case "o": // Keep 'o' as alias or remove? Removing for strictness.
-				// m.state = StateVenvScanInput ...
-				// User asked for 's', let's stick to 's'.
+			case "o":
+
 				return m, nil
 			case "r":
 				m.list.SetItems(loadVenvs(m.manager))
-				m.message = "" // Clear message on refresh
+				m.message = ""
 				return m, nil
 			case "enter":
 				i, ok := m.list.SelectedItem().(item)
 				if ok && i.title != "No environments found" && i.title != "Error" {
 					m.state = StateVenvActionMenu
-					m.message = "" // Clear message when entering action menu
+					m.message = ""
 					parts := strings.Split(i.desc, " | ")
 					if len(parts) >= 3 {
 						m.selectedEnv = venv.Environment{Name: i.title, Path: parts[2]}
 					}
-					return m, nil // CRITICAL: Return here to prevent list update
+					return m, nil
 				}
 			}
 			m.list, cmd = m.list.Update(msg)
@@ -255,21 +239,21 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			switch msg.String() {
 			case "esc":
 				m.state = StateVenvList
-			case "y": // Sync (was 's')
+			case "y":
 				m.state = StateVenvSyncInput
 				m.input.Placeholder = "Path for requirements.txt"
-				// Default to parent/requirements.txt
+
 				defaultPath := filepath.Join(filepath.Dir(m.selectedEnv.Path), "requirements.txt")
 				m.input.SetValue(defaultPath)
 				m.input.Focus()
 				return m, nil
-			case "d": // Delete - Show confirmation first
+			case "d":
 				m.state = StateVenvDeleteConfirm
 				return m, nil
-			case "c": // Clone
+			case "c":
 				m.state = StateVenvCloneInput
 				m.input.Placeholder = "Destination directory (e.g., D:\\MyNewProject)"
-				// Start empty so user can type any path they want
+
 				m.input.SetValue("")
 				m.input.Focus()
 				return m, nil
@@ -286,13 +270,12 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 					if abs, err := filepath.Abs(target); err == nil {
 						target = abs
 					}
-					// Append .venv to destination (consistent with create)
+
 					venvPath := filepath.Join(target, ".venv")
-					m.targetPath = venvPath // Store for navigation
+					m.targetPath = venvPath
 					m.state = StateVenvProcessing
 					m.message = "Cloning environment..."
 
-					// Store source name for success message
 					sourceName := filepath.Base(filepath.Dir(m.selectedEnv.Path))
 
 					return m, func() tea.Msg {
@@ -314,7 +297,7 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 				m.state = StateVenvActionMenu
 				return m, nil
 			case "enter", "y":
-				// Confirmed - proceed with deletion
+
 				m.state = StateVenvProcessing
 				m.message = "Deleting environment..."
 				return m, func() tea.Msg {
@@ -335,12 +318,11 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			case "enter":
 				target := m.input.Value()
 				if target != "" {
-					// Resolve absolute path for clarity
+
 					if abs, err := filepath.Abs(target); err == nil {
 						target = abs
 					}
 
-					// Append .venv to create venv inside a .venv subfolder
 					venvPath := filepath.Join(target, ".venv")
 
 					m.targetPath = venvPath
@@ -357,11 +339,10 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			return m, cmd
 		}
 
-		// Allow exiting the log view (Creating) manually ONLY with Esc
 		if m.state == StateVenvCreating {
 			if msg.String() == "esc" {
 				m.state = StateVenvList
-				// Refresh list if we are leaving
+
 				m.list.SetItems(loadVenvs(m.manager))
 				return m, nil
 			}
@@ -374,9 +355,9 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			case "enter":
 				target := m.input.Value()
 				if target != "" {
-					m.manager.Workspace = target // Update workspace
+					m.manager.Workspace = target
 					m.state = StateVenvList
-					// m.list.Title = "Scanning: " + target
+
 					m.list.SetItems(loadVenvs(m.manager))
 					return m, nil
 				}
@@ -414,17 +395,16 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 	case venvMsg:
 		m.state = StateVenvList
 		if msg.err != nil {
-			m.err = msg.err // Set global error
-			m.message = ""  // Clear any previous success message
+			m.err = msg.err
+			m.message = ""
 		} else {
-			// Show success message to user
+
 			if msg.msg != "" {
 				m.message = msg.msg
 			}
-			// Auto-Navigation for Clone/Sync success
+
 			if m.targetPath != "" {
-				// For Clone: targetPath is the new venv. Switch to parent to see it.
-				// For Sync: targetPath is the requirements.txt file. Switch to its folder.
+
 				if strings.HasSuffix(m.targetPath, "requirements.txt") {
 					m.manager.Workspace = filepath.Dir(m.targetPath)
 				} else {
@@ -445,7 +425,7 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 
 	case venvCreatedMsg:
 		if msg.err != nil {
-			// Do NOT jump back to list. Show error in log.
+
 			m.logBuf.WriteString(fmt.Sprintf(" Creation Failed: %v\n", msg.err))
 			m.logBuf.WriteString("\n(Press Esc to return)")
 			m.logView.SetContent(m.logBuf.String())
@@ -465,7 +445,7 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			m.logBuf.WriteString("\n(Press Esc to return)")
 			m.logView.SetContent(m.logBuf.String())
 			m.logView.GotoBottom()
-			// Stop here. No auto-tick.
+
 			return m, nil
 		} else {
 			m.logBuf.WriteString(" Environment verified! Ready to use.\n")
@@ -473,16 +453,16 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			m.logBuf.WriteString("Success screen in: 4...\n")
 			m.logView.SetContent(m.logBuf.String())
 			m.logView.GotoBottom()
-			// Start countdown from 4
+
 			m.countdown = 4
 			return m, tea.Tick(1*time.Second, func(_ time.Time) tea.Msg { return venvCountdownMsg{count: 3} })
 		}
 
 	case venvCountdownMsg:
 		if msg.count > 0 {
-			// Update the countdown display
+
 			m.countdown = msg.count
-			// Update last line with new countdown
+
 			lines := strings.Split(m.logBuf.String(), "\n")
 			if len(lines) > 0 {
 				lines[len(lines)-2] = fmt.Sprintf("Success screen in: %d...\n", msg.count)
@@ -491,10 +471,10 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			m.logBuf.WriteString(strings.Join(lines, "\n"))
 			m.logView.SetContent(m.logBuf.String())
 			m.logView.GotoBottom()
-			// Continue countdown
+
 			return m, tea.Tick(1*time.Second, func(_ time.Time) tea.Msg { return venvCountdownMsg{count: msg.count - 1} })
 		} else {
-			// Countdown finished, show success screen
+
 			return m, func() tea.Msg { return venvSuccessMsg{} }
 		}
 
@@ -504,14 +484,13 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		// Adjust list height to account for Header (3 lines) + Spacing (1) + Help (2) = ~6 lines
+
 		m.list.SetSize(msg.Width-h, msg.Height-v-6)
 		m.width = msg.Width
 		m.height = msg.Height
 		m.logView.Width = msg.Width - 4
 		m.logView.Height = msg.Height - 10
 
-		// Resize Help View
 		m.helpView.Width = msg.Width - h - 4
 		m.helpView.Height = msg.Height - v - 4
 
@@ -528,7 +507,7 @@ func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {
 			m.logView, cmd = m.logView.Update(msg)
 			return m, cmd
 		}
-		// List handles mouse events if delegate supports it (bubbles/list/defaultitem doesn't always, but list.Model does for scrolling)
+
 		if m.state == StateVenvList {
 			switch msg.Type {
 			case tea.MouseWheelUp:
@@ -548,7 +527,7 @@ func (m VenvDashboardModel) View() string {
 	h, v := docStyle.GetFrameSize()
 
 	if m.err != nil {
-		// Error Overlay
+
 		content := fmt.Sprintf("Error Detected\n\n%v\n\n(Press Esc/Enter to Dismiss)", m.err)
 		return docStyle.Render(
 			lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
@@ -569,7 +548,7 @@ func (m VenvDashboardModel) View() string {
 	}
 
 	if m.state == StateVenvProcessing {
-		// Simple centered spinner
+
 		content := fmt.Sprintf("%s %s", m.spinner.View(), m.message)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 	}
@@ -586,7 +565,6 @@ func (m VenvDashboardModel) View() string {
 		)
 	}
 
-	// Centered Inputs
 	if m.state == StateVenvCloneInput || m.state == StateVenvCreateInput || m.state == StateVenvScanInput || m.state == StateVenvSyncInput {
 		var title, inputView, footer string
 
@@ -623,7 +601,7 @@ func (m VenvDashboardModel) View() string {
 	}
 
 	if m.state == StateVenvDeleteConfirm {
-		// Delete Confirmation Dialog
+
 		title := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("Confirm Deletion")
 		envName := venvSelectedStyle.Render(m.selectedEnv.Name)
 		envPath := subtleStyle.Render(m.selectedEnv.Path)
@@ -652,7 +630,7 @@ func (m VenvDashboardModel) View() string {
 	}
 
 	if m.state == StateVenvActionMenu {
-		// Action Menu as a centered card
+
 		title := venvTitleStyle.Render("Manage Environment")
 		env := venvSelectedStyle.Render(m.selectedEnv.Name)
 
@@ -681,12 +659,10 @@ func (m VenvDashboardModel) View() string {
 		)
 	}
 
-	// Main Dashboard View
 	header := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Render(
 		titleStyle.Render("Virtual Environment Wizard"),
 	)
 
-	// Show success message if present
 	var successMsg string
 	if m.message != "" {
 		successMsg = lipgloss.NewStyle().
@@ -697,7 +673,6 @@ func (m VenvDashboardModel) View() string {
 
 	help := subtleStyle.Render("\n [?] Help • [n] New Env • [s] Scan System • [r] Refresh • [q] Quit")
 
-	// Build view with optional success message
 	var content string
 	if successMsg != "" {
 		content = lipgloss.JoinVertical(lipgloss.Left,
@@ -719,7 +694,6 @@ func (m VenvDashboardModel) View() string {
 	return docStyle.Render(content)
 }
 
-// Messages & Commands logic
 type pythonFoundMsg struct{}
 type venvCreatedMsg struct{ err error }
 type venvVerifiedMsg struct{ err error }
@@ -729,9 +703,9 @@ type venvSuccessMsg struct{}
 func checkPythonCmd(mgr *venv.Manager) tea.Cmd {
 	return func() tea.Msg {
 		if err := mgr.CheckPrerequisites(); err != nil {
-			return venvCreatedMsg{err: err} // Reuse err msg
+			return venvCreatedMsg{err: err}
 		}
-		// Artificial delay for UX
+
 		time.Sleep(500 * time.Millisecond)
 		return pythonFoundMsg{}
 	}
@@ -746,7 +720,7 @@ func createVenvStepCmd(mgr *venv.Manager, path string) tea.Cmd {
 
 func verifyVenvCmd(mgr *venv.Manager, path string) tea.Cmd {
 	return func() tea.Msg {
-		// Artificial delay
+
 		time.Sleep(500 * time.Millisecond)
 		err := mgr.Verify(path)
 		return venvVerifiedMsg{err: err}

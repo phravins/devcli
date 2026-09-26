@@ -11,22 +11,22 @@ import (
 type EnvironmentType string
 
 const (
-	TypePythonVenv  EnvironmentType = "Python venv"
-	TypeAnaconda    EnvironmentType = "Conda"
-	TypeNodeModules EnvironmentType = "Node Modules"
-	TypeUnknown     EnvironmentType = "Unknown"
+	TypePythonVenv	EnvironmentType	= "Python venv"
+	TypeAnaconda	EnvironmentType	= "Conda"
+	TypeNodeModules	EnvironmentType	= "Node Modules"
+	TypeUnknown	EnvironmentType	= "Unknown"
 )
 
 type Environment struct {
-	Name string
-	Path string
-	Type EnvironmentType
-	Size string
+	Name	string
+	Path	string
+	Type	EnvironmentType
+	Size	string
 }
 
 type Manager struct {
-	Workspace  string
-	PythonPath string
+	Workspace	string
+	PythonPath	string
 }
 
 func NewManager(workspace string) *Manager {
@@ -69,10 +69,10 @@ func (m *Manager) List() ([]Environment, error) {
 					fullPath := filepath.Join(gPath, e.Name())
 					if t := detectType(fullPath); t != TypeUnknown {
 						envs = append(envs, Environment{
-							Name: fmt.Sprintf("Global: %s", e.Name()),
-							Path: fullPath,
-							Type: t,
-							Size: getSize(fullPath),
+							Name:	fmt.Sprintf("Global: %s", e.Name()),
+							Path:	fullPath,
+							Type:	t,
+							Size:	getSize(fullPath),
 						})
 					}
 				}
@@ -102,15 +102,13 @@ func (m *Manager) List() ([]Environment, error) {
 			return nil
 		}
 
-		// Optimize: Check depth
 		currentDepth := strings.Count(path, string(os.PathSeparator))
 		if currentDepth-baseDepth > 3 {
 			return filepath.SkipDir
 		}
 
 		if shouldSkip(path) && path != workspace {
-			if t := detectType(path); t != TypeUnknown {
-			} else {
+			if detectType(path) == TypeUnknown {
 				return filepath.SkipDir
 			}
 		}
@@ -124,10 +122,10 @@ func (m *Manager) List() ([]Environment, error) {
 			}
 
 			envs = append(envs, Environment{
-				Name: name,
-				Path: path,
-				Type: t,
-				Size: getSize(path),
+				Name:	name,
+				Path:	path,
+				Type:	t,
+				Size:	getSize(path),
 			})
 			return filepath.SkipDir
 		}
@@ -150,7 +148,6 @@ func (m *Manager) CreateVenv(projectPath string) error {
 		return fmt.Errorf("invalid path: %w", err)
 	}
 
-	// Ensure parent directory exists
 	parentDir := filepath.Dir(absPath)
 
 	if err := os.MkdirAll(parentDir, 0755); err != nil {
@@ -158,7 +155,7 @@ func (m *Manager) CreateVenv(projectPath string) error {
 	}
 
 	cmd := exec.Command(m.PythonPath, "-m", "venv", absPath)
-	// Output captured primarily for error usage; we don't stream here to avoid TUI corruption
+
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("venv creation failed: %s: %w", string(out), err)
 	}
@@ -166,7 +163,6 @@ func (m *Manager) CreateVenv(projectPath string) error {
 	return nil
 }
 
-// Verify checks if the venv looks valid (has activate script)
 func (m *Manager) Verify(path string) error {
 	if t := detectType(path); t != TypePythonVenv {
 		return fmt.Errorf("verification failed: venv folder not detected or invalid")
@@ -174,25 +170,21 @@ func (m *Manager) Verify(path string) error {
 	return nil
 }
 
-// Delete removes the environment
 func (m *Manager) Delete(path string) error {
 	return os.RemoveAll(path)
 }
 
-// Clone copies an environment's requirements to a new location
 func (m *Manager) Clone(srcPath, destPath string) error {
-	// 1. Identify source type
+
 	t := detectType(srcPath)
 	if t != TypePythonVenv {
 		return fmt.Errorf("only python venv cloning is supported currently")
 	}
 
-	// 2. Create new venv at dest
 	if err := m.CreateVenv(destPath); err != nil {
 		return err
 	}
 
-	// 3. Sync Packages
 	pip, err := findPip(srcPath)
 	if err != nil {
 		return fmt.Errorf("could not find pip in source: %w", err)
@@ -200,7 +192,7 @@ func (m *Manager) Clone(srcPath, destPath string) error {
 
 	out, err := exec.Command(pip, "freeze").Output()
 	if err != nil {
-		return nil // Maybe empty
+		return fmt.Errorf("failed to get packages from source: %w", err)
 	}
 
 	destPip, err := findPip(destPath)
@@ -219,9 +211,8 @@ func (m *Manager) Clone(srcPath, destPath string) error {
 	return nil
 }
 
-// Sync generates requirements.txt for a project env
 func (m *Manager) Sync(venvPath string, destPath string) error {
-	// Find pip
+
 	pip, err := findPip(venvPath)
 	if err != nil {
 		return err
@@ -235,13 +226,12 @@ func (m *Manager) Sync(venvPath string, destPath string) error {
 	return os.WriteFile(destPath, out, 0644)
 }
 
-// findPip explicitly looks for pip executable handling Windows .exe extension
 func findPip(venvPath string) (string, error) {
 	candidates := []string{
-		filepath.Join(venvPath, "Scripts", "pip.exe"), // Windows standard
-		filepath.Join(venvPath, "Scripts", "pip"),     // Windows no/weird ext
-		filepath.Join(venvPath, "bin", "pip"),         // Unix
-		filepath.Join(venvPath, "bin", "pip3"),        // Unix alternative
+		filepath.Join(venvPath, "Scripts", "pip.exe"),
+		filepath.Join(venvPath, "Scripts", "pip"),
+		filepath.Join(venvPath, "bin", "pip"),
+		filepath.Join(venvPath, "bin", "pip3"),
 	}
 
 	for _, c := range candidates {
@@ -252,23 +242,20 @@ func findPip(venvPath string) (string, error) {
 	return "", fmt.Errorf("pip executable not found in %s", venvPath)
 }
 
-// Helpers
-
 func detectType(path string) EnvironmentType {
-	// Check for pyvenv.cfg (Python venv)
+
 	if _, err := os.Stat(filepath.Join(path, "pyvenv.cfg")); err == nil {
 		return TypePythonVenv
 	}
-	// Check for Scripts/activate (Python venv windows)
+
 	if _, err := os.Stat(filepath.Join(path, "Scripts", "activate")); err == nil {
 		return TypePythonVenv
 	}
-	// Check for bin/activate (Python venv linux)
+
 	if _, err := os.Stat(filepath.Join(path, "bin", "activate")); err == nil {
 		return TypePythonVenv
 	}
-	// Node
-	// naive check: package.json logic usually handles creation, but folder check:
+
 	if filepath.Base(path) == "node_modules" {
 		return TypeNodeModules
 	}
@@ -285,7 +272,6 @@ func getSize(path string) string {
 		return nil
 	})
 
-	// Format
 	mb := float64(size) / 1024 / 1024
 	if mb < 1024 {
 		return fmt.Sprintf("%.1f MB", mb)

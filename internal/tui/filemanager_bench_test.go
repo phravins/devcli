@@ -23,8 +23,8 @@ func generateMockPaths(count int) []string {
 func BenchmarkFilterFiles_Fuzzy(b *testing.B) {
 	paths := generateMockPaths(10000)
 	m := FileManagerModel{
-		allFilePaths: paths,
-		globalSearch: true,
+		allFilePaths:	paths,
+		globalSearch:	true,
 	}
 
 	b.ResetTimer()
@@ -38,8 +38,8 @@ func BenchmarkFilterFiles_Fuzzy(b *testing.B) {
 func BenchmarkFilterFiles_FastPath(b *testing.B) {
 	paths := generateMockPaths(25000)
 	m := FileManagerModel{
-		allFilePaths: paths,
-		globalSearch: true,
+		allFilePaths:	paths,
+		globalSearch:	true,
 	}
 
 	b.ResetTimer()

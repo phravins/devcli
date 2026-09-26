@@ -24,9 +24,9 @@ import (
 )
 
 var EditorCmd = &cobra.Command{
-	Use:   "editor [file]",
-	Short: "Launch the built-in multi-language IDE",
-	Args:  cobra.MaximumNArgs(1),
+	Use:	"editor [file]",
+	Short:	"Launch the built-in multi-language IDE",
+	Args:	cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filename := ""
 		if len(args) > 0 {
@@ -56,7 +56,7 @@ func blinkCmd() tea.Cmd {
 type sessionState int
 
 const (
-	stateSelection sessionState = iota
+	stateSelection	sessionState	= iota
 	stateEditor
 	stateWebServer
 	stateSavePrompt
@@ -64,45 +64,42 @@ const (
 )
 
 const (
-	viewEditor = iota
+	viewEditor	= iota
 	viewOutput
 )
 
-// Custom Editor Model
 type editorModel struct {
-	content string
-	cursor  int // Linear index
-	// We use the viewport for rendering
-	viewport viewport.Model
+	content	string
+	cursor	int
+
+	viewport	viewport.Model
 }
 
 type model struct {
-	state    sessionState
-	choices  []string
-	cursor   int // Menu cursor
-	filename string
-	language string // New: explicitly track language mode
+	state		sessionState
+	choices		[]string
+	cursor		int
+	filename	string
+	language	string
 
-	// Custom Editor
-	editor editorModel
+	editor	editorModel
 
-	status         string
-	showHelp       bool
-	running        bool
-	output         string
-	saveInput      textinput.Model
-	commandInput   string
-	width          int
-	height         int
-	helpView       viewport.Model // New
-	showCursorLine bool
+	status		string
+	showHelp	bool
+	running		bool
+	output		string
+	saveInput	textinput.Model
+	commandInput	string
+	width		int
+	height		int
+	helpView	viewport.Model
+	showCursorLine	bool
 
-	// Output View
-	outputView      viewport.Model
-	activeView      int // 0=Editor, 1=Output
-	outputMaximized bool
-	webLogs         []string
-	logChan         chan string
+	outputView	viewport.Model
+	activeView	int
+	outputMaximized	bool
+	webLogs		[]string
+	logChan		chan string
 }
 
 func initialModel(filename string) model {
@@ -118,19 +115,16 @@ func initialModel(filename string) model {
 		}
 	}
 
-	// Output Viewport
 	outVp := viewport.New(80, 10)
 
 	vp := viewport.New(80, 20)
 
-	// Help Viewport
 	hv := viewport.New(80, 20)
 	hv.Style = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("62")).
 		Padding(1, 2)
 
-	// Render Markdown Help
 	renderer, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(80),
@@ -147,7 +141,7 @@ func initialModel(filename string) model {
 	}
 
 	return model{
-		state: startState,
+		state:	startState,
 		choices: []string{
 			"   Python (Py) ",
 			"   Java (Jv) ",
@@ -158,21 +152,21 @@ func initialModel(filename string) model {
 			"   Zig (Zg) ",
 			" 󰜰  Web Compiler (G) ",
 		},
-		cursor:          0,
-		filename:        filename,
-		language:        detectLanguage(filename),
-		editor:          editorModel{content: initialContent, cursor: 0, viewport: vp},
-		status:          "Select an editor mode to begin",
-		showHelp:        false,
-		helpView:        hv,
-		running:         false,
-		output:          "",
-		saveInput:       ti,
-		width:           80,
-		height:          40,
-		outputView:      outVp,
-		activeView:      viewEditor,
-		outputMaximized: false,
+		cursor:			0,
+		filename:		filename,
+		language:		detectLanguage(filename),
+		editor:			editorModel{content: initialContent, cursor: 0, viewport: vp},
+		status:			"Select an editor mode to begin",
+		showHelp:		false,
+		helpView:		hv,
+		running:		false,
+		output:			"",
+		saveInput:		ti,
+		width:			80,
+		height:			40,
+		outputView:		outVp,
+		activeView:		viewEditor,
+		outputMaximized:	false,
 	}
 }
 
@@ -200,7 +194,6 @@ func (m *model) resolveExecutable(cmdName string, fallbacks []string) string {
 		filepath.Join(userHome, ".local/bin"),
 	}
 
-	// Filter roots that exist
 	validRoots := []string{}
 	for _, r := range searchRoots {
 		if utils.DirExists(r) {
@@ -219,13 +212,13 @@ func (m *model) resolveExecutable(cmdName string, fallbacks []string) string {
 
 func highlightCode(code, language string) string {
 	b := new(strings.Builder)
-	// Map our internal lang names to Chroma lexers if needed, usually they match well
+
 	lexer := language
 	if lexer == "csharp" {
 		lexer = "c#"
 	}
 	if lexer == "" || lexer == "text" {
-		// Try to highlight as plain text or just return original if it fails
+
 		lexer = "text"
 	}
 	err := quick.Highlight(b, code, lexer, "terminal256", "dracula")
@@ -249,24 +242,22 @@ func (m *model) updateLayout() {
 
 	availableHeight := m.height - headerHeight - statusHeight - helpHeight
 
-	// Calculate Width
 	width := m.width - 4
 	if width < 20 {
 		width = 20
 	}
 
-	// Calculate Heights
 	if m.outputMaximized {
-		// Output Maximized: Editor gets minimum, Output gets rest
+
 		m.editor.viewport.Height = 5
 		m.outputView.Height = availableHeight - 5
 	} else if m.output != "" {
-		// Split 50/50
+
 		half := availableHeight / 2
 		m.editor.viewport.Height = half
 		m.outputView.Height = availableHeight - half
 	} else {
-		// Full Editor
+
 		m.editor.viewport.Height = availableHeight
 		m.outputView.Height = 0
 	}
@@ -274,21 +265,16 @@ func (m *model) updateLayout() {
 	m.editor.viewport.Width = width
 	m.outputView.Width = width
 
-	// Resize Help View
-
-	// Resize Help View
 	m.helpView.Width = m.width - 8
 	m.helpView.Height = m.height - 4
 
 	m.syncEditorView()
 }
 
-// Helper to highlight text AND insert a visual cursor
 func (m *model) syncEditorView() {
 	val := m.editor.content
 	cursorPos := m.editor.cursor
 
-	// Safety check for bounds
 	if cursorPos > len(val) {
 		cursorPos = len(val)
 	}
@@ -301,31 +287,27 @@ func (m *model) syncEditorView() {
 
 	rawLines := strings.Split(highlighted, "\n")
 	var finalOutput strings.Builder
-	lineNumStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#6272A4")) // Muted purple from theme
+	lineNumStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#6272A4"))
 
 	vpWidth := m.editor.viewport.Width
 	if vpWidth == 0 {
-		vpWidth = 80 // Fallback
+		vpWidth = 80
 	}
 
 	for i, line := range rawLines {
-		// 1. Render Line Number with Margin
+
 		var numStr string
 		if i == currentLineIndex && m.showCursorLine {
-			// Active Line: Yellow Bar
+
 			numStr = fmt.Sprintf(" %s %3d ", cursorBarStyle.Render("|"), i+1)
 		} else {
-			// Inactive Line: Space instead of Bar
-			// We render a space with the SAME style structure if needed, or just hardcode spaces
+
 			numStr = fmt.Sprintf("   %3d ", i+1)
 		}
 		renderedNum := lineNumStyle.Render(numStr)
 
-		// 2. Render Line Content
-		// If this is the active line, apply the background style
 		if i == currentLineIndex && m.showCursorLine {
-			// We need to calculate the visible width of the line to pad it correctly
-			// lipgloss.Width handles ANSI codes correctly
+
 			contentWidth := lipgloss.Width(renderedNum) + lipgloss.Width(line)
 
 			paddingNeeded := vpWidth - contentWidth
@@ -333,10 +315,8 @@ func (m *model) syncEditorView() {
 				paddingNeeded = 0
 			}
 
-			// Construct the full line string
 			fullLine := renderedNum + line + strings.Repeat(" ", paddingNeeded)
 
-			// Apply the highlighter
 			finalOutput.WriteString(cursorLineStyle.Render(fullLine))
 		} else {
 			finalOutput.WriteString(renderedNum)
@@ -350,7 +330,6 @@ func (m *model) syncEditorView() {
 
 	m.editor.viewport.SetContent(finalOutput.String())
 
-	// Sync Scrolling (Keep cursor visible)
 	viewportHeight := m.editor.viewport.Height
 	currentOffset := m.editor.viewport.YOffset
 
@@ -377,7 +356,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-		// Handle Editor Mode Selection Scroll
 		if m.state == stateSelection {
 			switch msg.Type {
 			case tea.MouseWheelUp:
@@ -392,21 +370,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Handle Output Scrolling if Focused
 		if m.activeView == viewOutput {
 			m.outputView, cmd = m.outputView.Update(msg)
 			cmds = append(cmds, cmd)
 			return m, tea.Batch(cmds...)
 		}
 
-		// Only scroll editor viewport if we are IN the editor AND it is focused
 		if m.state == stateEditor && m.activeView == viewEditor {
 			m.editor.viewport, cmd = m.editor.viewport.Update(msg)
 			cmds = append(cmds, cmd)
 		}
 
 	case tea.KeyMsg:
-		// Global Shortcuts (Always active in Editor state)
+
 		if m.state == stateEditor {
 			switch msg.String() {
 			case "ctrl+o":
@@ -443,7 +419,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.state {
 		case stateSelection:
-			// Reset cursor visibility when selecting
+
 			m.showCursorLine = true
 			switch msg.String() {
 			case "up", "k":
@@ -467,7 +443,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					m.state = stateEditor
 					m.status = "Ready"
-					// Set Language Mode based on selection
+
 					newLang := ""
 					switch {
 					case strings.Contains(choice, "Python"):
@@ -486,7 +462,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						newLang = "zig"
 					}
 
-					// Buffer Isolation: Clear and inject boilerplate if switching languages on unsaved file
 					if newLang != m.language && m.filename == "" {
 						m.editor.content = getBoilerplate(newLang)
 						m.editor.cursor = len(m.editor.content)
@@ -507,14 +482,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case stateEditor:
-			// Always show cursor line on input
+
 			m.showCursorLine = true
 
 			switch msg.Type {
 			case tea.KeyCtrlC, tea.KeyCtrlQ:
 				return m, tea.Quit
 			case tea.KeyEsc:
-				// Go back to selection menu instead of exiting editor completely
+
 				m.state = stateSelection
 				m.status = "Select an editor mode to begin"
 				m.updateLayout()
@@ -561,9 +536,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = stateCommandPrompt
 				m.status = "Enter shell command..."
 
-			// Editor Input Handling
 			case tea.KeyRunes:
-				// Check for "?" key to toggle help
+
 				if msg.String() == "?" && !m.running {
 					m.showHelp = true
 					m.helpView.GotoTop()
@@ -579,7 +553,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				char := msg.String()
 
-				// Auto-closing logic
 				var toInsert string
 				var moveCursor int = 1
 
@@ -619,7 +592,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					pos = len(val)
 				}
 
-				// Smart Enter: Check if between brackets e.g. "{" | "}"
 				isBetweenBraces := false
 				if pos > 0 && pos < len(val) {
 					prev := val[pos-1]
@@ -630,13 +602,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				if isBetweenBraces {
-					// Insert: \n    \n
-					// Cursor: \n    | \n
-					// Basic 4-space indentation
+
 					indent := "    "
 					toInsert := "\n" + indent + "\n"
 					m.editor.content = val[:pos] + toInsert + val[pos:]
-					m.editor.cursor += 1 + len(indent) // Move to indent position
+					m.editor.cursor += 1 + len(indent)
 				} else {
 					m.editor.content = val[:pos] + "\n" + val[pos:]
 					m.editor.cursor++
@@ -651,8 +621,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				if pos > 0 {
-					// UTF-8 aware backspace
-					// Decode the rune BEFORE the cursor
+
 					r, size := utf8.DecodeLastRuneInString(val[:pos])
 					if r != utf8.RuneError {
 						m.editor.content = val[:pos-size] + val[pos:]
@@ -730,7 +699,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case stateWebServer:
-			// Allow quitting from web server mode
+
 			switch msg.String() {
 			case "ctrl+c", "q", "esc":
 				return m, tea.Quit
@@ -747,9 +716,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case execResult:
 		m.running = false
 		m.output = msg.output
-		m.outputView.SetContent(m.output) // Update viewport content
-		m.activeView = viewOutput         // Auto-focus output
-		m.outputView.GotoBottom()         // Auto-scroll to bottom
+		m.outputView.SetContent(m.output)
+		m.activeView = viewOutput
+		m.outputView.GotoBottom()
 
 		if msg.err != nil {
 			m.status = fmt.Sprintf("Error: %v", msg.err)
@@ -771,20 +740,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) moveCursorVertical(key tea.KeyType) {
-	// 1. Get lines
+
 	lines := strings.Split(m.editor.content, "\n")
 
-	// 2. Find visual row/col
 	currentPos := 0
 	currentRow := 0
-	currentCol := 0 // byte offset in line
+	currentCol := 0
 
 	found := false
 	for r, line := range lines {
-		lineLen := len(line) + 1 // newline
+		lineLen := len(line) + 1
 		if r == len(lines)-1 {
 			lineLen--
-		} // last line no newline
+		}
 
 		if m.editor.cursor < currentPos+lineLen {
 			currentRow = r
@@ -799,7 +767,6 @@ func (m *model) moveCursorVertical(key tea.KeyType) {
 		currentCol = len(lines[currentRow])
 	}
 
-	// 3. Target Row
 	targetRow := currentRow
 	if key == tea.KeyUp {
 		targetRow--
@@ -814,13 +781,11 @@ func (m *model) moveCursorVertical(key tea.KeyType) {
 		targetRow = len(lines) - 1
 	}
 
-	// 4. Calculate new index
 	targetLine := lines[targetRow]
 	if currentCol > len(targetLine) {
-		currentCol = len(targetLine) // Snap to end
+		currentCol = len(targetLine)
 	}
 
-	// Sum length of previous lines
 	newIndex := 0
 	for i := 0; i < targetRow; i++ {
 		newIndex += len(lines[i]) + 1
@@ -830,70 +795,66 @@ func (m *model) moveCursorVertical(key tea.KeyType) {
 	m.editor.cursor = newIndex
 }
 
-// Styles
 var (
-	headerStyle = lipgloss.NewStyle().
+	headerStyle	= lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#FAFAFA")).
-			Background(lipgloss.Color("#7D56F4")). // Vivid Purple
+			Background(lipgloss.Color("#7D56F4")).
 			Padding(0, 1).
 			Width(80)
 
-	fileStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#A8A8A8")). // Grey
+	fileStyle	= lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#A8A8A8")).
 			MarginLeft(1)
 
-	statusStyle = lipgloss.NewStyle().
+	statusStyle	= lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(lipgloss.Color("#2E1065")). // Dark Purple
+			Background(lipgloss.Color("#2E1065")).
 			Padding(0, 1)
 
-	// Cursor Line Highlighting
-	cursorLineStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("#44475a")) // Dracula Selection Color
+	cursorLineStyle	= lipgloss.NewStyle().
+			Background(lipgloss.Color("#44475a"))
 
-	// Vertical Bar Style (Yellow)
-	cursorBarStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFF00")). // Bright Yellow
+	cursorBarStyle	= lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FFFF00")).
 			Bold(true)
 
-	outputTitleStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#0F9E99")). // Teal
+	outputTitleStyle	= lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#0F9E99")).
 				Bold(true)
 
-	outputContentStyle = lipgloss.NewStyle().
+	outputContentStyle	= lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("#0F9E99")). // Teal
+				BorderForeground(lipgloss.Color("#0F9E99")).
 				Padding(0, 1)
 
-	// Selection Menu Styles
-	selectionTitleStyle = lipgloss.NewStyle().
+	selectionTitleStyle	= lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color("#FAFAFA")).
-				Background(lipgloss.Color("#7D56F4")). // Dracula Purple
+				Background(lipgloss.Color("#7D56F4")).
 				Padding(1, 4).
 				MarginBottom(1).
 				Align(lipgloss.Center)
 
-	selectionBoxStyle = lipgloss.NewStyle().
+	selectionBoxStyle	= lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("#7D56F4")). // Purple Border
+				BorderForeground(lipgloss.Color("#7D56F4")).
 				Padding(1, 4).
 				Margin(1, 0)
 
-	selectedItemStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#282A36")). // Dracula Background (Dark)
-				Background(lipgloss.Color("#50FA7B")). // Dracula Green
+	selectedItemStyle	= lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#282A36")).
+				Background(lipgloss.Color("#50FA7B")).
 				Bold(true).
 				Padding(0, 2).
 				MarginLeft(2)
 
-	unselectedItemStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#6272A4")). // Dracula Comment (Greyish Blue)
+	unselectedItemStyle	= lipgloss.NewStyle().
+				Foreground(lipgloss.Color("#6272A4")).
 				PaddingLeft(4)
 
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF79C6")). // Dracula Pink
+	helpStyle	= lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF79C6")).
 			Italic(true).
 			MarginTop(2)
 )
@@ -957,38 +918,36 @@ func (m model) View() string {
 
 	var s strings.Builder
 
-	// Dynamic Header Config
 	var title string
 	var bgColor string
 
 	switch m.language {
 	case "python":
 		title = "Python Mini-IDE (TUI Py)"
-		bgColor = "#7D56F4" // Vivid Purple
+		bgColor = "#7D56F4"
 	case "java":
 		title = "Java IDE (TUI Java)"
-		bgColor = "#b45309" // Amber/Orange
+		bgColor = "#b45309"
 	case "cpp":
 		title = "C++ IDE (TUI C++)"
-		bgColor = "#0369a1" // Sky Blue
+		bgColor = "#0369a1"
 	case "c":
 		title = "C IDE (TUI C)"
-		bgColor = "#15803d" // Green
+		bgColor = "#15803d"
 	case "csharp":
 		title = "C# IDE (TUI C#)"
-		bgColor = "#7e22ce" // Purple
+		bgColor = "#7e22ce"
 	case "rust":
 		title = "Rust IDE (TUI Rust)"
-		bgColor = "#c2410c" // Rust Orange
+		bgColor = "#c2410c"
 	case "zig":
 		title = "Zig IDE (TUI Zig)"
-		bgColor = "#a21caf" // Fuchsia
+		bgColor = "#a21caf"
 	default:
 		title = "Code Editor (Multi-Lang)"
-		bgColor = "#44475a" // Muted Grey/Selection Color
+		bgColor = "#44475a"
 	}
 
-	// Header: Dynamic Title and Color
 	header := headerStyle.Width(m.width).
 		Background(lipgloss.Color(bgColor)).
 		Render(title)
@@ -1000,19 +959,16 @@ func (m model) View() string {
 	s.WriteString(fileInfo)
 	s.WriteString("\n\n")
 
-	// Code Editor (Original Simple View)
 	s.WriteString(m.editor.viewport.View())
 	s.WriteString("\n")
 
-	// Output section (Styled)
 	if m.output != "" {
 		cwd, _ := os.Getwd()
 		title := fmt.Sprintf("Output (Executed in: %s) [Ctrl+E: Editor | Ctrl+M: Maximize]", cwd)
 
-		// Change border color based on focus
-		borderColor := "#0F9E99" // Teal (Default)
+		borderColor := "#0F9E99"
 		if m.activeView == viewOutput {
-			borderColor = "#FFFF00" // Yellow (Generic Focus)
+			borderColor = "#FFFF00"
 			title = " >> " + title + " << "
 		}
 
@@ -1031,8 +987,6 @@ func (m model) View() string {
 		s.WriteString("\n")
 	}
 
-	// Status Bar
-	// Calculate line number manually
 	currentLine := strings.Count(m.editor.content[:m.editor.cursor], "\n") + 1
 
 	statusText := fmt.Sprintf(" Status: %s | Line: %d ", m.status, currentLine)
@@ -1044,7 +998,6 @@ func (m model) View() string {
 	return s.String()
 }
 
-// detectLanguage attempts to infer language from filename
 func detectLanguage(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
@@ -1077,17 +1030,16 @@ func detectLanguage(filename string) string {
 	case ".h":
 		return "c"
 	default:
-		return "text" // Default fallback
+		return "text"
 	}
 }
 
-// runCode dispatches execution based on language mode
 func (m *model) runCode() tea.Cmd {
 	code := m.editor.content
 	language := m.language
 
 	return func() tea.Msg {
-		// SANITIZATION
+
 		cleanCode := strings.Map(func(r rune) rune {
 			if r == '\n' || r == '\t' {
 				return r
@@ -1098,12 +1050,11 @@ func (m *model) runCode() tea.Cmd {
 			return r
 		}, code)
 
-		// Create a specific temp directory for this run to avoid collisions
 		tmpDir, err := os.MkdirTemp("", "devcli_run_*")
 		if err != nil {
 			return execResult{"", fmt.Errorf("failed to create temp dir: %v", err)}
 		}
-		defer os.RemoveAll(tmpDir) // Cleanup everything after run
+		defer os.RemoveAll(tmpDir)
 
 		var cmd *exec.Cmd
 
@@ -1129,16 +1080,16 @@ func (m *model) runCode() tea.Cmd {
 			cmd = exec.Command(pyPath, "-u", tmpFile)
 
 		case "java":
-			// Attempt to find class name to name file correctly
+
 			className := "Main"
-			// Simple regex to find "public class X"
+
 			lines := strings.Split(cleanCode, "\n")
 			for _, line := range lines {
 				if strings.Contains(line, "class ") {
 					parts := strings.Fields(line)
 					for i, p := range parts {
 						if p == "class" && i+1 < len(parts) {
-							// Strip braces if present
+
 							name := strings.Trim(parts[i+1], "{")
 							if name != "" {
 								className = name
@@ -1153,7 +1104,6 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", err}
 			}
 
-			// Find Compiler
 			javaFallbacks := []string{
 				`C:\Program Files\Java\jdk*\bin\java.exe`,
 				`C:\Program Files\Eclipse Adoptium\jdk*\bin\java.exe`,
@@ -1170,14 +1120,12 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", fmt.Errorf("Java/Javac not found. Please install JDK or add to PATH")}
 			}
 
-			// Compile
 			compileCmd := exec.Command(javacPath, "-d", ".", className+".java")
 			compileCmd.Dir = tmpDir
 			if out, err := compileCmd.CombinedOutput(); err != nil {
 				return execResult{string(out), fmt.Errorf("compilation failed: %v", err)}
 			}
 
-			// Run
 			cmd = exec.Command(javaPath, "-cp", ".", className)
 
 		case "cpp":
@@ -1190,7 +1138,6 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", err}
 			}
 
-			// Find Compiler
 			gppFallbacks := []string{
 				`C:\Program Files\CodeBlocks\MinGW\bin\g++.exe`,
 				`C:\Program Files (x86)\CodeBlocks\MinGW\bin\g++.exe`,
@@ -1202,14 +1149,12 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", fmt.Errorf("g++ compiler not found. Please install MinGW or add to PATH")}
 			}
 
-			// Compile
 			compileCmd := exec.Command(gppPath, "main.cpp", "-o", exeFile)
 			compileCmd.Dir = tmpDir
 			if out, err := compileCmd.CombinedOutput(); err != nil {
 				return execResult{string(out), fmt.Errorf("compilation failed: %v", err)}
 			}
 
-			// Run
 			cmd = exec.Command(exeFile)
 
 		case "c":
@@ -1222,7 +1167,6 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", err}
 			}
 
-			// Find Compiler
 			gccFallbacks := []string{
 				`C:\Program Files\CodeBlocks\MinGW\bin\gcc.exe`,
 				`C:\Program Files (x86)\CodeBlocks\MinGW\bin\gcc.exe`,
@@ -1234,14 +1178,12 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", fmt.Errorf("gcc compiler not found. Please install MinGW or add to PATH")}
 			}
 
-			// Compile
 			compileCmd := exec.Command(gccPath, "main.c", "-o", exeFile)
 			compileCmd.Dir = tmpDir
 			if out, err := compileCmd.CombinedOutput(); err != nil {
 				return execResult{string(out), fmt.Errorf("compilation failed: %v", err)}
 			}
 
-			// Run
 			cmd = exec.Command(exeFile)
 
 		case "rust":
@@ -1253,7 +1195,7 @@ func (m *model) runCode() tea.Cmd {
 			if err := os.WriteFile(srcFile, []byte(cleanCode), 0644); err != nil {
 				return execResult{"", err}
 			}
-			// Find Compiler
+
 			userHome, _ := os.UserHomeDir()
 			rustFallbacks := []string{
 				filepath.Join(userHome, `.cargo\bin\rustc.exe`),
@@ -1263,14 +1205,12 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", fmt.Errorf("rustc not found. Please install Rust or add to PATH")}
 			}
 
-			// Compile
 			compileCmd := exec.Command(rustcPath, "main.rs", "-o", exeFile)
 			compileCmd.Dir = tmpDir
 			if out, err := compileCmd.CombinedOutput(); err != nil {
 				return execResult{string(out), fmt.Errorf("compilation failed: %v", err)}
 			}
 
-			// Run
 			cmd = exec.Command(exeFile)
 
 		case "zig":
@@ -1278,7 +1218,7 @@ func (m *model) runCode() tea.Cmd {
 			if err := os.WriteFile(srcFile, []byte(cleanCode), 0644); err != nil {
 				return execResult{"", err}
 			}
-			// Find Zig
+
 			zigFallbacks := []string{
 				`C:\Program Files\Zig*\zig.exe`,
 				`C:\zig*\zig.exe`,
@@ -1288,26 +1228,20 @@ func (m *model) runCode() tea.Cmd {
 				return execResult{"", fmt.Errorf("zig not found. Please install Zig or add to PATH")}
 			}
 
-			// zig run
 			cmd = exec.Command(zigPath, "run", srcFile)
 
 		case "csharp":
-			// C# is tricky without a project. We will try to use 'dotnet-script' if available, or create a temp project.
-			// Simplest robust way: dotnet new console, replace Program.cs, dotnet run.
 
-			// 1. dotnet new console
 			setupCmd := exec.Command("dotnet", "new", "console", "-o", tmpDir, "--force")
 			if out, err := setupCmd.CombinedOutput(); err != nil {
 				return execResult{string(out), fmt.Errorf("failed to init dotnet project: %v", err)}
 			}
 
-			// 2. Overwrite Program.cs
 			mainFile := filepath.Join(tmpDir, "Program.cs")
 			if err := os.WriteFile(mainFile, []byte(cleanCode), 0644); err != nil {
 				return execResult{"", err}
 			}
 
-			// 3. dotnet run
 			cmd = exec.Command("dotnet", "run", "--project", tmpDir)
 
 		default:
@@ -1315,8 +1249,6 @@ func (m *model) runCode() tea.Cmd {
 		}
 
 		cmd.Dir = tmpDir
-		// If using 'cmd /C', we set dir to tmpDir so relative paths work?
-		// Actually for compiled languages we generated commands assuming we are in tmpDir.
 
 		output, err := cmd.CombinedOutput()
 		outStr := string(output)

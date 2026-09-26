@@ -8,38 +8,38 @@ import (
 )
 
 type DocsModel struct {
-	viewport viewport.Model
-	width    int
-	height   int
-	ready    bool
-	renderer *glamour.TermRenderer
-	language string // Current language code
+	viewport	viewport.Model
+	width		int
+	height		int
+	ready		bool
+	renderer	*glamour.TermRenderer
+	language	string
 }
 
 const (
-	LangEnglish  = "en"
-	LangSpanish  = "es"
-	LangHindi    = "hi"
-	LangFrench   = "fr"
-	LangGerman   = "de"
-	LangChinese  = "zh"
-	LangJapanese = "ja"
+	LangEnglish	= "en"
+	LangSpanish	= "es"
+	LangHindi	= "hi"
+	LangFrench	= "fr"
+	LangGerman	= "de"
+	LangChinese	= "zh"
+	LangJapanese	= "ja"
 
-	Backtick = "`"
+	Backtick	= "`"
 )
 
 func NewDocsModel() DocsModel {
-	// Initialize glamour renderer
+
 	r, _ := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(100), // Default, will be updated on resize
+		glamour.WithWordWrap(100),
 	)
 
 	return DocsModel{
-		width:    100, // Default, will be resized
-		height:   30,
-		renderer: r,
-		language: LangEnglish,
+		width:		100,
+		height:		30,
+		renderer:	r,
+		language:	LangEnglish,
 	}
 }
 
@@ -57,7 +57,7 @@ func (m DocsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "l", "L":
-			// Cycle languages
+
 			switch m.language {
 			case LangEnglish:
 				m.language = LangSpanish
@@ -74,7 +74,7 @@ func (m DocsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			default:
 				m.language = LangEnglish
 			}
-			m.resizeViewport() // Re-render with new language
+			m.resizeViewport()
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -115,12 +115,11 @@ func (m DocsModel) View() string {
 }
 
 func (m *DocsModel) resizeViewport() {
-	headerHeight := 4 // Header + Padding
-	footerHeight := 3 // Footer + Padding
+	headerHeight := 4
+	footerHeight := 3
 	verticalMarginHeight := headerHeight + footerHeight
 
-	// Re-create renderer with new width
-	contentWidth := m.width - 4 // Padding
+	contentWidth := m.width - 4
 	if contentWidth < 20 {
 		contentWidth = 20
 	}
@@ -136,14 +135,14 @@ func (m *DocsModel) resizeViewport() {
 	}
 
 	if !m.ready {
-		// First time initialization
+
 		m.viewport = viewport.New(m.width, m.height-verticalMarginHeight)
 		m.viewport.SetContent(renderedContent)
 		m.ready = true
 	} else {
 		m.viewport.Width = m.width
 		m.viewport.Height = m.height - verticalMarginHeight
-		m.viewport.SetContent(renderedContent) // Re-render content for wrapping
+		m.viewport.SetContent(renderedContent)
 	}
 }
 

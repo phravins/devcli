@@ -14,19 +14,17 @@ import (
 )
 
 var CommitCmd = &cobra.Command{
-	Use:   "commit",
-	Short: "Auto-generate conventional Git commit messages using AI",
-	Long:  `Inspects your Git diff, generates a conventional commit message via AI, and commits changes upon approval.`,
+	Use:	"commit",
+	Short:	"Auto-generate conventional Git commit messages using AI",
+	Long:	`Inspects your Git diff, generates a conventional commit message via AI, and commits changes upon approval.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("🔍 Analyzing git changes...")
 
-		// Check if inside a git repository
 		if err := exec.Command("git", "rev-parse", "--is-inside-work-tree").Run(); err != nil {
 			fmt.Println("❌ Error: Not inside a Git repository.")
 			return
 		}
 
-		// Get staged diff
 		diffBytes, err := exec.Command("git", "diff", "--cached").Output()
 		if err != nil {
 			fmt.Printf("❌ Error running git diff: %v\n", err)
@@ -34,7 +32,6 @@ var CommitCmd = &cobra.Command{
 		}
 		diffStr := strings.TrimSpace(string(diffBytes))
 
-		// If no staged diff, fallback to unstaged diff
 		if diffStr == "" {
 			diffBytes, _ = exec.Command("git", "diff").Output()
 			diffStr = strings.TrimSpace(string(diffBytes))
@@ -45,12 +42,10 @@ var CommitCmd = &cobra.Command{
 			return
 		}
 
-		// Limit diff size to prevent token overflow
 		if len(diffStr) > 4000 {
 			diffStr = diffStr[:4000] + "\n... [diff truncated]"
 		}
 
-		// Load provider
 		cfg, _ := config.LoadConfig()
 		provider, err := providers.GetProvider(cfg)
 		if err != nil || provider == nil {
@@ -70,7 +65,7 @@ var CommitCmd = &cobra.Command{
 		}
 
 		commitMsg := strings.TrimSpace(resp)
-		// Clean up quotes or markdown if model added them
+
 		commitMsg = strings.Trim(commitMsg, "`\"'")
 
 		fmt.Println("\n=======================================================")
@@ -93,7 +88,7 @@ var CommitCmd = &cobra.Command{
 		}
 
 		if input == "" || input == "y" {
-			// Stage all changes if nothing staged
+
 			if len(diffBytes) == 0 {
 				exec.Command("git", "add", ".").Run()
 			}

@@ -7,13 +7,13 @@ import (
 
 func TestContainsIgnoreCase(t *testing.T) {
 	tests := []struct {
-		s           string
-		lowerSubstr string
-		expected    bool
+		s		string
+		lowerSubstr	string
+		expected	bool
 	}{
 		{"/usr/local/main.go", "main", true},
 		{"/USR/LOCAL/MAIN.GO", "main", true},
-		{"/usr/local/main.go", "MAIN", false}, // lowerSubstr must be lowercased by caller
+		{"/usr/local/main.go", "MAIN", false},
 		{"/usr/local/main.go", "xyz", false},
 		{"/usr/local/main.go", "", true},
 		{"short", "longerstring", false},
@@ -67,8 +67,8 @@ func TestMatchPaths(t *testing.T) {
 
 func TestFilterFiles(t *testing.T) {
 	m := FileManagerModel{
-		allFilePaths: []string{"/a/first.go", "/a/second.py", "/b/third.js"},
-		globalSearch: true,
+		allFilePaths:	[]string{"/a/first.go", "/a/second.py", "/b/third.js"},
+		globalSearch:	true,
 	}
 
 	m.filterFiles("second")
