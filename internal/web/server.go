@@ -33,14 +33,6 @@ func setupRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/", handleRoot)
 
-	mux.HandleFunc("/auth/login", handleLogin)
-	mux.HandleFunc("/auth/register", handleRegister)
-	mux.HandleFunc("/auth/logout", handleLogout)
-	mux.HandleFunc("/auth/forgot-password", handleForgotPassword)
-	mux.HandleFunc("/auth/verify-email", handleVerifyEmail)
-	mux.HandleFunc("/auth/google", handleGoogleOAuth)
-
-	mux.HandleFunc("/drive/save", handleDriveSave)
 
 	mux.HandleFunc("/logs", handleLogs)
 	mux.HandleFunc("/cancel", handleCancel)
@@ -81,9 +73,6 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func handleGoogleOAuth(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Google OAuth is not yet implemented", http.StatusNotImplemented)
-}
 
 func handleLogs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -122,10 +111,6 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := GetSessionUser(r); !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 
 	var payload struct {
 		Filename	string	`json:"filename"`
@@ -178,10 +163,6 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := GetSessionUser(r); !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -230,10 +211,6 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := GetSessionUser(r); !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

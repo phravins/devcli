@@ -18,8 +18,6 @@ Install DevCLI globally on any Linux desktop environment (GNOME, KDE, XFCE, Cinn
 curl -fsSL https://raw.githubusercontent.com/phravins/devcli/main/install_linux.sh | bash
 ```
 
-> **No Go Pre-installed?** No problem! The script automatically installs Go in user space (`~/.local/go`), sets up `devcli` in `~/.devcli/bin`, creates a Desktop Application Launcher (`.desktop` entry), and registers shell PATH exports automatically.
-
 ---
 
 ##  Key Features in v1.1.0

@@ -8,7 +8,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-	"time"
 )
 
 func TestParseCommand(t *testing.T) {
@@ -55,18 +54,6 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 		t.Fatalf("Failed to create request: %v", err)
 	}
 
-	authMu.Lock()
-	sessions["valid-test-session"] = Session{
-		Email:		"test@example.com",
-		ExpiresAt:	time.Now().Add(1 * time.Hour),
-	}
-	authMu.Unlock()
-	defer func() {
-		authMu.Lock()
-		delete(sessions, "valid-test-session")
-		authMu.Unlock()
-	}()
-	req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-test-session"})
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)
@@ -126,22 +113,6 @@ func TestRunShellDisallowed(t *testing.T) {
 	}
 }
 
-func TestHandleRunAndTerminalAuth(t *testing.T) {
-
-	reqRun, _ := http.NewRequest("POST", "/run", bytes.NewBufferString(`print("hello")`))
-	rrRun := httptest.NewRecorder()
-	handleRun(rrRun, reqRun)
-	if rrRun.Code != http.StatusUnauthorized {
-		t.Errorf("handleRun unauthenticated got status %d, want %d", rrRun.Code, http.StatusUnauthorized)
-	}
-
-	reqTerm, _ := http.NewRequest("POST", "/terminal", bytes.NewBufferString("ls"))
-	rrTerm := httptest.NewRecorder()
-	handleTerminal(rrTerm, reqTerm)
-	if rrTerm.Code != http.StatusUnauthorized {
-		t.Errorf("handleTerminal unauthenticated got status %d, want %d", rrTerm.Code, http.StatusUnauthorized)
-	}
-}
 
 func TestHandleSavePathTraversal(t *testing.T) {
 
@@ -150,17 +121,6 @@ func TestHandleSavePathTraversal(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(origWd)
 
-	authMu.Lock()
-	sessions["valid-test-session"] = Session{
-		Email:		"test@example.com",
-		ExpiresAt:	time.Now().Add(1 * time.Hour),
-	}
-	authMu.Unlock()
-	defer func() {
-		authMu.Lock()
-		delete(sessions, "valid-test-session")
-		authMu.Unlock()
-	}()
 
 	tests := []struct {
 		name		string
@@ -169,13 +129,6 @@ func TestHandleSavePathTraversal(t *testing.T) {
 		unauthenticated	bool
 		expectedStatus	int
 	}{
-		{
-			name:			"Unauthenticated request rejected",
-			filename:		"valid_file.txt",
-			content:		"hello world",
-			unauthenticated:	true,
-			expectedStatus:		http.StatusUnauthorized,
-		},
 		{
 			name:		"Valid local relative path",
 			filename:	"valid_file.txt",

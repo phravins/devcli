@@ -6,11 +6,10 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/phravins/devcli/internal/auth"
 )
 
 const (
-	StateDashboard	= iota
+	StateDashboard = iota
 	StateProject
 	StateFileManager
 	StateChat
@@ -19,13 +18,11 @@ const (
 	StateDocs
 	StateDocker
 	StateAPIClient
-	StateAuthSetup
-	StateAuthLogin
 )
 
 type SwitchViewMsg struct {
-	TargetState	int
-	Args		interface{}
+	TargetState int
+	Args        interface{}
 }
 
 type BackMsg struct{}
@@ -37,45 +34,34 @@ type BonusBackMsg struct{}
 type SubFeatureBackMsg struct{}
 
 type RootModel struct {
-	state	int
-	width	int
-	height	int
+	state  int
+	width  int
+	height int
 
-	dashboard	DashboardModel
-	project		ProjectDashboardModel
-	fileManager	FileManagerModel
-	chat		ChatModel
-	editor		model
-	autoupdate	AutoUpdateModel
-	docs		DocsModel
-	docker		DockerDashboardModel
-	apiClient	APIClientModel
-	authSetup	AuthSetupModel
-	authLogin	AuthLoginModel
+	dashboard   DashboardModel
+	project     ProjectDashboardModel
+	fileManager FileManagerModel
+	chat        ChatModel
+	editor      model
+	autoupdate  AutoUpdateModel
+	docs        DocsModel
+	docker      DockerDashboardModel
+	apiClient   APIClientModel
 }
 
 func NewRootModel() RootModel {
 	initialState := StateDashboard
-	if !auth.IsSetup() {
-		initialState = StateAuthSetup
-	} else if !auth.IsSessionUnlocked() {
-		initialState = StateAuthLogin
-	}
 
 	return RootModel{
-		state:		initialState,
-		dashboard:	NewDashboard(),
-		project:	NewProjectDashboardModel(),
-		authSetup:	NewAuthSetupModel(),
-		authLogin:	NewAuthLoginModel(),
+		state:     initialState,
+		dashboard: NewDashboard(),
+		project:   NewProjectDashboardModel(),
 	}
 }
 
 func (m RootModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.dashboard.Init(),
-		m.authSetup.Init(),
-		m.authLogin.Init(),
 	)
 }
 
@@ -93,10 +79,6 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-
-	case AuthSuccessMsg:
-		m.state = StateDashboard
-		return m, m.dashboard.Init()
 
 	case SwitchViewMsg:
 		m.state = msg.TargetState
@@ -175,14 +157,6 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.state {
-	case StateAuthSetup:
-		newM, newCmd := m.authSetup.Update(msg)
-		m.authSetup = newM.(AuthSetupModel)
-		cmds = append(cmds, newCmd)
-	case StateAuthLogin:
-		newM, newCmd := m.authLogin.Update(msg)
-		m.authLogin = newM.(AuthLoginModel)
-		cmds = append(cmds, newCmd)
 	case StateDashboard:
 		newM, newCmd := m.dashboard.Update(msg)
 		m.dashboard = newM.(DashboardModel)
@@ -226,10 +200,6 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m RootModel) View() string {
 	switch m.state {
-	case StateAuthSetup:
-		return m.authSetup.View()
-	case StateAuthLogin:
-		return m.authLogin.View()
 	case StateDashboard:
 		return m.dashboard.View()
 	case StateProject:

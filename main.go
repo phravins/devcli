@@ -11,7 +11,6 @@ import (
 	"github.com/phravins/devcli/assets"
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/aicommit"
-	"github.com/phravins/devcli/internal/auth"
 	"github.com/phravins/devcli/internal/fileops"
 	"github.com/phravins/devcli/internal/project"
 	"github.com/phravins/devcli/internal/tui"
@@ -28,25 +27,6 @@ var rootCmd = &cobra.Command{
 - File operations
 - AI chatbot integration
 - Built-in Python IDE`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-
-		if cmd.CommandPath() == "devcli auth setup" || cmd.CommandPath() == "devcli auth status" {
-			return nil
-		}
-
-		if !auth.IsSetup() {
-			fmt.Println("🔒 Welcome to DevCLI Production Security!")
-			fmt.Println("Account setup required: Please create your Username and Master Password.")
-			fmt.Println()
-			return auth.SetupCLI()
-		}
-
-		if !auth.IsSessionUnlocked() {
-			return auth.RequireCLILogin()
-		}
-
-		return nil
-	},
 }
 
 var startCmd = &cobra.Command{
@@ -318,7 +298,6 @@ var updateCmd = &cobra.Command{
 
 func init() {
 
-	rootCmd.AddCommand(auth.AuthCmd)
 	fileops.FileCmd.Run = func(cmd *cobra.Command, args []string) {
 		tui.RunFileManager("")
 	}

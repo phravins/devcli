@@ -224,9 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.classList.add('hidden'), 3000);
     };
 
-    document.getElementById('google-auth-btn').addEventListener('click', () => {
-        showToast("Connecting to Google...", "info");
-        window.location.href = '/auth/google';
     });
 
     document.getElementById('drive-sidebar-btn').addEventListener('click', () => {

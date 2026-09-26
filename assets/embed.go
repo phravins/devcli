@@ -5,6 +5,7 @@ import (
 	"io/fs"
 )
 
+//go:embed devcli_logo.png
 var assetsFS embed.FS
 
 func GetLogo() ([]byte, error) {
