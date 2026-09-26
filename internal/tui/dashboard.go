@@ -226,7 +226,7 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v-16)
+		m.list.SetSize(msg.Width-h, msg.Height-v-8)
 
 		if m.showSettings {
 			updatedSettings, _ := m.settings.Update(msg)

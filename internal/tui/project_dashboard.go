@@ -790,7 +790,7 @@ func (m ProjectDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		innerW := msg.Width - h - 2
 		innerH := msg.Height - v
 
-		m.menuList.SetSize(innerW, innerH-14)
+		m.menuList.SetSize(innerW, innerH-4)
 		m.projectList.SetSize(innerW, innerH-4)
 		m.templateList.SetSize(innerW, innerH-4)
 		m.historyList.SetSize(innerW, innerH-4)
