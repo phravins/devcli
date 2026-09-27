@@ -424,6 +424,34 @@ var allowedCommands = map[string]bool{
 	"npm":		true,
 }
 
+var disallowedFlags = map[string][]string{
+	"python":	{"-c"},
+	"python3":	{"-c"},
+	"node":		{"-e", "--eval", "-p", "--print"},
+	"git":		{"-c", "--exec-path", "--config-env"},
+}
+
+func isFlagDisallowed(baseCmd, arg string) bool {
+	flags, ok := disallowedFlags[baseCmd]
+	if !ok {
+		return false
+	}
+	for _, f := range flags {
+		if arg == f || strings.HasPrefix(arg, f+"=") {
+			return true
+		}
+		if strings.HasPrefix(f, "--") && strings.HasPrefix(arg, f) {
+			return true
+		}
+		if strings.HasPrefix(f, "-") && !strings.HasPrefix(f, "--") && strings.HasPrefix(arg, f) && len(arg) > 1 {
+			if f == "-c" || f == "-e" || f == "-p" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func runShell(command string) (string, error) {
 	if currentDir == "" {
 		currentDir, _ = os.Getwd()
@@ -473,6 +501,12 @@ func runShell(command string) (string, error) {
 	baseCmd := args[0]
 	if !allowedCommands[baseCmd] {
 		return "", fmt.Errorf("command not allowed for security reasons: %s. Allowed commands are: ls, pwd, cat, echo, go, python, node, git, grep, head, tail, npm", baseCmd)
+	}
+
+	for _, arg := range args[1:] {
+		if isFlagDisallowed(baseCmd, arg) {
+			return "", fmt.Errorf("flag not allowed for security reasons in command %s: %s", baseCmd, arg)
+		}
 	}
 
 	var cmd *exec.Cmd

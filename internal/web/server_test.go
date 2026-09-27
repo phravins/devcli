@@ -113,6 +113,31 @@ func TestRunShellDisallowed(t *testing.T) {
 	}
 }
 
+func TestRunShellDisallowedFlags(t *testing.T) {
+	tests := []struct {
+		name	string
+		cmd	string
+	}{
+		{"python3 -c", "python3 -c 'import os; os.system(\"id\")'"},
+		{"python -c", "python -c 'print(1)'"},
+		{"python3 concatenated flag", "python3 -c'import os'"},
+		{"node -e", "node -e 'console.log(1)'"},
+		{"node --eval", "node --eval 'console.log(1)'"},
+		{"node -p", "node -p 'process.env'"},
+		{"git -c", "git -c core.pager=cat log"},
+		{"git --exec-path", "git --exec-path=/tmp"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := runShell(tt.cmd)
+			if err == nil {
+				t.Errorf("expected command %q to fail due to disallowed flag, but it succeeded", tt.cmd)
+			}
+		})
+	}
+}
+
 
 func TestHandleSavePathTraversal(t *testing.T) {
 
