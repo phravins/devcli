@@ -257,6 +257,7 @@ func copyDir(src, dst string) error {
 }
 
 func searchFiles(pattern, directory string) ([]string, error) {
+	directory = filepath.Clean(directory)
 	var matches []string
 
 	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
@@ -352,6 +353,7 @@ func yamlToJSON(filename string) error {
 }
 
 func bulkRename(pattern, replacement, directory string) (int, error) {
+	directory = filepath.Clean(directory)
 	count := 0
 
 	entries, err := os.ReadDir(directory)
@@ -367,6 +369,10 @@ func bulkRename(pattern, replacement, directory string) (int, error) {
 		oldName := entry.Name()
 		if strings.Contains(oldName, pattern) {
 			newName := strings.ReplaceAll(oldName, pattern, replacement)
+			// Prevent path traversal via replacement string (e.g. "../" or path separators)
+			if strings.Contains(newName, "/") || strings.Contains(newName, "\\") || filepath.Base(newName) != newName {
+				return count, fmt.Errorf("invalid replacement: path traversal detected in filename %q", newName)
+			}
 			oldPath := filepath.Join(directory, oldName)
 			newPath := filepath.Join(directory, newName)
 
