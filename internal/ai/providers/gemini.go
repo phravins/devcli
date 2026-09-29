@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -99,7 +100,7 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("gemini API connection failed: %w", err)

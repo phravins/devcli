@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -91,7 +92,7 @@ func (p *HFProvider) Send(messages []ai.Message) (string, error) {
 		req.Header.Set("Authorization", "Bearer "+p.APIKey)
 	}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("HF API connection failed: %w", err)
