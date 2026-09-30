@@ -33,6 +33,89 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMakeSecureHandlerCSRFAndHostProtection(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+	handler := makeSecureHandler(mux)
+
+	tests := []struct {
+		name           string
+		host           string
+		origin         string
+		referer        string
+		expectedStatus int
+	}{
+		{
+			name:           "Valid localhost request",
+			host:           "localhost:8080",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Valid 127.0.0.1 request with Origin",
+			host:           "127.0.0.1:8080",
+			origin:         "http://127.0.0.1:8080",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Valid localhost request with Referer",
+			host:           "localhost:8080",
+			referer:        "http://localhost:8080/index.html",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Disallowed external Host header (DNS rebinding)",
+			host:           "attacker.com",
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:           "Disallowed cross-origin request (Origin)",
+			host:           "127.0.0.1:8080",
+			origin:         "http://malicious.com",
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:           "Disallowed domain prefix bypass Origin",
+			host:           "127.0.0.1:8080",
+			origin:         "http://localhost.attacker.com",
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:           "Disallowed cross-origin request (Referer)",
+			host:           "127.0.0.1:8080",
+			referer:        "http://evil.org/phishing",
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest("POST", "/test", nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+			if tt.host != "" {
+				req.Host = tt.host
+			}
+			if tt.origin != "" {
+				req.Header.Set("Origin", tt.origin)
+			}
+			if tt.referer != "" {
+				req.Header.Set("Referer", tt.referer)
+			}
+
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+
+			if rr.Code != tt.expectedStatus {
+				t.Errorf("makeSecureHandler status = %d, want %d", rr.Code, tt.expectedStatus)
+			}
+		})
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()

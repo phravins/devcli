@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -249,20 +251,49 @@ func StartServer(port string, logs chan string) error {
 	addr := "127.0.0.1:" + port
 	fmt.Printf("Starting local premium compiler server at http://%s\n", addr)
 
-	secureHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("X-XSS-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:;")
-		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		mux.ServeHTTP(w, r)
-	})
+	secureHandler := makeSecureHandler(mux)
 
 	err := http.ListenAndServe(addr, secureHandler)
 	if err != nil {
 		serverStarted = false
 	}
 	return err
+}
+
+func makeSecureHandler(mux http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:;")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		// Prevent DNS rebinding attacks by validating Host header
+		host := r.Host
+		if h, _, err := net.SplitHostPort(r.Host); err == nil {
+			host = h
+		}
+		if host != "" && host != "127.0.0.1" && host != "localhost" {
+			http.Error(w, "Forbidden: Invalid Host header", http.StatusForbidden)
+			return
+		}
+
+		// Prevent CSRF from cross-origin requests by validating Origin and Referer headers
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			if u, err := url.Parse(origin); err != nil || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost") {
+				http.Error(w, "Forbidden: Cross-origin request rejected", http.StatusForbidden)
+				return
+			}
+		} else if ref := r.Header.Get("Referer"); ref != "" {
+			if u, err := url.Parse(ref); err != nil || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost") {
+				http.Error(w, "Forbidden: Cross-origin request rejected", http.StatusForbidden)
+				return
+			}
+		}
+
+		mux.ServeHTTP(w, r)
+	})
 }
 
 func runCode(lang, code string) (string, error) {
