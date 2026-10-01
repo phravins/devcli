@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -97,6 +98,10 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleCancel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	activeMu.Lock()
 	defer activeMu.Unlock()
 	if activeCmd != nil && activeCmd.Process != nil {
@@ -255,6 +260,18 @@ func StartServer(port string, logs chan string) error {
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:;")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		if r.Method == http.MethodPost {
+			origin := r.Header.Get("Origin")
+			if origin != "" {
+				u, err := url.Parse(origin)
+				if err != nil || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost") {
+					http.Error(w, "Forbidden: Invalid Origin header", http.StatusForbidden)
+					return
+				}
+			}
+		}
+
 		mux.ServeHTTP(w, r)
 	})
 
