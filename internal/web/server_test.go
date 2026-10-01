@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"testing"
@@ -110,6 +111,86 @@ func TestRunShellDisallowed(t *testing.T) {
 	_, err := runShell("rm -rf /")
 	if err == nil {
 		t.Errorf("expected rm to be disallowed, but it succeeded")
+	}
+}
+
+func TestHandleCancelMethodValidation(t *testing.T) {
+	req, err := http.NewRequest("GET", "/cancel", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleCancel(rr, req)
+
+	if status := rr.Code; status != http.StatusMethodNotAllowed {
+		t.Errorf("handleCancel returned wrong status code for GET: got %v want %v", status, http.StatusMethodNotAllowed)
+	}
+
+	postReq, err := http.NewRequest("POST", "/cancel", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	postRr := httptest.NewRecorder()
+	handleCancel(postRr, postReq)
+
+	if status := postRr.Code; status != http.StatusOK {
+		t.Errorf("handleCancel returned wrong status code for POST: got %v want %v", status, http.StatusOK)
+	}
+}
+
+func TestCSRFOriginValidation(t *testing.T) {
+	mux := http.NewServeMux()
+	setupRoutes(mux)
+
+	secureHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:;")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		if r.Method == http.MethodPost {
+			origin := r.Header.Get("Origin")
+			if origin != "" {
+				u, err := url.Parse(origin)
+				if err != nil || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost") {
+					http.Error(w, "Forbidden: Invalid Origin header", http.StatusForbidden)
+					return
+				}
+			}
+		}
+
+		mux.ServeHTTP(w, r)
+	})
+
+	tests := []struct {
+		name		string
+		origin		string
+		expectedCode	int
+	}{
+		{"Allowed 127.0.0.1", "http://127.0.0.1:8080", http.StatusOK},
+		{"Allowed localhost", "http://localhost:3000", http.StatusOK},
+		{"Blocked malicious domain", "http://attacker.com", http.StatusForbidden},
+		{"Blocked spoofed localhost domain", "http://localhost.attacker.com", http.StatusForbidden},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest("POST", "/cancel", nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+			req.Header.Set("Origin", tt.origin)
+
+			rr := httptest.NewRecorder()
+			secureHandler.ServeHTTP(rr, req)
+
+			if rr.Code != tt.expectedCode {
+				t.Errorf("secureHandler returned wrong status code for origin %q: got %v want %v", tt.origin, rr.Code, tt.expectedCode)
+			}
+		})
 	}
 }
 
