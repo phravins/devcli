@@ -195,6 +195,23 @@ func TestCSRFOriginValidation(t *testing.T) {
 }
 
 
+func TestRequestBodyLengthLimitDoS(t *testing.T) {
+	// Generate oversized payload (> 1MB)
+	largeBody := bytes.Repeat([]byte("a"), 2*1024*1024)
+
+	req, err := http.NewRequest("POST", "/logs", bytes.NewReader(largeBody))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleLogs(rr, req)
+
+	if rr.Code != http.StatusBadRequest && rr.Code != http.StatusInternalServerError && rr.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("expected error status for oversized body, got %v", rr.Code)
+	}
+}
+
 func TestHandleSavePathTraversal(t *testing.T) {
 
 	tempDir := t.TempDir()
