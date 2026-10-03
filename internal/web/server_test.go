@@ -34,6 +34,39 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReaderLimit(t *testing.T) {
+	t.Run("handleLogs oversize payload", func(t *testing.T) {
+		// maxLogBytes is 1MB. Send 1MB + 100 bytes.
+		oversized := bytes.Repeat([]byte("a"), maxLogBytes+100)
+		req, err := http.NewRequest("POST", "/logs", bytes.NewReader(oversized))
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		rr := httptest.NewRecorder()
+		handleLogs(rr, req)
+
+		if rr.Code != http.StatusInternalServerError && rr.Code != http.StatusRequestEntityTooLarge {
+			t.Errorf("handleLogs expected error status on oversized body, got %v", rr.Code)
+		}
+	})
+
+	t.Run("handleTerminal oversize payload", func(t *testing.T) {
+		oversized := bytes.Repeat([]byte("echo "), (maxLogBytes/5)+100)
+		req, err := http.NewRequest("POST", "/terminal", bytes.NewReader(oversized))
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		rr := httptest.NewRecorder()
+		handleTerminal(rr, req)
+
+		if rr.Code != http.StatusInternalServerError && rr.Code != http.StatusRequestEntityTooLarge && rr.Code != http.StatusBadRequest {
+			t.Errorf("handleTerminal expected error status on oversized body, got %v", rr.Code)
+		}
+	})
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
