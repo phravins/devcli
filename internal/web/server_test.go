@@ -34,6 +34,61 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestRequestBodySizeLimits(t *testing.T) {
+	tests := []struct {
+		name		string
+		handler		http.HandlerFunc
+		endpoint	string
+		oversizedData	[]byte
+		expectedStatus	int
+	}{
+		{
+			name:		"Oversized /logs body (>64KB)",
+			handler:	handleLogs,
+			endpoint:	"/logs",
+			oversizedData:	bytes.Repeat([]byte("a"), 70*1024),
+			expectedStatus:	http.StatusInternalServerError,
+		},
+		{
+			name:		"Oversized /terminal body (>64KB)",
+			handler:	handleTerminal,
+			endpoint:	"/terminal",
+			oversizedData:	bytes.Repeat([]byte("a"), 70*1024),
+			expectedStatus:	http.StatusBadRequest,
+		},
+		{
+			name:		"Oversized /run body (>2MB)",
+			handler:	handleRun,
+			endpoint:	"/run",
+			oversizedData:	bytes.Repeat([]byte("a"), 3*1024*1024),
+			expectedStatus:	http.StatusBadRequest,
+		},
+		{
+			name:		"Oversized /save body (>10MB)",
+			handler:	handleSave,
+			endpoint:	"/save",
+			oversizedData:	bytes.Repeat([]byte("a"), 11*1024*1024),
+			expectedStatus:	http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest("POST", tt.endpoint, bytes.NewReader(tt.oversizedData))
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+
+			rr := httptest.NewRecorder()
+			tt.handler(rr, req)
+
+			if rr.Code != tt.expectedStatus {
+				t.Errorf("%s returned code %v, want %v", tt.endpoint, rr.Code, tt.expectedStatus)
+			}
+		})
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
