@@ -34,6 +34,23 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReaderEnforcement(t *testing.T) {
+	// Create a large payload exceeding 1MB limit for /logs
+	largePayload := bytes.Repeat([]byte("A"), (1<<20)+100)
+
+	req, err := http.NewRequest("POST", "/logs", bytes.NewBuffer(largePayload))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleLogs(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("handleLogs expected status %v for oversized body, got %v", http.StatusBadRequest, rr.Code)
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
