@@ -34,6 +34,48 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReaderLimits(t *testing.T) {
+	large1MB := bytes.Repeat([]byte("a"), 2*1024*1024)
+
+	t.Run("handleLogs oversized payload", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/logs", bytes.NewReader(large1MB))
+		rr := httptest.NewRecorder()
+		handleLogs(rr, req)
+		if rr.Code != http.StatusBadRequest && rr.Code != http.StatusRequestEntityTooLarge {
+			t.Errorf("expected bad request or entity too large status, got %d", rr.Code)
+		}
+	})
+
+	t.Run("handleTerminal oversized payload", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/terminal", bytes.NewReader(large1MB))
+		rr := httptest.NewRecorder()
+		handleTerminal(rr, req)
+		if rr.Code != http.StatusBadRequest && rr.Code != http.StatusRequestEntityTooLarge {
+			t.Errorf("expected bad request or entity too large status, got %d", rr.Code)
+		}
+	})
+
+	large10MB := bytes.Repeat([]byte("b"), 11*1024*1024)
+
+	t.Run("handleSave oversized payload", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/save", bytes.NewReader(large10MB))
+		rr := httptest.NewRecorder()
+		handleSave(rr, req)
+		if rr.Code != http.StatusBadRequest && rr.Code != http.StatusRequestEntityTooLarge {
+			t.Errorf("expected bad request or entity too large status, got %d", rr.Code)
+		}
+	})
+
+	t.Run("handleRun oversized payload", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/run", bytes.NewReader(large10MB))
+		rr := httptest.NewRecorder()
+		handleRun(rr, req)
+		if rr.Code != http.StatusBadRequest && rr.Code != http.StatusRequestEntityTooLarge {
+			t.Errorf("expected bad request or entity too large status, got %d", rr.Code)
+		}
+	})
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
