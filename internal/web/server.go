@@ -80,9 +80,10 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB limit to prevent body flooding DoS
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading body", http.StatusInternalServerError)
+		http.Error(w, "Error reading body", http.StatusBadRequest)
 		return
 	}
 
@@ -115,7 +116,7 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
+	r.Body = http.MaxBytesReader(w, r.Body, 2<<20) // 2 MB limit to prevent body flooding DoS
 
 	var payload struct {
 		Filename	string	`json:"filename"`
@@ -167,7 +168,7 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
+	r.Body = http.MaxBytesReader(w, r.Body, 2<<20) // 2 MB limit to prevent body flooding DoS
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -215,7 +216,7 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB limit to prevent body flooding DoS
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
