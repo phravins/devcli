@@ -80,9 +80,10 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading body", http.StatusInternalServerError)
+		http.Error(w, "Error reading body or payload too large", http.StatusBadRequest)
 		return
 	}
 
@@ -115,7 +116,7 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 
 	var payload struct {
 		Filename	string	`json:"filename"`
@@ -167,11 +168,11 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading body", http.StatusBadRequest)
+		http.Error(w, "Error reading body or payload too large", http.StatusBadRequest)
 		return
 	}
 
@@ -215,11 +216,11 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading body", http.StatusBadRequest)
+		http.Error(w, "Error reading body or payload too large", http.StatusBadRequest)
 		return
 	}
 

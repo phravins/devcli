@@ -34,6 +34,21 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReader(t *testing.T) {
+	oversizedData := bytes.Repeat([]byte("A"), (1<<20)+1024)
+	req, err := http.NewRequest("POST", "/logs", bytes.NewReader(oversizedData))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleLogs(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected status %v for oversized payload, got %v", http.StatusBadRequest, rr.Code)
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
