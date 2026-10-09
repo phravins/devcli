@@ -18,6 +18,8 @@ import (
 
 var staticAssets embed.FS
 
+const maxRequestBodySize = 2 * 1024 * 1024 // 2MB limit to prevent DoS via unbounded body allocations
+
 var (
 	serverStarted	bool
 	serverPort	string
@@ -80,9 +82,10 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Error reading body", http.StatusInternalServerError)
+		http.Error(w, "Error reading body or payload too large", http.StatusBadRequest)
 		return
 	}
 
@@ -116,7 +119,7 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	var payload struct {
 		Filename	string	`json:"filename"`
 		Content		string	`json:"content"`
@@ -168,7 +171,7 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading body", http.StatusBadRequest)
@@ -216,7 +219,7 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading body", http.StatusBadRequest)
