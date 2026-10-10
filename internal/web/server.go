@@ -18,6 +18,9 @@ import (
 
 var staticAssets embed.FS
 
+// maxRequestBodySize limits incoming HTTP request bodies (10MB) to prevent DoS attacks via memory exhaustion.
+const maxRequestBodySize = 10 << 20
+
 var (
 	serverStarted	bool
 	serverPort	string
@@ -80,6 +83,8 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// Limit request body size to prevent DoS via unbounded memory allocation.
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
@@ -116,6 +121,8 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limit request body size to prevent DoS via unbounded memory allocation.
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 
 	var payload struct {
 		Filename	string	`json:"filename"`
@@ -168,6 +175,8 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limit request body size to prevent DoS via unbounded memory allocation.
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -216,6 +225,8 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limit request body size to prevent DoS via unbounded memory allocation.
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
