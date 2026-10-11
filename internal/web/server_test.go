@@ -34,6 +34,27 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReaderLimit(t *testing.T) {
+	// Create a payload that exceeds the 64KB limit for /terminal
+	oversizedBody := make([]byte, 128*1024)
+	for i := range oversizedBody {
+		oversizedBody[i] = 'a'
+	}
+
+	req, err := http.NewRequest("POST", "/terminal", bytes.NewBuffer(oversizedBody))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleTerminal(rr, req)
+
+	// MaxBytesReader causes io.ReadAll to return an error, resulting in HTTP 400
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected status %v for oversized request body, got %v", http.StatusBadRequest, rr.Code)
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
