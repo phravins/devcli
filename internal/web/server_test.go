@@ -34,6 +34,27 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReaderEnforcement(t *testing.T) {
+	// Generate payload exceeding 1MB
+	largePayload := make([]byte, maxLogBytes+1024)
+	for i := range largePayload {
+		largePayload[i] = 'a'
+	}
+
+	req, err := http.NewRequest("POST", "/logs", bytes.NewReader(largePayload))
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	handleLogs(rr, req)
+
+	// Since http.MaxBytesReader causes io.ReadAll to return an error, handleLogs returns StatusInternalServerError
+	if rr.Code != http.StatusInternalServerError {
+		t.Errorf("expected status %v for oversized log body, got %v", http.StatusInternalServerError, rr.Code)
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
