@@ -34,6 +34,57 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReaderLimit(t *testing.T) {
+	tests := []struct {
+		name    string
+		handler http.HandlerFunc
+		path    string
+		size    int
+	}{
+		{
+			name:    "handleLogs body size limit exceeded",
+			handler: handleLogs,
+			path:    "/logs",
+			size:    maxLogsBodySize + 100,
+		},
+		{
+			name:    "handleSave body size limit exceeded",
+			handler: handleSave,
+			path:    "/save",
+			size:    maxSaveBodySize + 100,
+		},
+		{
+			name:    "handleRun body size limit exceeded",
+			handler: handleRun,
+			path:    "/run",
+			size:    maxRunBodySize + 100,
+		},
+		{
+			name:    "handleTerminal body size limit exceeded",
+			handler: handleTerminal,
+			path:    "/terminal",
+			size:    maxTerminalBodySize + 100,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			largeData := bytes.Repeat([]byte("a"), tt.size)
+			req, err := http.NewRequest("POST", tt.path, bytes.NewReader(largeData))
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+
+			rr := httptest.NewRecorder()
+			tt.handler(rr, req)
+
+			if rr.Code != http.StatusBadRequest && rr.Code != http.StatusRequestEntityTooLarge && rr.Code != http.StatusInternalServerError {
+				t.Errorf("expected error status code for oversized payload, got: %v", rr.Code)
+			}
+		})
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()

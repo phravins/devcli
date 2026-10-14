@@ -18,6 +18,13 @@ import (
 
 var staticAssets embed.FS
 
+const (
+	maxLogsBodySize		= 1 << 20	// 1 MB
+	maxSaveBodySize		= 10 << 20	// 10 MB
+	maxRunBodySize		= 10 << 20	// 10 MB
+	maxTerminalBodySize	= 1 << 20	// 1 MB
+)
+
 var (
 	serverStarted	bool
 	serverPort	string
@@ -80,6 +87,7 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxLogsBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
@@ -116,6 +124,7 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxSaveBodySize)
 
 	var payload struct {
 		Filename	string	`json:"filename"`
@@ -168,6 +177,7 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxRunBodySize)
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -216,6 +226,7 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxTerminalBodySize)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
