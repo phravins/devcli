@@ -34,6 +34,36 @@ func TestParseCommand(t *testing.T) {
 	}
 }
 
+func TestMaxBytesReaderLimit(t *testing.T) {
+	oversizedBody := bytes.Repeat([]byte("a"), (1<<20)+100) // Slightly over 1MB
+
+	endpoints := []struct {
+		name	string
+		handler	http.HandlerFunc
+		path	string
+	}{
+		{"logs endpoint", handleLogs, "/logs"},
+		{"save endpoint", handleSave, "/save"},
+		{"run endpoint", handleRun, "/run"},
+		{"terminal endpoint", handleTerminal, "/terminal"},
+	}
+
+	for _, ep := range endpoints {
+		t.Run(ep.name, func(t *testing.T) {
+			req, err := http.NewRequest("POST", ep.path, bytes.NewReader(oversizedBody))
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+			rr := httptest.NewRecorder()
+			ep.handler(rr, req)
+
+			if rr.Code == http.StatusOK {
+				t.Errorf("expected error status for oversized payload on %s, got 200 OK", ep.path)
+			}
+		})
+	}
+}
+
 func TestHandleSaveErrorSanitization(t *testing.T) {
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
