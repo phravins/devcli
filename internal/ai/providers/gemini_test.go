@@ -113,6 +113,9 @@ func TestGeminiProvider_Configure(t *testing.T) {
 			if p.BaseURL != tt.expectedBaseURL {
 				t.Errorf("Expected BaseURL '%s', got '%s'", tt.expectedBaseURL, p.BaseURL)
 			}
+			if p.httpClient == nil || p.httpClient.Timeout == 0 {
+				t.Errorf("Expected httpClient with timeout to be set")
+			}
 		})
 	}
 }
