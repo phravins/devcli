@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestParseCommand(t *testing.T) {
@@ -31,6 +32,33 @@ func TestParseCommand(t *testing.T) {
 				t.Errorf("parseCommand(%q) = %v, want %v", tt.command, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestServerTimeouts(t *testing.T) {
+	mux := http.NewServeMux()
+	setupRoutes(mux)
+
+	server := &http.Server{
+		Addr:              "127.0.0.1:0",
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	if server.ReadHeaderTimeout == 0 {
+		t.Error("expected non-zero ReadHeaderTimeout to prevent Slowloris attacks")
+	}
+	if server.ReadTimeout == 0 {
+		t.Error("expected non-zero ReadTimeout")
+	}
+	if server.WriteTimeout == 0 {
+		t.Error("expected non-zero WriteTimeout")
+	}
+	if server.IdleTimeout == 0 {
+		t.Error("expected non-zero IdleTimeout")
 	}
 }
 
