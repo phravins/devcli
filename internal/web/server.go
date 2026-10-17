@@ -279,7 +279,16 @@ func StartServer(port string, logs chan string) error {
 		mux.ServeHTTP(w, r)
 	})
 
-	err := http.ListenAndServe(addr, secureHandler)
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           secureHandler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	err := server.ListenAndServe()
 	if err != nil {
 		serverStarted = false
 	}
