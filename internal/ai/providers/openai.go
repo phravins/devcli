@@ -115,7 +115,7 @@ func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
 	}
 
 	if p.httpClient == nil {
-		p.httpClient = &http.Client{}
+		p.httpClient = &http.Client{Timeout: 90 * time.Second}
 	}
 
 	resp, err := p.httpClient.Do(req)

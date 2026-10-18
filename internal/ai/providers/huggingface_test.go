@@ -77,6 +77,12 @@ func TestHFProvider_Configure(t *testing.T) {
 			if p.APIKey != tt.expectedAPIKey {
 				t.Errorf("expected APIKey = %q, got %q", tt.expectedAPIKey, p.APIKey)
 			}
+
+			if p.httpClient == nil {
+				t.Errorf("Expected httpClient to be initialized")
+			} else if p.httpClient.Timeout == 0 {
+				t.Errorf("Expected non-zero httpClient timeout")
+			}
 		})
 	}
 }
