@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -15,6 +16,7 @@ type HFProvider struct {
 	BaseURL		string
 	APIKey		string
 	modelName	string
+	httpClient	*http.Client
 }
 
 func (p *HFProvider) Name() string {
@@ -40,6 +42,11 @@ func (p *HFProvider) Configure(cfg *config.Config) error {
 	if cfg.HFAccessToken != "" {
 		p.APIKey = cfg.HFAccessToken
 	}
+
+	p.httpClient = &http.Client{
+		Timeout: 90 * time.Second,
+	}
+
 	return nil
 }
 
@@ -91,8 +98,11 @@ func (p *HFProvider) Send(messages []ai.Message) (string, error) {
 		req.Header.Set("Authorization", "Bearer "+p.APIKey)
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	if p.httpClient == nil {
+		p.httpClient = &http.Client{Timeout: 90 * time.Second}
+	}
+
+	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("HF API connection failed: %w", err)
 	}
