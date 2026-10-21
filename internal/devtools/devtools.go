@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -35,8 +36,9 @@ var serverCmd = &cobra.Command{
 	Args:	cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		port := args[0]
-		fmt.Printf("Starting development server on port %s...\n", port)
-		runDevServer(port)
+		if err := runDevServer(port); err != nil {
+			fmt.Printf("Error starting server: %v\n", err)
+		}
 	},
 }
 
@@ -96,15 +98,26 @@ func createProject(name string) error {
 	return os.WriteFile(filepath.Join(name, "package.json"), []byte(packageJSON), 0644)
 }
 
-func runDevServer(port string) {
+func validatePort(port string) (int, error) {
+	p, err := strconv.Atoi(port)
+	if err != nil || p < 1 || p > 65535 {
+		return 0, fmt.Errorf("invalid port number: %s (must be between 1 and 65535)", port)
+	}
+	return p, nil
+}
 
-	cmd := exec.Command("python3", "-m", "http.server", port)
+func runDevServer(port string) error {
+	p, err := validatePort(port)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Starting development server on port %d...\n", p)
+	cmd := exec.Command("python3", "-m", "http.server", strconv.Itoa(p))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error starting server: %v\n", err)
-	}
+	return cmd.Run()
 }
 
 func generateBoilerplate(boilerplateType string) error {
