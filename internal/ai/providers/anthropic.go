@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -15,6 +16,7 @@ type AnthropicProvider struct {
 	BaseURL		string
 	APIKey		string
 	modelName	string
+	httpClient	*http.Client
 }
 
 func (p *AnthropicProvider) Name() string {
@@ -35,6 +37,9 @@ func (p *AnthropicProvider) Configure(cfg *config.Config) error {
 	}
 	if cfg.AIBaseURL != "" {
 		p.BaseURL = cfg.AIBaseURL
+	}
+	p.httpClient = &http.Client{
+		Timeout: 90 * time.Second,
 	}
 	return nil
 }
@@ -94,14 +99,16 @@ func (p *AnthropicProvider) Send(messages []ai.Message) (string, error) {
 	req.Header.Set("x-api-key", p.APIKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	if p.httpClient == nil {
+		p.httpClient = &http.Client{Timeout: 90 * time.Second}
+	}
+	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("claude API connection failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
 
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
