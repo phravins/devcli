@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -112,6 +113,9 @@ func TestGeminiProvider_Configure(t *testing.T) {
 			}
 			if p.BaseURL != tt.expectedBaseURL {
 				t.Errorf("Expected BaseURL '%s', got '%s'", tt.expectedBaseURL, p.BaseURL)
+			}
+			if p.httpClient == nil || p.httpClient.Timeout != 90*time.Second {
+				t.Errorf("Expected httpClient Timeout to be 90s, got %v", p.httpClient)
 			}
 		})
 	}
