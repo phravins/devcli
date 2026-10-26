@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -301,4 +302,26 @@ func TestGeminiProvider_Send_DecodeAndEmptyErrors(t *testing.T) {
 			t.Errorf("Expected empty response error, got '%v'", err)
 		}
 	})
+}
+
+func TestGeminiProvider_Send_Timeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+	}))
+	defer server.Close()
+
+	p := &GeminiProvider{}
+	p.Configure(&config.Config{AIBaseURL: server.URL})
+
+	if p.httpClient == nil || p.httpClient.Timeout == 0 {
+		t.Fatal("Expected non-zero timeout on httpClient")
+	}
+
+	// Override timeout to a short duration for fast unit test execution
+	p.httpClient.Timeout = 20 * time.Millisecond
+
+	_, err := p.Send([]ai.Message{{Role: "user", Content: "Hello"}})
+	if err == nil {
+		t.Fatal("Expected error due to client timeout/connection issue, got nil")
+	}
 }
