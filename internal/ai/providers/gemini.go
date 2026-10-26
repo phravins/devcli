@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -16,6 +17,7 @@ type GeminiProvider struct {
 	BaseURL		string
 	APIKey		string
 	modelName	string
+	httpClient	*http.Client
 }
 
 func (p *GeminiProvider) Name() string {
@@ -43,6 +45,10 @@ func (p *GeminiProvider) Configure(cfg *config.Config) error {
 		p.BaseURL = cfg.AIBaseURL
 	} else {
 		p.BaseURL = "https://generativelanguage.googleapis.com/v1beta/models"
+	}
+
+	p.httpClient = &http.Client{
+		Timeout: 30 * time.Second,
 	}
 	return nil
 }
@@ -99,8 +105,11 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	if p.httpClient == nil {
+		p.httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
+
+	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("gemini API connection failed: %w", err)
 	}
