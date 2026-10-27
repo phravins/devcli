@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -94,14 +95,16 @@ func (p *AnthropicProvider) Send(messages []ai.Message) (string, error) {
 	req.Header.Set("x-api-key", p.APIKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("claude API connection failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	// Limit response reading to 10MB to prevent DoS via unbounded memory allocation
+	limitedBody := io.LimitReader(resp.Body, 10<<20)
+	body, _ := io.ReadAll(limitedBody)
 
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
