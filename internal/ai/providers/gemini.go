@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/phravins/devcli/internal/ai"
 	"github.com/phravins/devcli/internal/config"
@@ -99,15 +100,18 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("gemini API connection failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Limit response reading to 10MB to prevent DoS via unbounded memory allocation
+	limitedBody := io.LimitReader(resp.Body, 10<<20)
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(limitedBody)
 
 		safeURL := fmt.Sprintf("%s/%s:generateContent", p.BaseURL, p.modelName)
 		switch resp.StatusCode {
@@ -124,7 +128,7 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 		}
 	}
 	var parsedResp geminiResponse
-	if err := json.NewDecoder(resp.Body).Decode(&parsedResp); err != nil {
+	if err := json.NewDecoder(limitedBody).Decode(&parsedResp); err != nil {
 		return "", fmt.Errorf("failed to decode response: %w", err)
 	}
 	if len(parsedResp.Candidates) == 0 || len(parsedResp.Candidates[0].Content.Parts) == 0 {
