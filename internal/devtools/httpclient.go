@@ -72,7 +72,9 @@ func ExecuteAPIRequest(req APIRequest) APIResponse {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	// Limit response body reading to 10MB to prevent memory exhaustion (DoS) attacks from unbounded HTTP responses.
+	const maxResponseBodyBytes = 10 << 20
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 	if err != nil {
 		return APIResponse{StatusCode: resp.StatusCode, Status: resp.Status, LatencyMs: latency, Headers: resp.Header, Err: err}
 	}
