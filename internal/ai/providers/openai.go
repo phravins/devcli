@@ -115,7 +115,7 @@ func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
 	}
 
 	if p.httpClient == nil {
-		p.httpClient = &http.Client{}
+		p.httpClient = &http.Client{Timeout: 90 * time.Second}
 	}
 
 	resp, err := p.httpClient.Do(req)
@@ -125,7 +125,7 @@ func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		var errResp openAIErrorResponse
 		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
 			switch resp.StatusCode {
