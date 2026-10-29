@@ -302,3 +302,27 @@ func TestGeminiProvider_Send_DecodeAndEmptyErrors(t *testing.T) {
 		}
 	})
 }
+
+func TestGeminiProvider_Send_BoundedErrorBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		// Write oversized error body (>1MB)
+		w.Write([]byte(strings.Repeat("A", (1<<20)+500)))
+	}))
+	defer server.Close()
+
+	p := &GeminiProvider{}
+	p.Configure(&config.Config{AIBaseURL: server.URL})
+
+	_, err := p.Send([]ai.Message{{Role: "user", Content: "Hello"}})
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+
+	// The error message contains the read body; verify it was truncated to 1MB (1048576)
+	expectedMaxLen := 1 << 20
+	errStr := err.Error()
+	if len(errStr) > expectedMaxLen+200 {
+		t.Errorf("Error body was not bounded by LimitReader, err len: %d", len(errStr))
+	}
+}
