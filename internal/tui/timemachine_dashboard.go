@@ -15,16 +15,16 @@ import (
 )
 
 type TimeMachineModel struct {
-	timeline	*timemachine.Timeline
-	blameViewport	viewport.Model
-	detailViewport	viewport.Model
-	helpViewport	viewport.Model
-	width		int
-	height		int
-	ready		bool
-	showHelp	bool
-	bugSuspects	[]timemachine.BugSuspect
-	authorColors	map[string]lipgloss.Color
+	timeline       *timemachine.Timeline
+	blameViewport  viewport.Model
+	detailViewport viewport.Model
+	helpViewport   viewport.Model
+	width          int
+	height         int
+	ready          bool
+	showHelp       bool
+	bugSuspects    []timemachine.BugSuspect
+	authorColors   map[string]lipgloss.Color
 }
 
 func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
@@ -50,15 +50,15 @@ func NewTimeMachineModel(repoPath, filePath string) (*TimeMachineModel, error) {
 	helpVp.SetContent(TimeMachineHelp)
 
 	model := &TimeMachineModel{
-		timeline:	timeline,
-		bugSuspects:	suspects,
-		authorColors:	colors,
-		blameViewport:	viewport.New(initW, initH),
-		detailViewport:	viewport.New(initW, 5),
-		helpViewport:	helpVp,
-		width:		initW,
-		height:		initH,
-		ready:		true,
+		timeline:       timeline,
+		bugSuspects:    suspects,
+		authorColors:   colors,
+		blameViewport:  viewport.New(initW, initH),
+		detailViewport: viewport.New(initW, 5),
+		helpViewport:   helpVp,
+		width:          initW,
+		height:         initH,
+		ready:          true,
 	}
 
 	model.setupViewports()

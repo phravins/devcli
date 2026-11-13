@@ -12,9 +12,9 @@ import (
 )
 
 type GeminiProvider struct {
-	BaseURL		string
-	APIKey		string
-	modelName	string
+	BaseURL   string
+	APIKey    string
+	modelName string
 }
 
 func (p *GeminiProvider) Name() string {
@@ -54,8 +54,8 @@ type geminiPart struct {
 	Text string `json:"text"`
 }
 type geminiContent struct {
-	Role	string		`json:"role,omitempty"`
-	Parts	[]geminiPart	`json:"parts"`
+	Role  string       `json:"role,omitempty"`
+	Parts []geminiPart `json:"parts"`
 }
 type geminiRequest struct {
 	Contents []geminiContent `json:"contents"`
@@ -80,8 +80,8 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 			role = "model"
 		}
 		geminiMsgs = append(geminiMsgs, geminiContent{
-			Role:	role,
-			Parts:	[]geminiPart{{Text: m.Content}},
+			Role:  role,
+			Parts: []geminiPart{{Text: m.Content}},
 		})
 	}
 

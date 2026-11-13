@@ -15,26 +15,26 @@ const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)
 var re = regexp.MustCompile(ansi)
 
 type LogLine struct {
-	ServerName	string
-	Line		string
-	IsError		bool
+	ServerName string
+	Line       string
+	IsError    bool
 }
 
 type Runner struct {
-	ctx		context.Context
-	cancel		context.CancelFunc
-	processes	[]*exec.Cmd
-	logChan		chan LogLine
-	wg		sync.WaitGroup
+	ctx       context.Context
+	cancel    context.CancelFunc
+	processes []*exec.Cmd
+	logChan   chan LogLine
+	wg        sync.WaitGroup
 }
 
 func NewRunner() *Runner {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Runner{
-		ctx:		ctx,
-		cancel:		cancel,
-		processes:	make([]*exec.Cmd, 0),
-		logChan:	make(chan LogLine, 100),
+		ctx:       ctx,
+		cancel:    cancel,
+		processes: make([]*exec.Cmd, 0),
+		logChan:   make(chan LogLine, 100),
 	}
 }
 
@@ -93,9 +93,9 @@ func (r *Runner) streamLogs(serverName string, reader io.Reader, isError bool) {
 		case <-r.ctx.Done():
 			return
 		case r.logChan <- LogLine{
-			ServerName:	serverName,
-			Line:		re.ReplaceAllString(scanner.Text(), ""),
-			IsError:	isError,
+			ServerName: serverName,
+			Line:       re.ReplaceAllString(scanner.Text(), ""),
+			IsError:    isError,
 		}:
 		}
 	}

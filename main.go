@@ -19,9 +19,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:		"devcli",
-	Version:	"1.1.0",
-	Short:		"A comprehensive CLI for developers",
+	Use:     "devcli",
+	Version: "1.1.0",
+	Short:   "A comprehensive CLI for developers",
 	Long: `DevCLI is a powerful command-line interface that provides:
 - Local development tools
 - File operations
@@ -30,9 +30,9 @@ var rootCmd = &cobra.Command{
 }
 
 var startCmd = &cobra.Command{
-	Use:	"start [name] [stack]",
-	Short:	"Initialize a new project",
-	Args:	cobra.MinimumNArgs(1),
+	Use:   "start [name] [stack]",
+	Short: "Initialize a new project",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
 		stack := "Go"
@@ -51,10 +51,10 @@ var startCmd = &cobra.Command{
 }
 
 var timemachineCmd = &cobra.Command{
-	Use:	"timemachine [file]",
-	Short:	"Code Time Machine - Track code evolution and find bugs",
-	Long:	`Interactive Git blame and history viewer showing line-by-line changes, bug risks, and commit timeline.`,
-	Args:	cobra.MaximumNArgs(1),
+	Use:   "timemachine [file]",
+	Short: "Code Time Machine - Track code evolution and find bugs",
+	Long:  `Interactive Git blame and history viewer showing line-by-line changes, bug risks, and commit timeline.`,
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var filePath string
 		if len(args) > 0 {
@@ -73,9 +73,9 @@ var timemachineCmd = &cobra.Command{
 }
 
 var installCmd = &cobra.Command{
-	Use:	"install",
-	Short:	"Install DevCLI globally to your system",
-	Long:	`Copies the DevCLI binary to your home directory and adds it to your system PATH.`,
+	Use:   "install",
+	Short: "Install DevCLI globally to your system",
+	Long:  `Copies the DevCLI binary to your home directory and adds it to your system PATH.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Starting DevCLI installation...")
 
@@ -258,9 +258,9 @@ StartupNotify=true
 }
 
 var updateCmd = &cobra.Command{
-	Use:	"update",
-	Short:	"Update DevCLI to the latest version",
-	Long:	`Checks for the latest version of DevCLI on GitHub and updates the binary if a new version is available.`,
+	Use:   "update",
+	Short: "Update DevCLI to the latest version",
+	Long:  `Checks for the latest version of DevCLI on GitHub and updates the binary if a new version is available.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("🔍 Checking for updates...")
 

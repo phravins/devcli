@@ -19,46 +19,46 @@ import (
 )
 
 type FileManagerModel struct {
-	currentPath	string
-	files		[]fs.DirEntry
-	filtered	[]fs.DirEntry
+	currentPath string
+	files       []fs.DirEntry
+	filtered    []fs.DirEntry
 
-	cursor		int
-	width		int
-	height		int
-	quitting	bool
-	searchInput	textinput.Model
-	err		error
+	cursor      int
+	width       int
+	height      int
+	quitting    bool
+	searchInput textinput.Model
+	err         error
 
-	selectedFile	string
+	selectedFile string
 
-	moveMode	bool
-	moveInput	textinput.Model
-	selectedForMove	string
+	moveMode        bool
+	moveInput       textinput.Model
+	selectedForMove string
 
-	copyMode	bool
-	copyInput	textinput.Model
-	selectedForCopy	string
+	copyMode        bool
+	copyInput       textinput.Model
+	selectedForCopy string
 
-	pathMode	bool
-	pathInput	textinput.Model
+	pathMode  bool
+	pathInput textinput.Model
 
-	allFilePaths	[]string
+	allFilePaths []string
 
-	history	[]string
+	history []string
 
-	globalSearch	bool
+	globalSearch bool
 
-	loading	bool
+	loading bool
 
-	searchID	int
+	searchID int
 
-	scanChan	chan string
+	scanChan chan string
 
-	ready	bool
+	ready bool
 
-	showHelp	bool
-	helpView	viewport.Model
+	showHelp bool
+	helpView viewport.Model
 }
 
 type searchDebounceMsg struct {
@@ -211,16 +211,16 @@ func NewFileManagerModel(startPath string) FileManagerModel {
 	pi.SetValue(startPath)
 
 	m := FileManagerModel{
-		currentPath:	startPath,
-		searchInput:	ti,
-		moveInput:	mi,
-		copyInput:	ci,
-		pathInput:	pi,
-		globalSearch:	true,
-		loading:	true,
-		scanChan:	make(chan string, 1000),
+		currentPath:  startPath,
+		searchInput:  ti,
+		moveInput:    mi,
+		copyInput:    ci,
+		pathInput:    pi,
+		globalSearch: true,
+		loading:      true,
+		scanChan:     make(chan string, 1000),
 
-		helpView:	hv,
+		helpView: hv,
 	}
 
 	m.reloadAllFiles()
@@ -1013,10 +1013,10 @@ type dummyEntry struct {
 	path string
 }
 
-func (d dummyEntry) Name() string		{ return d.path }
-func (d dummyEntry) IsDir() bool		{ return false }
-func (d dummyEntry) Type() fs.FileMode		{ return 0 }
-func (d dummyEntry) Info() (fs.FileInfo, error)	{ return nil, nil }
+func (d dummyEntry) Name() string               { return d.path }
+func (d dummyEntry) IsDir() bool                { return false }
+func (d dummyEntry) Type() fs.FileMode          { return 0 }
+func (d dummyEntry) Info() (fs.FileInfo, error) { return nil, nil }
 
 func (m FileManagerModel) Init() tea.Cmd {
 	var cmds []tea.Cmd

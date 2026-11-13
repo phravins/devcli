@@ -29,6 +29,10 @@ const (
 	// execTimeout bounds every compile/run/shell invocation so a runaway
 	// program cannot outlive the HTTP request that started it.
 	execTimeout = 25 * time.Second
+	// launchCodeTTL bounds how long a browser launch code stays valid. The
+	// code is visible in the browser launcher's process arguments, so it is
+	// single-use and short-lived, and it is never the session secret itself.
+	launchCodeTTL = 60 * time.Second
 )
 
 var (
@@ -38,6 +42,7 @@ var (
 
 	sessionMu    sync.Mutex
 	sessionToken string
+	launchCodes  = map[string]time.Time{}
 
 	logMu   sync.Mutex
 	logChan chan string
@@ -47,29 +52,67 @@ var (
 	activeMu   sync.Mutex
 )
 
+func randomHex(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
 // ensureSessionToken lazily creates the per-process secret that authorizes
-// the browser tab DevCLI opens. Nothing is served without it.
+// the browser tab DevCLI opens. It only ever travels in an HttpOnly cookie,
+// never in a URL or command line. Nothing is served without it.
 func ensureSessionToken() (string, error) {
 	sessionMu.Lock()
 	defer sessionMu.Unlock()
 	if sessionToken == "" {
-		b := make([]byte, 32)
-		if _, err := rand.Read(b); err != nil {
+		t, err := randomHex(32)
+		if err != nil {
 			return "", fmt.Errorf("failed to generate session token: %w", err)
 		}
-		sessionToken = hex.EncodeToString(b)
+		sessionToken = t
 	}
 	return sessionToken, nil
 }
 
 // LaunchURL returns the URL the TUI should open in the browser. It carries a
-// one-time token that the server exchanges for an HttpOnly session cookie.
+// fresh single-use launch code (valid for launchCodeTTL) that the server
+// exchanges for the session cookie. Because the code dies on first use, seeing
+// it in the browser launcher's process arguments is useless after the
+// browser has loaded the page.
 func LaunchURL(port string) (string, error) {
-	token, err := ensureSessionToken()
+	code, err := randomHex(32)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to generate launch code: %w", err)
 	}
-	return fmt.Sprintf("http://127.0.0.1:%s/?token=%s", port, token), nil
+	sessionMu.Lock()
+	now := time.Now()
+	for c, exp := range launchCodes {
+		if now.After(exp) {
+			delete(launchCodes, c)
+		}
+	}
+	launchCodes[code] = now.Add(launchCodeTTL)
+	sessionMu.Unlock()
+	return fmt.Sprintf("http://127.0.0.1:%s/?token=%s", port, code), nil
+}
+
+// consumeLaunchCode reports whether code is a live launch code, and
+// invalidates it so it can never be used again.
+func consumeLaunchCode(code string) bool {
+	sessionMu.Lock()
+	defer sessionMu.Unlock()
+	ok := false
+	now := time.Now()
+	for c, exp := range launchCodes {
+		// Compare against every entry in constant time; don't short-circuit.
+		if subtle.ConstantTimeCompare([]byte(c), []byte(code)) == 1 && now.Before(exp) {
+			ok = true
+			delete(launchCodes, c)
+		}
+	}
+	return ok
 }
 
 func sendLog(msg string) {
@@ -311,7 +354,7 @@ func setSecurityHeaders(w http.ResponseWriter) {
 //   - Origin, when sent, must be exactly our origin, port included (blocks
 //     other localhost apps and cross-site pages)
 //   - every request must carry the session cookie, obtained only by visiting
-//     the one-time LaunchURL (blocks other local users/processes)
+//     a single-use LaunchURL (blocks other local users/processes)
 func newSecureHandler(port, token string, next http.Handler) http.Handler {
 	allowed := map[string]bool{
 		"127.0.0.1:" + port: true,
@@ -344,10 +387,13 @@ func newSecureHandler(port, token string, next http.Handler) http.Handler {
 		}
 
 		if r.Method == http.MethodGet && r.URL.Path == "/" && r.URL.Query().Has("token") {
-			if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("token")), []byte(token)) != 1 {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			if !consumeLaunchCode(r.URL.Query().Get("token")) {
+				http.Error(w, "Unauthorized: this launch link has expired or was already used. "+
+					"Reopen the Web Compiler from DevCLI. If you did not use it yourself, "+
+					"another process on this machine may have.", http.StatusUnauthorized)
 				return
 			}
+			sendLog("[TUI] Browser session started (" + r.RemoteAddr + ")")
 			http.SetCookie(w, &http.Cookie{
 				Name:     sessionCookieName,
 				Value:    token,

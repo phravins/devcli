@@ -8,9 +8,9 @@ import (
 
 func TestContainsAny(t *testing.T) {
 	tests := []struct {
-		s		string
-		keywords	[]string
-		expected	bool
+		s        string
+		keywords []string
+		expected bool
 	}{
 		{"fix issue in login", []string{"fix", "hotfix"}, true},
 		{"add feature", []string{"fix", "hotfix"}, false},
@@ -33,41 +33,41 @@ func TestAnalyzeBugRisks(t *testing.T) {
 
 	commits := []Commit{
 		{
-			Hash:		"hash1",
-			ShortHash:	"h1",
-			Author:		"Alice",
-			Date:		baseTime,
-			Message:	"Normal commit",
-			LinesAdded:	10,
-			LinesRemoved:	10,
+			Hash:         "hash1",
+			ShortHash:    "h1",
+			Author:       "Alice",
+			Date:         baseTime,
+			Message:      "Normal commit",
+			LinesAdded:   10,
+			LinesRemoved: 10,
 		},
 		{
-			Hash:		"hash2",
-			ShortHash:	"h2",
-			Author:		"Bob",
-			Date:		baseTime.Add(1 * time.Hour),
-			Message:	"WIP: unfinished work",
-			LinesAdded:	50,
-			LinesRemoved:	20,
+			Hash:         "hash2",
+			ShortHash:    "h2",
+			Author:       "Bob",
+			Date:         baseTime.Add(1 * time.Hour),
+			Message:      "WIP: unfinished work",
+			LinesAdded:   50,
+			LinesRemoved: 20,
 		},
 		{
-			Hash:		"hash3",
-			ShortHash:	"h3",
-			Author:		"Charlie",
-			Date:		time.Date(2023, 10, 27, 18, 0, 0, 0, time.UTC),
-			Message:	"fix: patch critical bug",
-			LinesAdded:	150,
-			LinesRemoved:	100,
-			FilesChanged:	[]string{"a", "b", "c", "d", "e", "f"},
+			Hash:         "hash3",
+			ShortHash:    "h3",
+			Author:       "Charlie",
+			Date:         time.Date(2023, 10, 27, 18, 0, 0, 0, time.UTC),
+			Message:      "fix: patch critical bug",
+			LinesAdded:   150,
+			LinesRemoved: 100,
+			FilesChanged: []string{"a", "b", "c", "d", "e", "f"},
 		},
 		{
-			Hash:		"hash4",
-			ShortHash:	"h4",
-			Author:		"Dave",
-			Date:		time.Date(2023, 10, 28, 2, 0, 0, 0, time.UTC),
-			Message:	"quick temp hack",
-			LinesAdded:	5,
-			LinesRemoved:	5,
+			Hash:         "hash4",
+			ShortHash:    "h4",
+			Author:       "Dave",
+			Date:         time.Date(2023, 10, 28, 2, 0, 0, 0, time.UTC),
+			Message:      "quick temp hack",
+			LinesAdded:   5,
+			LinesRemoved: 5,
 		},
 	}
 
@@ -112,9 +112,9 @@ func TestAnalyzeBugRisks(t *testing.T) {
 
 func TestGetRiskLevelAndColor(t *testing.T) {
 	tests := []struct {
-		risk		float64
-		expectedLevel	string
-		expectedColor	string
+		risk          float64
+		expectedLevel string
+		expectedColor string
 	}{
 		{0.8, "High", "#FF4444"},
 		{0.7, "High", "#FF4444"},

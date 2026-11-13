@@ -11,14 +11,13 @@
         <!-- Sidebar / Navigation -->
         <nav class="glass-sidebar">
             <div class="logo">
-                <i data-lucide="terminal" class="icon-accent"></i>
+                <svg class="icon icon-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
                 <span>DevCLI</span>
             </div>
             <div class="nav-links">
-                <button class="nav-btn active" title="Editor"><i data-lucide="code-2"></i></button>
-                <button class="nav-btn" title="Files"><i data-lucide="folder-open"></i></button>
-                <button class="nav-btn" title="Cloud Storage" id="drive-sidebar-btn"><i data-lucide="cloud"></i></button>
-                <button class="nav-btn" title="Settings" id="settings-trigger"><i data-lucide="settings"></i></button>
+                <button class="nav-btn active" title="Editor"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+                <button class="nav-btn" title="Files"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+                <button class="nav-btn" title="Settings" id="settings-trigger"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
             </div>
             <div class="user-profile">
             </div>
@@ -29,13 +28,13 @@
             <!-- Header -->
             <header class="glass-header">
                 <div class="file-info">
-                    <i data-lucide="file-code" class="icon-muted"></i>
+                    <svg class="icon icon-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="10 12 8 14.5 10 17"/><polyline points="14 12 16 14.5 14 17"/></svg>
                     <input type="text" id="filename" class="minimal-input" value="main.py" placeholder="Untitled.py">
                 </div>
                 <div class="actions">
                     <div id="save-status" class="status-indicator">All changes saved</div>
-                    <button class="btn btn-secondary" id="save-btn"><i data-lucide="save"></i> Save</button>
-                    <button class="btn btn-primary" id="run-btn"><i data-lucide="play"></i> Run</button>
+                    <button class="btn btn-secondary" id="save-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
+                    <button class="btn btn-primary" id="run-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg> Run</button>
                 </div>
             </header>
 
@@ -49,7 +48,7 @@
                     <div class="editor-wrapper">
                         <textarea id="code" spellcheck="false" placeholder="Write your code here...">def main():
     print("Welcome to DevCLI!")
-    print("Functional, beautiful, and cloud-ready.")
+    print("Write, run, and save code locally.")
 
 if __name__ == "__main__":
     main()</textarea>
@@ -63,7 +62,7 @@ if __name__ == "__main__":
                         <button class="tab-btn active" data-tab="output">Output</button>
                         <button class="tab-btn" data-tab="terminal">Terminal</button>
                         <div class="spacer"></div>
-                        <button class="icon-btn" title="Clear" id="clear-output-btn"><i data-lucide="trash-2"></i></button>
+                        <button class="icon-btn" title="Clear" id="clear-output-btn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
                     </div>
                     <div id="output-view" class="tab-content active">
                         <pre id="output-log" class="monospaced">Ready...</pre>
@@ -79,11 +78,10 @@ if __name__ == "__main__":
             </div>
         </main>
 
-        <!-- Auth Modal -->
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal-overlay hidden">
             <div class="modal-content glass">
-                <button class="close-modal" id="close-settings"><i data-lucide="x"></i></button>
+                <button class="close-modal" id="close-settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 <h2 class="modal-title">Settings</h2>
                 <form id="settings-form" class="settings-form">
                     <div class="form-group">
@@ -95,14 +93,7 @@ if __name__ == "__main__":
                     </div>
                     <div class="form-group">
                         <label>Default Save Path</label>
-                        <input type="text" id="default-save-path" placeholder="e.g., C:\Users\phrav\Dev">
-                    </div>
-                    <div class="form-group">
-                        <label>Google Drive Account</label>
-                        <div class="account-status">
-                            <span id="drive-status">Not Connected</span>
-                            <button type="button" class="btn btn-secondary btn-small" id="connect-drive">Connect</button>
-                        </div>
+                        <input type="text" id="default-save-path" placeholder="e.g., ~/projects">
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Save Preferences</button>
                 </form>
@@ -112,25 +103,12 @@ if __name__ == "__main__":
         <!-- Save Path Dialog -->
         <div id="save-modal" class="modal-overlay hidden">
             <div class="modal-content glass">
-                <button class="close-modal" id="close-save"><i data-lucide="x"></i></button>
+                <button class="close-modal" id="close-save"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                 <h2 class="modal-title">Save Code</h2>
-                <div class="form-group">
-                    <label>Storage Location</label>
-                    <div class="location-tabs">
-                        <button class="tab-btn active" data-location="local">Local Disk</button>
-                        <button class="tab-btn" data-location="drive">Google Drive</button>
-                    </div>
-                </div>
                 <div id="local-save-options">
                     <div class="form-group">
                         <label>File Path</label>
                         <input type="text" id="custom-save-path" placeholder="path/to/script.py">
-                    </div>
-                </div>
-                <div id="drive-save-options" class="hidden">
-                    <div class="form-group">
-                        <label>Google Drive folder</label>
-                        <p class="text-muted">Select a folder or save to root.</p>
                     </div>
                 </div>
                 <button id="confirm-save-btn" class="btn btn-primary btn-block">Confirm Save</button>

@@ -19,18 +19,18 @@ import (
 )
 
 type ChatModel struct {
-	viewport	viewport.Model
-	textarea	textarea.Model
-	spinner		spinner.Model
-	provider	ai.Provider
-	messages	[]ai.Message
-	err		error
-	loading		bool
-	width		int
-	height		int
-	ready		bool
-	showHelp	bool
-	helpView	viewport.Model
+	viewport viewport.Model
+	textarea textarea.Model
+	spinner  spinner.Model
+	provider ai.Provider
+	messages []ai.Message
+	err      error
+	loading  bool
+	width    int
+	height   int
+	ready    bool
+	showHelp bool
+	helpView viewport.Model
 }
 
 func NewChatModel() ChatModel {
@@ -68,12 +68,12 @@ func NewChatModel() ChatModel {
 	}
 
 	return ChatModel{
-		textarea:	ta,
-		viewport:	vp,
-		spinner:	sp,
-		provider:	p,
-		messages:	[]ai.Message{},
-		helpView:	hv,
+		textarea: ta,
+		viewport: vp,
+		spinner:  sp,
+		provider: p,
+		messages: []ai.Message{},
+		helpView: hv,
 	}
 }
 
@@ -85,9 +85,9 @@ type errMsg error
 
 func (m ChatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
-		tiCmd	tea.Cmd
-		vpCmd	tea.Cmd
-		cmd	tea.Cmd
+		tiCmd tea.Cmd
+		vpCmd tea.Cmd
+		cmd   tea.Cmd
 	)
 
 	switch msg := msg.(type) {
@@ -295,8 +295,8 @@ func RunChat() {
 }
 
 var ChatCmd = &cobra.Command{
-	Use:	"chat",
-	Short:	"Start AI chat session (TUI)",
+	Use:   "chat",
+	Short: "Start AI chat session (TUI)",
 	Run: func(cmd *cobra.Command, args []string) {
 		RunChat()
 	},

@@ -10,16 +10,16 @@ import (
 )
 
 type Commit struct {
-	Hash		string
-	ShortHash	string
-	Author		string
-	AuthorEmail	string
-	Date		time.Time
-	Message		string
-	FilesChanged	[]string
-	LinesAdded	int
-	LinesRemoved	int
-	Diff		string
+	Hash         string
+	ShortHash    string
+	Author       string
+	AuthorEmail  string
+	Date         time.Time
+	Message      string
+	FilesChanged []string
+	LinesAdded   int
+	LinesRemoved int
+	Diff         string
 }
 
 func GetFileHistory(repoPath, filePath string) ([]Commit, error) {
@@ -49,12 +49,12 @@ func GetFileHistory(repoPath, filePath string) ([]Commit, error) {
 		timestamp, _ := strconv.ParseInt(parts[4], 10, 64)
 
 		commit := Commit{
-			Hash:		parts[0],
-			ShortHash:	parts[1],
-			Author:		parts[2],
-			AuthorEmail:	parts[3],
-			Date:		time.Unix(timestamp, 0),
-			Message:	parts[5],
+			Hash:        parts[0],
+			ShortHash:   parts[1],
+			Author:      parts[2],
+			AuthorEmail: parts[3],
+			Date:        time.Unix(timestamp, 0),
+			Message:     parts[5],
 		}
 
 		commits = append(commits, commit)
@@ -77,8 +77,8 @@ func GetFileHistory(repoPath, filePath string) ([]Commit, error) {
 }
 
 type DiffStats struct {
-	Added	int
-	Removed	int
+	Added   int
+	Removed int
 }
 
 func getCommitDiff(repoPath, commitHash, filePath string) (string, DiffStats, error) {
@@ -144,12 +144,12 @@ func GetCommitDetails(repoPath, commitHash string) (*Commit, error) {
 	timestamp, _ := strconv.ParseInt(parts[4], 10, 64)
 
 	commit := &Commit{
-		Hash:		parts[0],
-		ShortHash:	parts[1],
-		Author:		parts[2],
-		AuthorEmail:	parts[3],
-		Date:		time.Unix(timestamp, 0),
-		Message:	parts[5],
+		Hash:        parts[0],
+		ShortHash:   parts[1],
+		Author:      parts[2],
+		AuthorEmail: parts[3],
+		Date:        time.Unix(timestamp, 0),
+		Message:     parts[5],
 	}
 
 	if len(parts) > 6 && parts[6] != "" {

@@ -11,22 +11,22 @@ import (
 type EnvironmentType string
 
 const (
-	TypePythonVenv	EnvironmentType	= "Python venv"
-	TypeAnaconda	EnvironmentType	= "Conda"
-	TypeNodeModules	EnvironmentType	= "Node Modules"
-	TypeUnknown	EnvironmentType	= "Unknown"
+	TypePythonVenv  EnvironmentType = "Python venv"
+	TypeAnaconda    EnvironmentType = "Conda"
+	TypeNodeModules EnvironmentType = "Node Modules"
+	TypeUnknown     EnvironmentType = "Unknown"
 )
 
 type Environment struct {
-	Name	string
-	Path	string
-	Type	EnvironmentType
-	Size	string
+	Name string
+	Path string
+	Type EnvironmentType
+	Size string
 }
 
 type Manager struct {
-	Workspace	string
-	PythonPath	string
+	Workspace  string
+	PythonPath string
 }
 
 func NewManager(workspace string) *Manager {
@@ -69,10 +69,10 @@ func (m *Manager) List() ([]Environment, error) {
 					fullPath := filepath.Join(gPath, e.Name())
 					if t := detectType(fullPath); t != TypeUnknown {
 						envs = append(envs, Environment{
-							Name:	fmt.Sprintf("Global: %s", e.Name()),
-							Path:	fullPath,
-							Type:	t,
-							Size:	getSize(fullPath),
+							Name: fmt.Sprintf("Global: %s", e.Name()),
+							Path: fullPath,
+							Type: t,
+							Size: getSize(fullPath),
 						})
 					}
 				}
@@ -122,10 +122,10 @@ func (m *Manager) List() ([]Environment, error) {
 			}
 
 			envs = append(envs, Environment{
-				Name:	name,
-				Path:	path,
-				Type:	t,
-				Size:	getSize(path),
+				Name: name,
+				Path: path,
+				Type: t,
+				Size: getSize(path),
 			})
 			return filepath.SkipDir
 		}

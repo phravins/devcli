@@ -6,11 +6,11 @@ import (
 )
 
 type Timeline struct {
-	RepoPath	string
-	FilePath	string
-	Commits		[]Commit
-	CurrentIndex	int
-	BlameData	[]BlameLine
+	RepoPath     string
+	FilePath     string
+	Commits      []Commit
+	CurrentIndex int
+	BlameData    []BlameLine
 }
 
 func NewTimeline(repoPath, filePath string) (*Timeline, error) {
@@ -34,11 +34,11 @@ func NewTimeline(repoPath, filePath string) (*Timeline, error) {
 	}
 
 	return &Timeline{
-		RepoPath:	repoPath,
-		FilePath:	filePath,
-		Commits:	commits,
-		CurrentIndex:	0,
-		BlameData:	blame,
+		RepoPath:     repoPath,
+		FilePath:     filePath,
+		Commits:      commits,
+		CurrentIndex: 0,
+		BlameData:    blame,
 	}, nil
 }
 

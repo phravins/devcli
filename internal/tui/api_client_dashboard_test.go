@@ -236,11 +236,11 @@ func TestAPIClientModel_APIExecMsg(t *testing.T) {
 	model := NewAPIClientModel()
 
 	respSuccess := devtools.APIResponse{
-		Status:		"200 OK",
-		StatusCode:	200,
-		LatencyMs:	45,
-		Formatted:	`{"status": "ok"}`,
-		Err:		nil,
+		Status:     "200 OK",
+		StatusCode: 200,
+		LatencyMs:  45,
+		Formatted:  `{"status": "ok"}`,
+		Err:        nil,
 	}
 
 	updated, _ := model.Update(apiExecMsg{response: respSuccess})
@@ -330,10 +330,10 @@ func TestAPIClientModel_View(t *testing.T) {
 
 	model.state = StateAPIResponseView
 	model.lastResponse = devtools.APIResponse{
-		StatusCode:	200,
-		Status:		"200 OK",
-		LatencyMs:	12,
-		Formatted:	"OK",
+		StatusCode: 200,
+		Status:     "200 OK",
+		LatencyMs:  12,
+		Formatted:  "OK",
 	}
 	viewResp200 := model.View()
 	if !strings.Contains(viewResp200, "200 OK") || !strings.Contains(viewResp200, "12 ms") {
@@ -341,10 +341,10 @@ func TestAPIClientModel_View(t *testing.T) {
 	}
 
 	model.lastResponse = devtools.APIResponse{
-		StatusCode:	404,
-		Status:		"404 Not Found",
-		LatencyMs:	15,
-		Formatted:	"Not Found",
+		StatusCode: 404,
+		Status:     "404 Not Found",
+		LatencyMs:  15,
+		Formatted:  "Not Found",
 	}
 	viewResp404 := model.View()
 	if !strings.Contains(viewResp404, "404 Not Found") {

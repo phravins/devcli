@@ -14,7 +14,7 @@ import (
 type ProjectStatus int
 
 const (
-	StatusActive	ProjectStatus	= iota
+	StatusActive ProjectStatus = iota
 	StatusBroken
 	StatusArchived
 )
@@ -46,13 +46,13 @@ func (s ProjectStatus) Icon() string {
 }
 
 type ProjectInfo struct {
-	Name		string
-	Path		string
-	TechStack	[]string
-	Status		ProjectStatus
-	LastModified	time.Time
-	HasErrors	bool
-	Size		int64
+	Name         string
+	Path         string
+	TechStack    []string
+	Status       ProjectStatus
+	LastModified time.Time
+	HasErrors    bool
+	Size         int64
 }
 
 func DetectTechStack(projectPath string) []string {
@@ -70,19 +70,19 @@ func DetectTechStack(projectPath string) []string {
 	}
 
 	markers := map[string][]string{
-		"go.mod":		{"Go"},
-		"package.json":		{"Node.js"},
-		"requirements.txt":	{"Python"},
-		"Pipfile":		{"Python", "Pipenv"},
-		"poetry.lock":		{"Python", "Poetry"},
-		"Cargo.toml":		{"Rust"},
-		"pom.xml":		{"Java", "Maven"},
-		"build.gradle":		{"Java", "Gradle"},
-		"Gemfile":		{"Ruby"},
-		"composer.json":	{"PHP"},
-		"Dockerfile":		{"Docker"},
-		"docker-compose.yml":	{"Docker Compose"},
-		".git":			{"Git"},
+		"go.mod":             {"Go"},
+		"package.json":       {"Node.js"},
+		"requirements.txt":   {"Python"},
+		"Pipfile":            {"Python", "Pipenv"},
+		"poetry.lock":        {"Python", "Poetry"},
+		"Cargo.toml":         {"Rust"},
+		"pom.xml":            {"Java", "Maven"},
+		"build.gradle":       {"Java", "Gradle"},
+		"Gemfile":            {"Ruby"},
+		"composer.json":      {"PHP"},
+		"Dockerfile":         {"Docker"},
+		"docker-compose.yml": {"Docker Compose"},
+		".git":               {"Git"},
 	}
 
 	for marker, techs := range markers {
@@ -100,14 +100,14 @@ func DetectTechStack(projectPath string) []string {
 		if data, err := os.ReadFile(pkgPath); err == nil {
 			content := string(data)
 			frameworks := map[string]string{
-				"react":	"React",
-				"vue":		"Vue",
-				"angular":	"Angular",
-				"next":		"Next.js",
-				"express":	"Express",
-				"fastify":	"Fastify",
-				"typescript":	"TypeScript",
-				"vite":		"Vite",
+				"react":      "React",
+				"vue":        "Vue",
+				"angular":    "Angular",
+				"next":       "Next.js",
+				"express":    "Express",
+				"fastify":    "Fastify",
+				"typescript": "TypeScript",
+				"vite":       "Vite",
 			}
 			for pkg, name := range frameworks {
 				if strings.Contains(content, `"`+pkg+`"`) {
@@ -123,14 +123,14 @@ func DetectTechStack(projectPath string) []string {
 		if data, err := os.ReadFile(reqPath); err == nil {
 			content := strings.ToLower(string(data))
 			frameworks := map[string]string{
-				"django":	"Django",
-				"flask":	"Flask",
-				"fastapi":	"FastAPI",
-				"pytest":	"Pytest",
-				"numpy":	"NumPy",
-				"pandas":	"Pandas",
-				"pytorch":	"PyTorch",
-				"tensorflow":	"TensorFlow",
+				"django":     "Django",
+				"flask":      "Flask",
+				"fastapi":    "FastAPI",
+				"pytest":     "Pytest",
+				"numpy":      "NumPy",
+				"pandas":     "Pandas",
+				"pytorch":    "PyTorch",
+				"tensorflow": "TensorFlow",
 			}
 			for pkg, name := range frameworks {
 				if strings.Contains(content, pkg) {
@@ -265,12 +265,12 @@ func ScanWorkspace(workspacePath string) ([]ProjectInfo, error) {
 		}
 
 		info := ProjectInfo{
-			Name:		entry.Name(),
-			Path:		projectPath,
-			TechStack:	DetectTechStack(projectPath),
-			Status:		AnalyzeProjectStatus(projectPath),
-			LastModified:	GetProjectLastModified(projectPath),
-			Size:		GetProjectSize(projectPath),
+			Name:         entry.Name(),
+			Path:         projectPath,
+			TechStack:    DetectTechStack(projectPath),
+			Status:       AnalyzeProjectStatus(projectPath),
+			LastModified: GetProjectLastModified(projectPath),
+			Size:         GetProjectSize(projectPath),
 		}
 
 		projects = append(projects, info)

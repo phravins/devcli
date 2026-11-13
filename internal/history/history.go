@@ -8,9 +8,9 @@ import (
 )
 
 type Entry struct {
-	Name		string		`json:"name"`
-	Path		string		`json:"path"`
-	CreatedAt	time.Time	`json:"created_at"`
+	Name      string    `json:"name"`
+	Path      string    `json:"path"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func getHistoryPath() string {
@@ -57,9 +57,9 @@ func Add(name, path string) error {
 	entries, _ := Load()
 
 	newEntry := Entry{
-		Name:		name,
-		Path:		path,
-		CreatedAt:	time.Now(),
+		Name:      name,
+		Path:      path,
+		CreatedAt: time.Now(),
 	}
 	entries = append([]Entry{newEntry}, entries...)
 	return Save(entries)

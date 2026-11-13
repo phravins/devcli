@@ -16,24 +16,24 @@ import (
 )
 
 type TaskRunnerModel struct {
-	workspace	string
-	tasks		[]taskrunner.Task
-	list		list.Model
-	running		bool
-	output		*strings.Builder
-	outputView	viewport.Model
-	helpView	viewport.Model
-	currentTask	*taskrunner.Task
-	ctx		context.Context
-	cancel		context.CancelFunc
-	spinner		spinner.Model
-	width		int
-	height		int
-	state		int
+	workspace   string
+	tasks       []taskrunner.Task
+	list        list.Model
+	running     bool
+	output      *strings.Builder
+	outputView  viewport.Model
+	helpView    viewport.Model
+	currentTask *taskrunner.Task
+	ctx         context.Context
+	cancel      context.CancelFunc
+	spinner     spinner.Model
+	width       int
+	height      int
+	state       int
 }
 
 const (
-	trStateList	= iota
+	trStateList = iota
 	trStateRunning
 	trStateCompleted
 	trStateHelp
@@ -61,13 +61,13 @@ func NewTaskRunnerModel(workspace string) TaskRunnerModel {
 	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return TaskRunnerModel{
-		workspace:	workspace,
-		list:		list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
-		output:		&strings.Builder{},
-		outputView:	viewport.New(80, 20),
-		helpView:	viewport.New(80, 20),
-		spinner:	sp,
-		state:		trStateList,
+		workspace:  workspace,
+		list:       list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
+		output:     &strings.Builder{},
+		outputView: viewport.New(80, 20),
+		helpView:   viewport.New(80, 20),
+		spinner:    sp,
+		state:      trStateList,
 	}
 }
 
@@ -95,8 +95,8 @@ func (m TaskRunnerModel) Update(msg tea.Msg) (TaskRunnerModel, tea.Cmd) {
 		items := make([]list.Item, len(m.tasks))
 		for i, task := range m.tasks {
 			items[i] = item{
-				title:	fmt.Sprintf("%s %s", task.Icon, task.Name),
-				desc:	task.Description,
+				title: fmt.Sprintf("%s %s", task.Icon, task.Name),
+				desc:  task.Description,
 			}
 		}
 		m.list.SetItems(items)

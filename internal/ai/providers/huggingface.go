@@ -11,9 +11,9 @@ import (
 )
 
 type HFProvider struct {
-	BaseURL		string
-	APIKey		string
-	modelName	string
+	BaseURL   string
+	APIKey    string
+	modelName string
 }
 
 func (p *HFProvider) Name() string {
@@ -47,11 +47,11 @@ func (p *HFProvider) IsLocal() bool {
 }
 
 type hfRequest struct {
-	Inputs		string	`json:"inputs"`
-	Parameters	struct {
-		MaxNewTokens	int	`json:"max_new_tokens"`
-		ReturnFullText	bool	`json:"return_full_text"`
-	}	`json:"parameters"`
+	Inputs     string `json:"inputs"`
+	Parameters struct {
+		MaxNewTokens   int  `json:"max_new_tokens"`
+		ReturnFullText bool `json:"return_full_text"`
+	} `json:"parameters"`
 }
 
 type hfResponseItem struct {

@@ -284,7 +284,16 @@ func TestTokenExchangeSetsCookie(t *testing.T) {
 		t.Fatalf("bad token: got %v want 401", rr.Code)
 	}
 
-	good := httptest.NewRequest("GET", "/?token="+testToken, nil)
+	launch, err := LaunchURL(testPort)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(launch, testToken) {
+		t.Fatal("launch URL must never contain the session secret")
+	}
+	code := launch[strings.Index(launch, "?token=")+len("?token="):]
+
+	good := httptest.NewRequest("GET", "/?token="+code, nil)
 	good.Host = "127.0.0.1:" + testPort
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, good)
@@ -299,6 +308,35 @@ func TestTokenExchangeSetsCookie(t *testing.T) {
 	}
 	if c == nil || c.Value != testToken || !c.HttpOnly || c.SameSite != http.SameSiteStrictMode {
 		t.Fatalf("expected HttpOnly SameSite=Strict session cookie, got %+v", c)
+	}
+}
+
+func TestLaunchCodeIsSingleUse(t *testing.T) {
+	h := newTestHandler()
+	launch, err := LaunchURL(testPort)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code := launch[strings.Index(launch, "?token=")+len("?token="):]
+
+	for i, want := range []int{http.StatusSeeOther, http.StatusUnauthorized} {
+		req := httptest.NewRequest("GET", "/?token="+code, nil)
+		req.Host = "127.0.0.1:" + testPort
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != want {
+			t.Fatalf("use %d: got %v want %v", i+1, rr.Code, want)
+		}
+	}
+}
+
+func TestLaunchCodeExpires(t *testing.T) {
+	code := "expired-code"
+	sessionMu.Lock()
+	launchCodes[code] = time.Now().Add(-time.Second)
+	sessionMu.Unlock()
+	if consumeLaunchCode(code) {
+		t.Fatal("expired launch code was accepted")
 	}
 }
 

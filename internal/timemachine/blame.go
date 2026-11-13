@@ -10,14 +10,14 @@ import (
 )
 
 type BlameLine struct {
-	LineNumber	int
-	Content		string
-	CommitHash	string
-	Author		string
-	AuthorEmail	string
-	Timestamp	time.Time
-	CommitMessage	string
-	BoundaryCommit	bool
+	LineNumber     int
+	Content        string
+	CommitHash     string
+	Author         string
+	AuthorEmail    string
+	Timestamp      time.Time
+	CommitMessage  string
+	BoundaryCommit bool
 }
 
 func GetBlame(repoPath, filePath string) ([]BlameLine, error) {

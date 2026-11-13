@@ -12,20 +12,20 @@ import (
 )
 
 type APIRequest struct {
-	Method	string			`json:"method"`
-	URL	string			`json:"url"`
-	Headers	map[string]string	`json:"headers"`
-	Body	string			`json:"body"`
+	Method  string            `json:"method"`
+	URL     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
 }
 
 type APIResponse struct {
-	StatusCode	int		`json:"status_code"`
-	Status		string		`json:"status"`
-	LatencyMs	int64		`json:"latency_ms"`
-	Headers		http.Header	`json:"headers"`
-	Body		string		`json:"body"`
-	Formatted	string		`json:"formatted"`
-	Err		error		`json:"err"`
+	StatusCode int         `json:"status_code"`
+	Status     string      `json:"status"`
+	LatencyMs  int64       `json:"latency_ms"`
+	Headers    http.Header `json:"headers"`
+	Body       string      `json:"body"`
+	Formatted  string      `json:"formatted"`
+	Err        error       `json:"err"`
 }
 
 func ExecuteAPIRequest(req APIRequest) APIResponse {
@@ -88,11 +88,11 @@ func ExecuteAPIRequest(req APIRequest) APIResponse {
 	}
 
 	return APIResponse{
-		StatusCode:	resp.StatusCode,
-		Status:		resp.Status,
-		LatencyMs:	latency,
-		Headers:	resp.Header,
-		Body:		bodyStr,
-		Formatted:	formattedStr,
+		StatusCode: resp.StatusCode,
+		Status:     resp.Status,
+		LatencyMs:  latency,
+		Headers:    resp.Header,
+		Body:       bodyStr,
+		Formatted:  formattedStr,
 	}
 }

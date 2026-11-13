@@ -12,26 +12,26 @@ import (
 )
 
 type BonusDashboardModel struct {
-	menuList	list.Model
-	state		int
-	width		int
-	height		int
+	menuList list.Model
+	state    int
+	width    int
+	height   int
 
-	taskRunnerModel		TaskRunnerModel
-	smartFileModel		SmartFileModel
-	snippetsModel		SnippetsModel
-	projectDashModel	ProjectDashModel
-	aiAssistantModel	AIAssistantModel
-	timeMachineModel	interface{}
-	helpView		viewport.Model
+	taskRunnerModel  TaskRunnerModel
+	smartFileModel   SmartFileModel
+	snippetsModel    SnippetsModel
+	projectDashModel ProjectDashModel
+	aiAssistantModel AIAssistantModel
+	timeMachineModel interface{}
+	helpView         viewport.Model
 
-	filePickerList	list.Model
-	filePickerReady	bool
-	filePickerCwd	string
+	filePickerList  list.Model
+	filePickerReady bool
+	filePickerCwd   string
 }
 
 const (
-	StateBonusMenu	= iota
+	StateBonusMenu = iota
 	StateBonusTaskRunner
 	StateBonusSmartFile
 	StateBonusSnippets
@@ -64,14 +64,14 @@ func NewBonusDashboardModel(workspace string) BonusDashboardModel {
 	menu.SetShowTitle(true)
 
 	return BonusDashboardModel{
-		menuList:		menu,
-		state:			StateBonusMenu,
-		taskRunnerModel:	NewTaskRunnerModel(workspace),
-		smartFileModel:		NewSmartFileModel(workspace),
-		snippetsModel:		NewSnippetsModel(),
-		projectDashModel:	NewProjectDashModel(workspace),
-		aiAssistantModel:	NewAIAssistantModel(),
-		helpView:		viewport.New(80, 20),
+		menuList:         menu,
+		state:            StateBonusMenu,
+		taskRunnerModel:  NewTaskRunnerModel(workspace),
+		smartFileModel:   NewSmartFileModel(workspace),
+		snippetsModel:    NewSnippetsModel(),
+		projectDashModel: NewProjectDashModel(workspace),
+		aiAssistantModel: NewAIAssistantModel(),
+		helpView:         viewport.New(80, 20),
 	}
 }
 

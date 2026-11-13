@@ -20,29 +20,29 @@ import (
 )
 
 type SmartFileModel struct {
-	workspace	string
-	templateList	list.Model
-	input		textinput.Model
-	languageInput	textinput.Model
-	aiPromptInput	textinput.Model
-	preview		viewport.Model
-	spinner		spinner.Model
-	provider	ai.Provider
-	state		int
-	selectedTpl	*smartfile.FileTemplate
-	options		map[string]string
-	savePath	string
-	customPrompt	string
-	result		string
-	width		int
-	height		int
-	err		error
+	workspace     string
+	templateList  list.Model
+	input         textinput.Model
+	languageInput textinput.Model
+	aiPromptInput textinput.Model
+	preview       viewport.Model
+	spinner       spinner.Model
+	provider      ai.Provider
+	state         int
+	selectedTpl   *smartfile.FileTemplate
+	options       map[string]string
+	savePath      string
+	customPrompt  string
+	result        string
+	width         int
+	height        int
+	err           error
 
-	helpView	viewport.Model
+	helpView viewport.Model
 }
 
 const (
-	sfStateSelectTemplate	= iota
+	sfStateSelectTemplate = iota
 	sfStateCustomize
 	sfStateAIPrompt
 	sfStateFilename
@@ -64,8 +64,8 @@ func NewSmartFileModel(workspace string) SmartFileModel {
 	items := make([]list.Item, len(smartfile.Templates))
 	for i, tpl := range smartfile.Templates {
 		items[i] = item{
-			title:	tpl.Name,
-			desc:	tpl.Description,
+			title: tpl.Name,
+			desc:  tpl.Description,
 		}
 	}
 
@@ -97,17 +97,17 @@ func NewSmartFileModel(workspace string) SmartFileModel {
 	p, _ := providers.GetProvider(cfg)
 
 	return SmartFileModel{
-		workspace:	workspace,
-		templateList:	lst,
-		input:		ti,
-		languageInput:	langInput,
-		aiPromptInput:	aiInput,
-		preview:	vp,
-		spinner:	s,
-		provider:	p,
-		state:		sfStateSelectTemplate,
-		helpView:	hv,
-		options:	make(map[string]string),
+		workspace:     workspace,
+		templateList:  lst,
+		input:         ti,
+		languageInput: langInput,
+		aiPromptInput: aiInput,
+		preview:       vp,
+		spinner:       s,
+		provider:      p,
+		state:         sfStateSelectTemplate,
+		helpView:      hv,
+		options:       make(map[string]string),
 	}
 }
 

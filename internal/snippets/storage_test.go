@@ -46,15 +46,15 @@ func TestLoadAll_Success(t *testing.T) {
 
 	expected := []Snippet{
 		{
-			ID:		"test-1",
-			Title:		"Test Title",
-			Description:	"Test Description",
-			Language:	"go",
-			Category:	"testing",
-			Code:		"fmt.Println(\"hello\")",
-			Tags:		[]string{"go", "test"},
-			CreatedAt:	time.Now().Truncate(time.Second),
-			UpdatedAt:	time.Now().Truncate(time.Second),
+			ID:          "test-1",
+			Title:       "Test Title",
+			Description: "Test Description",
+			Language:    "go",
+			Category:    "testing",
+			Code:        "fmt.Println(\"hello\")",
+			Tags:        []string{"go", "test"},
+			CreatedAt:   time.Now().Truncate(time.Second),
+			UpdatedAt:   time.Now().Truncate(time.Second),
 		},
 	}
 
@@ -106,12 +106,12 @@ func TestStorage_CRUD(t *testing.T) {
 	storage, _ := setupTestStorage(t)
 
 	snip := Snippet{
-		Title:		"Bubble Tea App",
-		Description:	"TUI app template",
-		Language:	"go",
-		Category:	"tui",
-		Code:		"tea.NewProgram(...)",
-		Tags:		[]string{"charm", "tui"},
+		Title:       "Bubble Tea App",
+		Description: "TUI app template",
+		Language:    "go",
+		Category:    "tui",
+		Code:        "tea.NewProgram(...)",
+		Tags:        []string{"charm", "tui"},
 	}
 
 	err := storage.Add(snip)

@@ -1,18 +1,18 @@
 package boilerplate
 
 type Snippet struct {
-	Name		string
-	Description	string
-	Content		map[string]string
-	DefaultFile	string
+	Name        string
+	Description string
+	Content     map[string]string
+	DefaultFile string
 }
 
 var Snippets = map[string]Snippet{
 
 	"CRUD API": {
-		Name:		"CRUD API",
-		Description:	"Basic Create, Read, Update, Delete handlers (Runnable)",
-		DefaultFile:	"crud_api.go",
+		Name:        "CRUD API",
+		Description: "Basic Create, Read, Update, Delete handlers (Runnable)",
+		DefaultFile: "crud_api.go",
 		Content: map[string]string{
 			"Go": `package main
 
@@ -200,9 +200,9 @@ int main() {
 	},
 
 	"Auth System": {
-		Name:		"Login + Signup System",
-		Description:	"Basic JWT-based Authentication (Runnable)",
-		DefaultFile:	"auth_server.go",
+		Name:        "Login + Signup System",
+		Description: "Basic JWT-based Authentication (Runnable)",
+		DefaultFile: "auth_server.go",
 		Content: map[string]string{
 			"Go": `package main
 
@@ -348,9 +348,9 @@ app.listen(port, () => {
 	},
 
 	"DB: PostgreSQL": {
-		Name:		"DB Connection (Postgres)",
-		Description:	"PostgreSQL connection test (Runnable)",
-		DefaultFile:	"db_postgres.go",
+		Name:        "DB Connection (Postgres)",
+		Description: "PostgreSQL connection test (Runnable)",
+		DefaultFile: "db_postgres.go",
 		Content: map[string]string{
 			"Go": `package main
 
@@ -404,9 +404,9 @@ if __name__ == '__main__':
 	},
 
 	"DB: MySQL": {
-		Name:		"DB Connection (MySQL)",
-		Description:	"MySQL connection test (Runnable)",
-		DefaultFile:	"db_mysql.go",
+		Name:        "DB Connection (MySQL)",
+		Description: "MySQL connection test (Runnable)",
+		DefaultFile: "db_mysql.go",
 		Content: map[string]string{
 			"Go": `package main
 
@@ -460,9 +460,9 @@ if __name__ == '__main__':
 	},
 
 	"DB: MongoDB": {
-		Name:		"DB Connection (MongoDB)",
-		Description:	"MongoDB connection test (Runnable)",
-		DefaultFile:	"db_mongo.go",
+		Name:        "DB Connection (MongoDB)",
+		Description: "MongoDB connection test (Runnable)",
+		DefaultFile: "db_mongo.go",
 		Content: map[string]string{
 			"Go": `package main
 
@@ -518,9 +518,9 @@ if __name__ == '__main__':
 	},
 
 	"Frontend: Home": {
-		Name:		"Frontend: Home Page",
-		Description:	"Basic HTML5 Landing Page",
-		DefaultFile:	"index.html",
+		Name:        "Frontend: Home Page",
+		Description: "Basic HTML5 Landing Page",
+		DefaultFile: "index.html",
 		Content: map[string]string{
 			"HTML": `<!DOCTYPE html>
 <html lang="en">
@@ -627,9 +627,9 @@ export default Home;`,
 	},
 
 	"React Component": {
-		Name:		"React Component",
-		Description:	"Functional React component with useState",
-		DefaultFile:	"Counter.jsx",
+		Name:        "React Component",
+		Description: "Functional React component with useState",
+		DefaultFile: "Counter.jsx",
 		Content: map[string]string{
 			"JavaScript": `import React, { useState } from 'react';
 
@@ -677,9 +677,9 @@ export default Counter;`,
 	},
 
 	"Frontend: Login": {
-		Name:		"Frontend: Login UI",
-		Description:	"Clean HTML/CSS Login Form",
-		DefaultFile:	"login.html",
+		Name:        "Frontend: Login UI",
+		Description: "Clean HTML/CSS Login Form",
+		DefaultFile: "login.html",
 		Content: map[string]string{
 			"HTML": `<!DOCTYPE html>
 <html lang="en">
@@ -904,9 +904,9 @@ export default Login;`,
 	},
 
 	"Frontend: Dashboard": {
-		Name:		"Frontend: Dashboard Layout",
-		Description:	"Sidebar + Content Layout",
-		DefaultFile:	"dashboard.html",
+		Name:        "Frontend: Dashboard Layout",
+		Description: "Sidebar + Content Layout",
+		DefaultFile: "dashboard.html",
 		Content: map[string]string{
 			"HTML": `<!DOCTYPE html>
 <html lang="en">

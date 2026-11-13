@@ -14,9 +14,9 @@ import (
 )
 
 var CommitCmd = &cobra.Command{
-	Use:	"commit",
-	Short:	"Auto-generate conventional Git commit messages using AI",
-	Long:	`Inspects your Git diff, generates a conventional commit message via AI, and commits changes upon approval.`,
+	Use:   "commit",
+	Short: "Auto-generate conventional Git commit messages using AI",
+	Long:  `Inspects your Git diff, generates a conventional commit message via AI, and commits changes upon approval.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("🔍 Analyzing git changes...")
 

@@ -8,24 +8,24 @@ import (
 )
 
 type DocsModel struct {
-	viewport	viewport.Model
-	width		int
-	height		int
-	ready		bool
-	renderer	*glamour.TermRenderer
-	language	string
+	viewport viewport.Model
+	width    int
+	height   int
+	ready    bool
+	renderer *glamour.TermRenderer
+	language string
 }
 
 const (
-	LangEnglish	= "en"
-	LangSpanish	= "es"
-	LangHindi	= "hi"
-	LangFrench	= "fr"
-	LangGerman	= "de"
-	LangChinese	= "zh"
-	LangJapanese	= "ja"
+	LangEnglish  = "en"
+	LangSpanish  = "es"
+	LangHindi    = "hi"
+	LangFrench   = "fr"
+	LangGerman   = "de"
+	LangChinese  = "zh"
+	LangJapanese = "ja"
 
-	Backtick	= "`"
+	Backtick = "`"
 )
 
 func NewDocsModel() DocsModel {
@@ -36,10 +36,10 @@ func NewDocsModel() DocsModel {
 	)
 
 	return DocsModel{
-		width:		100,
-		height:		30,
-		renderer:	r,
-		language:	LangEnglish,
+		width:    100,
+		height:   30,
+		renderer: r,
+		language: LangEnglish,
 	}
 }
 

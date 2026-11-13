@@ -12,15 +12,16 @@ import (
 const Version = "v1.1.0"
 
 type Config struct {
-	AIBackend	string			`mapstructure:"ai_backend"`
-	AIModel		string			`mapstructure:"ai_model"`
-	AIAPIKey	string			`mapstructure:"ai_api_key"`
-	AIBaseURL	string			`mapstructure:"ai_base_url"`
-	EditorTheme	string			`mapstructure:"editor_theme"`
-	UserName	string			`mapstructure:"user_name"`
-	HFAccessToken	string			`mapstructure:"hf_access_token"`
-	GeminiAPIKey	string			`mapstructure:"gemini_api_key"`
-	Compilers	map[string]string	`mapstructure:"compilers"`
+	AIBackend       string            `mapstructure:"ai_backend"`
+	AIModel         string            `mapstructure:"ai_model"`
+	AIAPIKey        string            `mapstructure:"ai_api_key"`
+	AIBaseURL       string            `mapstructure:"ai_base_url"`
+	EditorTheme     string            `mapstructure:"editor_theme"`
+	UserName        string            `mapstructure:"user_name"`
+	HFAccessToken   string            `mapstructure:"hf_access_token"`
+	GeminiAPIKey    string            `mapstructure:"gemini_api_key"`
+	AnthropicAPIKey string            `mapstructure:"anthropic_api_key"`
+	Compilers       map[string]string `mapstructure:"compilers"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -63,6 +64,7 @@ func LoadConfig() (*Config, error) {
 	config.UserName = CleanString(config.UserName)
 	config.HFAccessToken = CleanString(config.HFAccessToken)
 	config.GeminiAPIKey = CleanString(config.GeminiAPIKey)
+	config.AnthropicAPIKey = CleanString(config.AnthropicAPIKey)
 
 	return &config, nil
 }

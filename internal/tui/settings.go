@@ -14,16 +14,16 @@ import (
 )
 
 type SettingsModel struct {
-	inputs		[]textinput.Model
-	focusedIdx	int
-	err		error
-	successMsg	string
-	quitting	bool
-	showHelp	bool
-	width		int
-	height		int
-	helpView	viewport.Model
-	mainView	viewport.Model
+	inputs     []textinput.Model
+	focusedIdx int
+	err        error
+	successMsg string
+	quitting   bool
+	showHelp   bool
+	width      int
+	height     int
+	helpView   viewport.Model
+	mainView   viewport.Model
 }
 
 func NewSettingsModel() SettingsModel {
@@ -61,6 +61,10 @@ func NewSettingsModel() SettingsModel {
 		if cfg.GeminiAPIKey != "" {
 			currentKey = cfg.GeminiAPIKey
 		}
+	case "claude", "anthropic":
+		if cfg.AnthropicAPIKey != "" {
+			currentKey = cfg.AnthropicAPIKey
+		}
 	}
 	inputs[2].SetValue(config.CleanString(currentKey))
 	inputs[2].CharLimit = 100
@@ -93,12 +97,12 @@ func NewSettingsModel() SettingsModel {
 	mv.Style = lipgloss.NewStyle().Padding(1, 2)
 
 	m := SettingsModel{
-		inputs:		inputs,
-		focusedIdx:	0,
-		width:		100,
-		height:		40,
-		helpView:	hv,
-		mainView:	mv,
+		inputs:     inputs,
+		focusedIdx: 0,
+		width:      100,
+		height:     40,
+		helpView:   hv,
+		mainView:   mv,
 	}
 	m.updateMainViewContent()
 	return m
@@ -318,6 +322,8 @@ func (m *SettingsModel) saveConfig() {
 		config.Set("hf_access_token", apiKey)
 	case "gemini", "google":
 		config.Set("gemini_api_key", apiKey)
+	case "claude", "anthropic":
+		config.Set("anthropic_api_key", apiKey)
 	}
 
 	config.Set("ai_base_url", strings.TrimSpace(m.inputs[3].Value()))

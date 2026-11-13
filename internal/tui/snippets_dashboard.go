@@ -14,25 +14,25 @@ import (
 )
 
 type SnippetsModel struct {
-	storage		*snippets.Storage
-	snippetsList	[]snippets.Snippet
-	list		list.Model
-	viewport	viewport.Model
-	titleInput	textinput.Model
-	descInput	textinput.Model
-	langInput	textinput.Model
-	searchInput	textinput.Model
-	saveInput	textinput.Model
-	state		int
-	selectedSnip	*snippets.Snippet
-	width		int
-	height		int
-	err		error
+	storage      *snippets.Storage
+	snippetsList []snippets.Snippet
+	list         list.Model
+	viewport     viewport.Model
+	titleInput   textinput.Model
+	descInput    textinput.Model
+	langInput    textinput.Model
+	searchInput  textinput.Model
+	saveInput    textinput.Model
+	state        int
+	selectedSnip *snippets.Snippet
+	width        int
+	height       int
+	err          error
 
-	helpView	viewport.Model
+	helpView viewport.Model
 
-	fullContent	string
-	streamIndex	int
+	fullContent string
+	streamIndex int
 }
 
 type snTickMsg time.Time
@@ -44,7 +44,7 @@ func snTickCmd() tea.Cmd {
 }
 
 const (
-	snStateList	= iota
+	snStateList = iota
 	snStateView
 	snStateAdd
 	snStateEdit
@@ -54,8 +54,8 @@ const (
 )
 
 type snippetsLoadedMsg struct {
-	snippets	[]snippets.Snippet
-	err		error
+	snippets []snippets.Snippet
+	err      error
 }
 
 func NewSnippetsModel() SnippetsModel {
@@ -84,16 +84,16 @@ func NewSnippetsModel() SnippetsModel {
 	vp := viewport.New(80, 20)
 
 	return SnippetsModel{
-		storage:	storage,
-		list:		list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
-		viewport:	vp,
-		titleInput:	ti,
-		descInput:	di,
-		langInput:	li,
-		searchInput:	si,
-		saveInput:	savi,
-		helpView:	viewport.New(80, 20),
-		state:		snStateList,
+		storage:     storage,
+		list:        list.New([]list.Item{}, list.NewDefaultDelegate(), 60, 14),
+		viewport:    vp,
+		titleInput:  ti,
+		descInput:   di,
+		langInput:   li,
+		searchInput: si,
+		saveInput:   savi,
+		helpView:    viewport.New(80, 20),
+		state:       snStateList,
 	}
 }
 
@@ -310,8 +310,8 @@ func (m *SnippetsModel) updateList(snips []snippets.Snippet) {
 	for i, snip := range snips {
 		desc := fmt.Sprintf("%s | %s", snip.Language, snip.Description)
 		items[i] = item{
-			title:	snip.Title,
-			desc:	desc,
+			title: snip.Title,
+			desc:  desc,
 		}
 	}
 	m.list.SetItems(items)

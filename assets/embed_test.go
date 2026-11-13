@@ -36,9 +36,9 @@ func TestGetAsset(t *testing.T) {
 
 func TestAssetExists(t *testing.T) {
 	tests := []struct {
-		name		string
-		asset		string
-		expected	bool
+		name     string
+		asset    string
+		expected bool
 	}{
 		{"Logo exists", "devcli_logo.png", true},
 		{"Non-existent file", "nonexistent.txt", false},

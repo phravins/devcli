@@ -10,17 +10,17 @@ import (
 )
 
 type UpdaterModel struct {
-	width	int
-	height	int
-	info	*updater.UpdateInfo
-	err	error
-	status	string
-	updated	bool
+	width   int
+	height  int
+	info    *updater.UpdateInfo
+	err     error
+	status  string
+	updated bool
 }
 
 type UpdateCheckMsg struct {
-	info	*updater.UpdateInfo
-	err	error
+	info *updater.UpdateInfo
+	err  error
 }
 
 type UpdateCompleteMsg struct {

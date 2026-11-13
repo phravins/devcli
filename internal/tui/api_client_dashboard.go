@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	StateAPIMethodSelect	= iota
+	StateAPIMethodSelect = iota
 	StateAPIURLInput
 	StateAPIBodyInput
 	StateAPISending
@@ -21,15 +21,15 @@ const (
 )
 
 type APIClientModel struct {
-	state		int
-	methodIndex	int
-	methods		[]string
-	urlInput	textinput.Model
-	bodyInput	textinput.Model
-	viewport	viewport.Model
-	spinner		spinner.Model
-	width, height	int
-	lastResponse	devtools.APIResponse
+	state         int
+	methodIndex   int
+	methods       []string
+	urlInput      textinput.Model
+	bodyInput     textinput.Model
+	viewport      viewport.Model
+	spinner       spinner.Model
+	width, height int
+	lastResponse  devtools.APIResponse
 }
 
 type apiExecMsg struct {
@@ -59,13 +59,13 @@ func NewAPIClientModel() APIClientModel {
 		Padding(1, 2)
 
 	return APIClientModel{
-		state:		StateAPIMethodSelect,
-		methodIndex:	0,
-		methods:	methods,
-		urlInput:	tiURL,
-		bodyInput:	tiBody,
-		viewport:	vp,
-		spinner:	s,
+		state:       StateAPIMethodSelect,
+		methodIndex: 0,
+		methods:     methods,
+		urlInput:    tiURL,
+		bodyInput:   tiBody,
+		viewport:    vp,
+		spinner:     s,
 	}
 }
 
@@ -176,10 +176,10 @@ func (m APIClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func executeAPIReqCmd(method, url, body string) tea.Cmd {
 	return func() tea.Msg {
 		req := devtools.APIRequest{
-			Method:		method,
-			URL:		url,
-			Headers:	map[string]string{"Accept": "application/json"},
-			Body:		body,
+			Method:  method,
+			URL:     url,
+			Headers: map[string]string{"Accept": "application/json"},
+			Body:    body,
 		}
 		resp := devtools.ExecuteAPIRequest(req)
 		return apiExecMsg{response: resp}
@@ -232,7 +232,7 @@ func (m APIClientModel) View() string {
 		return lipgloss.JoinVertical(lipgloss.Left, card)
 
 	case StateAPISending:
-		return lipgloss.JoinVertical(lipgloss.Left, 
+		return lipgloss.JoinVertical(lipgloss.Left,
 			lipgloss.Place(m.width, m.height-2, lipgloss.Center, lipgloss.Center,
 				lipgloss.JoinVertical(lipgloss.Center,
 					m.spinner.View(),

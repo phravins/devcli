@@ -10,13 +10,13 @@ import (
 )
 
 type Container struct {
-	ID		string	`json:"ID"`
-	Image		string	`json:"Image"`
-	Command		string	`json:"Command"`
-	CreatedAt	string	`json:"CreatedAt"`
-	Status		string	`json:"Status"`
-	Names		string	`json:"Names"`
-	State		string	`json:"State"`
+	ID        string `json:"ID"`
+	Image     string `json:"Image"`
+	Command   string `json:"Command"`
+	CreatedAt string `json:"CreatedAt"`
+	Status    string `json:"Status"`
+	Names     string `json:"Names"`
+	State     string `json:"State"`
 }
 
 func IsDockerAvailable() bool {

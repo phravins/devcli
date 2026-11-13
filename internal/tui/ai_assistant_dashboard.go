@@ -13,22 +13,22 @@ import (
 )
 
 type AIAssistantModel struct {
-	input		textarea.Model
-	output		viewport.Model
-	spinner		spinner.Model
-	provider	ai.Provider
-	state		int
-	activeAgent	int
-	prompt		string
-	result		string
-	width		int
-	height		int
+	input       textarea.Model
+	output      viewport.Model
+	spinner     spinner.Model
+	provider    ai.Provider
+	state       int
+	activeAgent int
+	prompt      string
+	result      string
+	width       int
+	height      int
 
-	helpView	viewport.Model
+	helpView viewport.Model
 }
 
 const (
-	aiStateInput	= iota
+	aiStateInput = iota
 	aiStateGenerating
 	aiStateResult
 	aiStateHelp
@@ -51,12 +51,12 @@ func NewAIAssistantModel() AIAssistantModel {
 	p, _ := providers.GetProvider(cfg)
 
 	return AIAssistantModel{
-		input:		ta,
-		output:		vp,
-		spinner:	s,
-		provider:	p,
-		helpView:	viewport.New(80, 20),
-		state:		aiStateInput,
+		input:    ta,
+		output:   vp,
+		spinner:  s,
+		provider: p,
+		helpView: viewport.New(80, 20),
+		state:    aiStateInput,
 	}
 }
 

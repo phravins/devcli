@@ -147,8 +147,8 @@ ai_backend:
 
 func TestCleanString(t *testing.T) {
 	cases := []struct {
-		input		string
-		expected	string
+		input    string
+		expected string
 	}{
 		{"", ""},
 		{"normal string", "normal string"},

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	StateBPMenu	= iota
+	StateBPMenu = iota
 	StateBPSnippets
 	StateBPLanguage
 	StateBPTemplates
@@ -34,39 +34,39 @@ const (
 type BoilerplateItemType int
 
 const (
-	ItemTypeNone	BoilerplateItemType	= iota
+	ItemTypeNone BoilerplateItemType = iota
 	ItemTypeSnippet
 	ItemTypeArchitecture
 )
 
 type BoilerplateDashboardModel struct {
-	menuList	list.Model
-	snippetList	list.Model
-	languageList	list.Model
-	templateList	list.Model
-	archList	list.Model
-	input		textinput.Model
-	loadInput	textinput.Model
-	pathInput	textinput.Model
-	projectList	list.Model
-	viewport	viewport.Model
-	helpView	viewport.Model
+	menuList     list.Model
+	snippetList  list.Model
+	languageList list.Model
+	templateList list.Model
+	archList     list.Model
+	input        textinput.Model
+	loadInput    textinput.Model
+	pathInput    textinput.Model
+	projectList  list.Model
+	viewport     viewport.Model
+	helpView     viewport.Model
 
-	state		int
-	width, height	int
-	manager		*boilerplate.Manager
-	tplManager	*boilerplate.TemplateManager
+	state         int
+	width, height int
+	manager       *boilerplate.Manager
+	tplManager    *boilerplate.TemplateManager
 
-	selectedTemplate	string
-	selectedProject		string
-	selectedItem		string
-	selectedItemType	BoilerplateItemType
-	targetLang		string
+	selectedTemplate string
+	selectedProject  string
+	selectedItem     string
+	selectedItemType BoilerplateItemType
+	targetLang       string
 
-	statusMsg	string
-	err		error
-	fullContent	string
-	streamIndex	int
+	statusMsg   string
+	err         error
+	fullContent string
+	streamIndex int
 }
 
 type bpTickMsg time.Time
@@ -144,20 +144,20 @@ func NewBoilerplateDashboardModel(workspace string) BoilerplateDashboardModel {
 	hv := viewport.New(80, 20)
 
 	return BoilerplateDashboardModel{
-		menuList:	menu,
-		snippetList:	snipList,
-		languageList:	langList,
-		archList:	archList,
-		templateList:	tplList,
-		input:		ti,
-		loadInput:	li,
-		pathInput:	pi,
-		projectList:	pl,
-		viewport:	vp,
-		helpView:	hv,
-		state:		StateBPMenu,
-		manager:	mgr,
-		tplManager:	tplMgr,
+		menuList:     menu,
+		snippetList:  snipList,
+		languageList: langList,
+		archList:     archList,
+		templateList: tplList,
+		input:        ti,
+		loadInput:    li,
+		pathInput:    pi,
+		projectList:  pl,
+		viewport:     vp,
+		helpView:     hv,
+		state:        StateBPMenu,
+		manager:      mgr,
+		tplManager:   tplMgr,
 	}
 }
 

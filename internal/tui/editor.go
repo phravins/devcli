@@ -24,9 +24,9 @@ import (
 )
 
 var EditorCmd = &cobra.Command{
-	Use:	"editor [file]",
-	Short:	"Launch the built-in multi-language IDE",
-	Args:	cobra.MaximumNArgs(1),
+	Use:   "editor [file]",
+	Short: "Launch the built-in multi-language IDE",
+	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filename := ""
 		if len(args) > 0 {
@@ -56,7 +56,7 @@ func blinkCmd() tea.Cmd {
 type sessionState int
 
 const (
-	stateSelection	sessionState	= iota
+	stateSelection sessionState = iota
 	stateEditor
 	stateWebServer
 	stateSavePrompt
@@ -64,42 +64,42 @@ const (
 )
 
 const (
-	viewEditor	= iota
+	viewEditor = iota
 	viewOutput
 )
 
 type editorModel struct {
-	content	string
-	cursor	int
+	content string
+	cursor  int
 
-	viewport	viewport.Model
+	viewport viewport.Model
 }
 
 type model struct {
-	state		sessionState
-	choices		[]string
-	cursor		int
-	filename	string
-	language	string
+	state    sessionState
+	choices  []string
+	cursor   int
+	filename string
+	language string
 
-	editor	editorModel
+	editor editorModel
 
-	status		string
-	showHelp	bool
-	running		bool
-	output		string
-	saveInput	textinput.Model
-	commandInput	string
-	width		int
-	height		int
-	helpView	viewport.Model
-	showCursorLine	bool
+	status         string
+	showHelp       bool
+	running        bool
+	output         string
+	saveInput      textinput.Model
+	commandInput   string
+	width          int
+	height         int
+	helpView       viewport.Model
+	showCursorLine bool
 
-	outputView	viewport.Model
-	activeView	int
-	outputMaximized	bool
-	webLogs		[]string
-	logChan		chan string
+	outputView      viewport.Model
+	activeView      int
+	outputMaximized bool
+	webLogs         []string
+	logChan         chan string
 }
 
 func initialModel(filename string) model {
@@ -141,7 +141,7 @@ func initialModel(filename string) model {
 	}
 
 	return model{
-		state:	startState,
+		state: startState,
 		choices: []string{
 			"   Python (Py) ",
 			"   Java (Jv) ",
@@ -152,21 +152,21 @@ func initialModel(filename string) model {
 			"   Zig (Zg) ",
 			" 󰜰  Web Compiler (G) ",
 		},
-		cursor:			0,
-		filename:		filename,
-		language:		detectLanguage(filename),
-		editor:			editorModel{content: initialContent, cursor: 0, viewport: vp},
-		status:			"Select an editor mode to begin",
-		showHelp:		false,
-		helpView:		hv,
-		running:		false,
-		output:			"",
-		saveInput:		ti,
-		width:			80,
-		height:			40,
-		outputView:		outVp,
-		activeView:		viewEditor,
-		outputMaximized:	false,
+		cursor:          0,
+		filename:        filename,
+		language:        detectLanguage(filename),
+		editor:          editorModel{content: initialContent, cursor: 0, viewport: vp},
+		status:          "Select an editor mode to begin",
+		showHelp:        false,
+		helpView:        hv,
+		running:         false,
+		output:          "",
+		saveInput:       ti,
+		width:           80,
+		height:          40,
+		outputView:      outVp,
+		activeView:      viewEditor,
+		outputMaximized: false,
 	}
 }
 
@@ -808,39 +808,39 @@ func (m *model) moveCursorVertical(key tea.KeyType) {
 }
 
 var (
-	headerStyle	= lipgloss.NewStyle().
+	headerStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#FAFAFA")).
 			Background(lipgloss.Color("#7D56F4")).
 			Padding(0, 1).
 			Width(80)
 
-	fileStyle	= lipgloss.NewStyle().
+	fileStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#A8A8A8")).
 			MarginLeft(1)
 
-	statusStyle	= lipgloss.NewStyle().
+	statusStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFFFF")).
 			Background(lipgloss.Color("#2E1065")).
 			Padding(0, 1)
 
-	cursorLineStyle	= lipgloss.NewStyle().
+	cursorLineStyle = lipgloss.NewStyle().
 			Background(lipgloss.Color("#44475a"))
 
-	cursorBarStyle	= lipgloss.NewStyle().
+	cursorBarStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFF00")).
 			Bold(true)
 
-	outputTitleStyle	= lipgloss.NewStyle().
+	outputTitleStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#0F9E99")).
 				Bold(true)
 
-	outputContentStyle	= lipgloss.NewStyle().
+	outputContentStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(lipgloss.Color("#0F9E99")).
 				Padding(0, 1)
 
-	selectionTitleStyle	= lipgloss.NewStyle().
+	selectionTitleStyle = lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color("#FAFAFA")).
 				Background(lipgloss.Color("#7D56F4")).
@@ -848,24 +848,24 @@ var (
 				MarginBottom(1).
 				Align(lipgloss.Center)
 
-	selectionBoxStyle	= lipgloss.NewStyle().
+	selectionBoxStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(lipgloss.Color("#7D56F4")).
 				Padding(1, 4).
 				Margin(1, 0)
 
-	selectedItemStyle	= lipgloss.NewStyle().
+	selectedItemStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#282A36")).
 				Background(lipgloss.Color("#50FA7B")).
 				Bold(true).
 				Padding(0, 2).
 				MarginLeft(2)
 
-	unselectedItemStyle	= lipgloss.NewStyle().
+	unselectedItemStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#6272A4")).
 				PaddingLeft(4)
 
-	helpStyle	= lipgloss.NewStyle().
+	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FF79C6")).
 			Italic(true).
 			MarginTop(2)

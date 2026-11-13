@@ -31,9 +31,9 @@ func main() {
 	mgr := boilerplate.NewManager(testDir)
 
 	tests := []struct {
-		name	string
-		lang	string
-		file	string
+		name string
+		lang string
+		file string
 	}{
 		{"Auth System", "Go", "auth_handlers.go"},
 		{"DB: PostgreSQL", "Go", "db_postgres.go"},

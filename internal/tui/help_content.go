@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	ProjectToolsHelp	= `
+	ProjectToolsHelp = `
 # PROJECT TOOLS - Help & Usage Guide
 
 ## OVERVIEW
@@ -63,7 +63,7 @@ Each project is created with:
 ---
 *Press **Esc** to close this help*`
 
-	VenvWizardHelp	= `
+	VenvWizardHelp = `
       VIRTUAL ENVIRONMENT WIZARD - Help & Usage Guide         
 
 
@@ -137,7 +137,7 @@ Anaconda - Conda environment
 
 Press Esc to close this help`
 
-	DevServerHelp	= `
+	DevServerHelp = `
           DEV SERVER - Help & Usage Guide                     
 
 UNDERSTAND
@@ -203,7 +203,7 @@ SUPPORTED FRAMEWORKS
 
 Press Esc to close this help`
 
-	FileManagerHelp	= `
+	FileManagerHelp = `
 # File Manager - Help Guide
 
 ## Overview
@@ -252,7 +252,7 @@ A powerful keyboard-driven file explorer with fuzzy search across all drives, mo
 ---
 *Press **Esc** to close this guide*`
 
-	EditorHelp	= `
+	EditorHelp = `
 # DevCLI Editor - Complete Guide
 
 ## Overview
@@ -294,7 +294,7 @@ DevCLI tries to find these automatically if they are in your PATH:
 ---
 *Press **Esc** or **Ctrl+H** to close this guide*`
 
-	AIchatHelp	= `
+	AIchatHelp = `
 # AI Chat - Help Guide
 
 ## Overview
@@ -331,7 +331,7 @@ Chat with AI models from multiple providers including **Ollama** (local), **Open
 ---
 *Press **Esc** to close this guide*`
 
-	SettingsHelp	= `
+	SettingsHelp = `
 # Settings - Help & Usage Guide
 
 ## Overview
@@ -380,7 +380,7 @@ Settings are stored at:
 ---
 *Press **Esc** to close this guide*`
 
-	BoilerplateHelp	= `
+	BoilerplateHelp = `
         BOILERPLATE GENERATOR - Help & Usage Guide           
 
 
@@ -431,7 +431,7 @@ TIPS
 
 Press Esc to close this help`
 
-	BonusFeaturesHelp	= `
+	BonusFeaturesHelp = `
           BONUS FEATURES - Help & Usage Guide                 
 
 
@@ -486,7 +486,7 @@ TIPS
 
 Press Esc to close this help`
 
-	TaskRunnerHelp	= `
+	TaskRunnerHelp = `
            TASK RUNNER - Help & Usage Guide                 
 
 
@@ -536,7 +536,7 @@ SUPPORTED LANGUAGES
 
 Press Esc to close this help`
 
-	AutoUpdateHelp	= `
+	AutoUpdateHelp = `
          AUTO-UPDATE CENTER - Help & Usage Guide             
 
 
@@ -622,7 +622,7 @@ TIPS
 
 Press Esc to close this help`
 
-	SmartFileHelp	= `
+	SmartFileHelp = `
           SMART FILE CREATOR - Help & Usage Guide             
                                                                 
 OVERVIEW
@@ -656,7 +656,7 @@ HOW TO USE
 
 Press Esc to close this help`
 
-	SnippetLibraryHelp	= `
+	SnippetLibraryHelp = `
            SNIPPET LIBRARY - Help & Usage Guide               
                                                                 
 OVERVIEW
@@ -694,7 +694,7 @@ HOW TO USE
 
 Press Esc to close this help`
 
-	AIAssistantHelp	= `
+	AIAssistantHelp = `
              AI ASSISTANT - Help & Usage Guide                
                                                                 
 OVERVIEW
@@ -733,7 +733,7 @@ HOW TO USE
                                                         
 Press Esc to close this help`
 
-	TimeMachineHelp	= `
+	TimeMachineHelp = `
          CODE TIME MACHINE - Help & Usage Guide             
 
 

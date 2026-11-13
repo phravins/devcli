@@ -14,10 +14,10 @@ func TestOllamaProvider_Send(t *testing.T) {
 
 	mockResponse := ollamaResponse{
 		Message: ai.Message{
-			Role:		"assistant",
-			Content:	"Hello from Ollama!",
+			Role:    "assistant",
+			Content: "Hello from Ollama!",
 		},
-		Done:	true,
+		Done: true,
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +42,8 @@ func TestOllamaProvider_Send(t *testing.T) {
 
 	p := &OllamaProvider{}
 	cfg := &config.Config{
-		AIBaseURL:	server.URL,
-		AIModel:	"test-model",
+		AIBaseURL: server.URL,
+		AIModel:   "test-model",
 	}
 	if err := p.Configure(cfg); err != nil {
 		t.Fatalf("Failed to configure provider: %v", err)

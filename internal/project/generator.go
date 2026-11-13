@@ -12,11 +12,11 @@ import (
 )
 
 type ProjectConfig struct {
-	Name		string
-	Path		string
-	Stack		string
-	InitGit		bool
-	AddReadme	bool
+	Name      string
+	Path      string
+	Stack     string
+	InitGit   bool
+	AddReadme bool
 }
 
 func Generate(cfg ProjectConfig) (string, error) {

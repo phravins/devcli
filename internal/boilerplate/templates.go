@@ -19,9 +19,9 @@ func NewTemplateManager(baseDir string) *TemplateManager {
 }
 
 type CustomTemplate struct {
-	Name		string
-	Path		string
-	CreatedAt	time.Time
+	Name      string
+	Path      string
+	CreatedAt time.Time
 }
 
 func (tm *TemplateManager) SaveAsTemplate(name, sourceDir string) error {
@@ -48,9 +48,9 @@ func (tm *TemplateManager) ListTemplates() ([]CustomTemplate, error) {
 		if e.IsDir() {
 			info, _ := e.Info()
 			templates = append(templates, CustomTemplate{
-				Name:		e.Name(),
-				Path:		filepath.Join(tm.TemplatesDir, e.Name()),
-				CreatedAt:	info.ModTime(),
+				Name:      e.Name(),
+				Path:      filepath.Join(tm.TemplatesDir, e.Name()),
+				CreatedAt: info.ModTime(),
 			})
 		}
 	}

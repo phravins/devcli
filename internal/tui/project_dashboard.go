@@ -24,36 +24,36 @@ import (
 )
 
 type ProjectDashboardModel struct {
-	menuList	list.Model
-	projectList	list.Model
-	templateList	list.Model
-	input		textinput.Model
-	pathInput	textinput.Model
-	spinner		spinner.Model
-	historyList	list.Model
+	menuList     list.Model
+	projectList  list.Model
+	templateList list.Model
+	input        textinput.Model
+	pathInput    textinput.Model
+	spinner      spinner.Model
+	historyList  list.Model
 
-	state		int
-	previousState	int
-	width, height	int
+	state         int
+	previousState int
+	width, height int
 
-	manager	*project.Manager
+	manager *project.Manager
 
-	venvModel		VenvDashboardModel
-	devServerModel		DevServerDashboardModel
-	boilerplateModel	BoilerplateDashboardModel
-	bonusModel		BonusDashboardModel
+	venvModel        VenvDashboardModel
+	devServerModel   DevServerDashboardModel
+	boilerplateModel BoilerplateDashboardModel
+	bonusModel       BonusDashboardModel
 
-	selectedTpl	string
-	err		error
-	statusMsg	string
+	selectedTpl string
+	err         error
+	statusMsg   string
 
-	installOutput	*strings.Builder
-	installView	viewport.Model
-	helpView	viewport.Model
+	installOutput *strings.Builder
+	installView   viewport.Model
+	helpView      viewport.Model
 }
 
 const (
-	StateMenu	= iota
+	StateMenu = iota
 	StateProjectList
 	StateSelectTemplate
 	StateNameProject
@@ -140,22 +140,22 @@ func NewProjectDashboardModel() ProjectDashboardModel {
 	hv.SetContent(out)
 
 	return ProjectDashboardModel{
-		menuList:		menu,
-		projectList:		pl,
-		templateList:		tplList,
-		historyList:		histList,
-		input:			ti,
-		pathInput:		pi,
-		spinner:		s,
-		manager:		mgr,
-		venvModel:		NewVenvDashboardModel(),
-		devServerModel:		NewDevServerDashboardModel(mgr.Workspace),
-		boilerplateModel:	NewBoilerplateDashboardModel(mgr.Workspace),
-		bonusModel:		NewBonusDashboardModel(mgr.Workspace),
-		state:			StateMenu,
-		installOutput:		&strings.Builder{},
-		installView:		vp,
-		helpView:		hv,
+		menuList:         menu,
+		projectList:      pl,
+		templateList:     tplList,
+		historyList:      histList,
+		input:            ti,
+		pathInput:        pi,
+		spinner:          s,
+		manager:          mgr,
+		venvModel:        NewVenvDashboardModel(),
+		devServerModel:   NewDevServerDashboardModel(mgr.Workspace),
+		boilerplateModel: NewBoilerplateDashboardModel(mgr.Workspace),
+		bonusModel:       NewBonusDashboardModel(mgr.Workspace),
+		state:            StateMenu,
+		installOutput:    &strings.Builder{},
+		installView:      vp,
+		helpView:         hv,
 	}
 }
 
@@ -225,9 +225,9 @@ func (m ProjectDashboardModel) Init() tea.Cmd {
 type cleanupPromptMsg struct{}
 
 type projectCreatedMsg struct {
-	installCmd	string
-	path		string
-	err		error
+	installCmd string
+	path       string
+	err        error
 }
 
 type delayedSuccessMsg struct{}
@@ -237,16 +237,16 @@ type loadProjectsMsg []list.Item
 type installDoneMsg struct{ err error }
 
 type cmdProcess struct {
-	cmd	*exec.Cmd
-	reader	*bufio.Reader
+	cmd    *exec.Cmd
+	reader *bufio.Reader
 }
 
 type installStartedMsg struct {
 	proc *cmdProcess
 }
 type installOutputMsg struct {
-	line	string
-	proc	*cmdProcess
+	line string
+	proc *cmdProcess
 }
 
 func createProjectCmd(mgr *project.Manager, name, stack, path string) tea.Cmd {
@@ -280,8 +280,8 @@ func startInstallCmd(dir, cmdStr string) tea.Cmd {
 
 		return installStartedMsg{
 			proc: &cmdProcess{
-				cmd:	c,
-				reader:	bufio.NewReader(outPipe),
+				cmd:    c,
+				reader: bufio.NewReader(outPipe),
 			},
 		}
 	}

@@ -16,27 +16,27 @@ import (
 )
 
 type VenvDashboardModel struct {
-	list	list.Model
-	spinner	spinner.Model
-	manager	*venv.Manager
+	list    list.Model
+	spinner spinner.Model
+	manager *venv.Manager
 
-	state		int
-	width, height	int
+	state         int
+	width, height int
 
-	message		string
-	err		error
-	input		textinput.Model
-	selectedEnv	venv.Environment
+	message     string
+	err         error
+	input       textinput.Model
+	selectedEnv venv.Environment
 
-	logView		viewport.Model
-	logBuf		*strings.Builder
-	targetPath	string
-	countdown	int
-	helpView	viewport.Model
+	logView    viewport.Model
+	logBuf     *strings.Builder
+	targetPath string
+	countdown  int
+	helpView   viewport.Model
 }
 
 const (
-	StateVenvList	= iota
+	StateVenvList = iota
 	StateVenvActionMenu
 	StateVenvCloneInput
 	StateVenvCreateInput
@@ -82,15 +82,15 @@ func NewVenvDashboardModel() VenvDashboardModel {
 	}
 
 	return VenvDashboardModel{
-		list:		l,
-		spinner:	s,
-		manager:	mgr,
-		input:		ti,
-		state:		StateVenvList,
-		err:		initErr,
-		logView:	vp,
-		logBuf:		&strings.Builder{},
-		helpView:	hv,
+		list:     l,
+		spinner:  s,
+		manager:  mgr,
+		input:    ti,
+		state:    StateVenvList,
+		err:      initErr,
+		logView:  vp,
+		logBuf:   &strings.Builder{},
+		helpView: hv,
 	}
 }
 
@@ -142,8 +142,8 @@ func (m VenvDashboardModel) Init() tea.Cmd {
 type loadVenvsMsg []list.Item
 
 type venvMsg struct {
-	err	error
-	msg	string
+	err error
+	msg string
 }
 
 func (m VenvDashboardModel) Update(msg tea.Msg) (VenvDashboardModel, tea.Cmd) {

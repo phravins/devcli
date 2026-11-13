@@ -34,8 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSave = document.getElementById('close-save');
     const confirmSaveBtn = document.getElementById('confirm-save-btn');
     const customSavePathInput = document.getElementById('custom-save-path');
-    const locationBtnTabs = document.querySelectorAll('.location-tabs .tab-btn');
-    let saveLocation = 'local';
 
     window.saveCode = () => {
         const currentFilename = filenameInput.value;
@@ -46,69 +44,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeSave.addEventListener('click', () => saveModal.classList.add('hidden'));
 
-    locationBtnTabs.forEach(btn => {
-        btn.addEventListener('click', () => {
-            locationBtnTabs.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            saveLocation = btn.getAttribute('data-location');
-            
-            if (saveLocation === 'local') {
-                document.getElementById('local-save-options').classList.remove('hidden');
-                document.getElementById('drive-save-options').classList.add('hidden');
-            } else {
-                document.getElementById('local-save-options').classList.add('hidden');
-                document.getElementById('drive-save-options').classList.remove('hidden');
-            }
-        });
-    });
-
     confirmSaveBtn.addEventListener('click', async () => {
         const code = codeEditor.value;
         const path = customSavePathInput.value;
 
-        if (saveLocation === 'local') {
-            if (!path) {
-                showToast("Path required!", "error");
-                return;
+        if (!path) {
+            showToast("Path required!", "error");
+            return;
+        }
+        try {
+            const response = await fetch('/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: path, content: code })
+            });
+
+            if (response.ok) {
+                showToast("Saved locally to " + path, "success");
+                filenameInput.value = path;
+                saveToLocal();
+                saveModal.classList.add('hidden');
+                sendLogToTUI(`File saved locally: ${path}`);
+            } else {
+                const txt = await response.text();
+                showToast("Error: " + txt, "error");
             }
-            try {
-                const response = await fetch('/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: path, content: code })
-                });
-                
-                if (response.ok) {
-                    showToast("Saved locally to " + path, "success");
-                    filenameInput.value = path;
-                    saveToLocal();
-                    saveModal.classList.add('hidden');
-                    sendLogToTUI(`File saved locally: ${path}`);
-                } else {
-                    const txt = await response.text();
-                    showToast("Error: " + txt, "error");
-                }
-            } catch (e) {
-                showToast("Network Error: " + e.message, "error");
-            }
-        } else {
-            // Drive Save
-            try {
-                const response = await fetch('/drive/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: path || "untitled.py", content: code })
-                });
-                if (response.ok) {
-                    showToast("Saved to Google Drive!", "success");
-                    saveModal.classList.add('hidden');
-                    sendLogToTUI(`File saved to Google Drive: ${path || "untitled.py"}`);
-                } else {
-                    showToast("Drive Save Failed. Please connect account.", "error");
-                }
-            } catch (e) {
-                showToast("Drive error: " + e.message, "error");
-            }
+        } catch (e) {
+            showToast("Network Error: " + e.message, "error");
         }
     });
 
@@ -224,14 +186,15 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.classList.add('hidden'), 3000);
     };
 
-    document.getElementById('drive-sidebar-btn').addEventListener('click', () => {
-        saveLocation = 'drive';
-        saveModal.classList.remove('hidden');
-        document.querySelectorAll('.location-tabs .tab-btn').forEach(b => {
-            b.classList.toggle('active', b.getAttribute('data-location') === 'drive');
+    // --- Output / Terminal tabs ---
+    document.querySelectorAll('.tabs .tab-btn[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tabs .tab-btn[data-tab]').forEach(b =>
+                b.classList.toggle('active', b === btn));
+            document.querySelectorAll('.bottom-pane .tab-content').forEach(c =>
+                c.classList.toggle('active', c.id === `${btn.dataset.tab}-view`));
+            if (btn.dataset.tab === 'terminal') termInput.focus();
         });
-        document.getElementById('local-save-options').classList.add('hidden');
-        document.getElementById('drive-save-options').classList.remove('hidden');
     });
 
     // Bound here instead of inline onclick="" so the page can run under a

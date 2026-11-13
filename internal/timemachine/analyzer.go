@@ -6,10 +6,10 @@ import (
 )
 
 type BugSuspect struct {
-	Commit	Commit
-	Reason	string
-	Risk	float64
-	Context	[]string
+	Commit  Commit
+	Reason  string
+	Risk    float64
+	Context []string
 }
 
 func containsAny(s string, keywords ...string) bool {
@@ -84,10 +84,10 @@ func AnalyzeBugRisks(commits []Commit) []BugSuspect {
 
 		if risk >= 0.3 {
 			suspects = append(suspects, BugSuspect{
-				Commit:		commit,
-				Reason:		strings.Join(reasons, ", "),
-				Risk:		risk,
-				Context:	context,
+				Commit:  commit,
+				Reason:  strings.Join(reasons, ", "),
+				Risk:    risk,
+				Context: context,
 			})
 		}
 	}
@@ -130,10 +130,10 @@ func FindSuspiciousLines(blameLines []BlameLine, suspects []BugSuspect) []int {
 }
 
 type ChurnData struct {
-	LineNumber	int
-	ChangeCount	int
-	LastModified	time.Time
-	Authors		[]string
+	LineNumber   int
+	ChangeCount  int
+	LastModified time.Time
+	Authors      []string
 }
 
 func AnalyzeChurn(commits []Commit) map[int]ChurnData {

@@ -27,11 +27,11 @@ func (m *Manager) CreateProject(name, stack, parentDir string) (string, string, 
 	parentDir = m.ExpandPath(parentDir)
 
 	cfg := ProjectConfig{
-		Name:		name,
-		Path:		filepath.Join(parentDir, name),
-		Stack:		stack,
-		InitGit:	true,
-		AddReadme:	true,
+		Name:      name,
+		Path:      filepath.Join(parentDir, name),
+		Stack:     stack,
+		InitGit:   true,
+		AddReadme: true,
 	}
 
 	fmt.Printf("Generating project at: %s\n", cfg.Path)

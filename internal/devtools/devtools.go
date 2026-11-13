@@ -10,15 +10,15 @@ import (
 )
 
 var DevCmd = &cobra.Command{
-	Use:	"dev",
-	Short:	"Development tools",
-	Long:	"Local development tools for project management",
+	Use:   "dev",
+	Short: "Development tools",
+	Long:  "Local development tools for project management",
 }
 
 var createCmd = &cobra.Command{
-	Use:	"create [project-name]",
-	Short:	"Create a new project folder",
-	Args:	cobra.ExactArgs(1),
+	Use:   "create [project-name]",
+	Short: "Create a new project folder",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := args[0]
 		if err := createProject(projectName); err != nil {
@@ -30,9 +30,9 @@ var createCmd = &cobra.Command{
 }
 
 var serverCmd = &cobra.Command{
-	Use:	"server [port]",
-	Short:	"Run a development server",
-	Args:	cobra.ExactArgs(1),
+	Use:   "server [port]",
+	Short: "Run a development server",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		port := args[0]
 		fmt.Printf("Starting development server on port %s...\n", port)
@@ -41,9 +41,9 @@ var serverCmd = &cobra.Command{
 }
 
 var boilerplateCmd = &cobra.Command{
-	Use:	"boilerplate [type]",
-	Short:	"Generate boilerplate files",
-	Args:	cobra.ExactArgs(1),
+	Use:   "boilerplate [type]",
+	Short: "Generate boilerplate files",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		boilerplateType := args[0]
 		if err := generateBoilerplate(boilerplateType); err != nil {

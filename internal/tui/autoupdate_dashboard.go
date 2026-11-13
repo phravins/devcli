@@ -33,7 +33,7 @@ var autoUpdateMenuItems = []list.Item{
 }
 
 const (
-	StateAutoUpdateMenu	= iota
+	StateAutoUpdateMenu = iota
 	StateAutoUpdateLanguages
 	StateAutoUpdateKeys
 	StateAutoUpdateCheck
@@ -46,32 +46,32 @@ const (
 )
 
 type AutoUpdateModel struct {
-	state		int
-	list		list.Model
-	width, height	int
-	spinner		spinner.Model
-	input		textinput.Model
-	keyProvider	string
+	state         int
+	list          list.Model
+	width, height int
+	spinner       spinner.Model
+	input         textinput.Model
+	keyProvider   string
 
-	outputView	viewport.Model
+	outputView viewport.Model
 
-	updateLog	string
-	updateSummary	string
-	provider	ai.Provider
+	updateLog     string
+	updateSummary string
+	provider      ai.Provider
 
-	err		error
-	statusMsg	string
+	err       error
+	statusMsg string
 }
 
 type updateCheckMsg struct {
-	hasUpdates	bool
-	log		string
-	err		error
+	hasUpdates bool
+	log        string
+	err        error
 }
 
 type summaryMsg struct {
-	content	string
-	err	error
+	content string
+	err     error
 }
 
 type installMsg struct {
@@ -161,12 +161,12 @@ func NewAutoUpdateModel() AutoUpdateModel {
 	}
 
 	return AutoUpdateModel{
-		state:		StateAutoUpdateMenu,
-		list:		l,
-		spinner:	s,
-		outputView:	vp,
-		provider:	p,
-		input:		ti,
+		state:      StateAutoUpdateMenu,
+		list:       l,
+		spinner:    s,
+		outputView: vp,
+		provider:   p,
+		input:      ti,
 	}
 }
 
@@ -632,10 +632,10 @@ func checkDevCLIUpdatesCmd() tea.Cmd {
 		}
 
 		var commits []struct {
-			Sha	string	`json:"sha"`
-			Commit	struct {
+			Sha    string `json:"sha"`
+			Commit struct {
 				Message string `json:"message"`
-			}	`json:"commit"`
+			} `json:"commit"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&commits); err != nil {
 			return updateCheckMsg{err: fmt.Errorf("failed to parse github response: %v", err)}
@@ -668,8 +668,8 @@ func summarizeUpdatesCmd(p ai.Provider, log string) tea.Cmd {
 		}
 
 		type result struct {
-			content	string
-			err	error
+			content string
+			err     error
 		}
 		resChan := make(chan result, 1)
 

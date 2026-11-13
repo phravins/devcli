@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	githubRepo	= "phravins/devcli"
+	githubRepo = "phravins/devcli"
 
-	currentVersion	= "1.1.0"
+	currentVersion = "1.1.0"
 )
 
 type UpdateInfo struct {
-	CurrentVersion		string
-	LatestVersion		string
-	IsUpdateAvailable	bool
-	ReleaseURL		string
-	ReleaseNotes		string
+	CurrentVersion    string
+	LatestVersion     string
+	IsUpdateAvailable bool
+	ReleaseURL        string
+	ReleaseNotes      string
 }
 
 func CheckForUpdates() (*UpdateInfo, error) {
@@ -45,11 +45,11 @@ func CheckForUpdates() (*UpdateInfo, error) {
 	}
 
 	info := &UpdateInfo{
-		CurrentVersion:		currentVersion,
-		LatestVersion:		latest.Version(),
-		IsUpdateAvailable:	latestVer.GreaterThan(currentVer),
-		ReleaseURL:		latest.URL,
-		ReleaseNotes:		latest.ReleaseNotes,
+		CurrentVersion:    currentVersion,
+		LatestVersion:     latest.Version(),
+		IsUpdateAvailable: latestVer.GreaterThan(currentVer),
+		ReleaseURL:        latest.URL,
+		ReleaseNotes:      latest.ReleaseNotes,
 	}
 
 	return info, nil

@@ -18,24 +18,24 @@ func TestGetOldEntries(t *testing.T) {
 
 	entries := []history.Entry{
 		{
-			Name:		"Entry 1",
-			Path:		"/path/1",
-			CreatedAt:	now,
+			Name:      "Entry 1",
+			Path:      "/path/1",
+			CreatedAt: now,
 		},
 		{
-			Name:		"Entry 2",
-			Path:		"/path/2",
-			CreatedAt:	now.AddDate(0, 0, -2),
+			Name:      "Entry 2",
+			Path:      "/path/2",
+			CreatedAt: now.AddDate(0, 0, -2),
 		},
 		{
-			Name:		"Entry 3",
-			Path:		"/path/3",
-			CreatedAt:	now.AddDate(0, 0, -10),
+			Name:      "Entry 3",
+			Path:      "/path/3",
+			CreatedAt: now.AddDate(0, 0, -10),
 		},
 		{
-			Name:		"Entry 4",
-			Path:		"/path/4",
-			CreatedAt:	now.AddDate(0, 0, -30),
+			Name:      "Entry 4",
+			Path:      "/path/4",
+			CreatedAt: now.AddDate(0, 0, -30),
 		},
 	}
 

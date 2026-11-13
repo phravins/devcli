@@ -13,35 +13,35 @@ import (
 )
 
 type DevServerDashboardModel struct {
-	width, height		int
-	state			int
-	projectPath		string
-	projectInfo		devserver.ProjectInfo
-	runner			*devserver.Runner
-	logView			viewport.Model
-	helpView		viewport.Model
-	searchInput		textinput.Model
-	pathInput		textinput.Model
-	logs			[]logEntry
-	filterMode		string
-	serverFilter		string
-	autoScroll		bool
-	showHelp		bool
-	err			error
-	pendingAction		string
-	confirmationMessage	string
+	width, height       int
+	state               int
+	projectPath         string
+	projectInfo         devserver.ProjectInfo
+	runner              *devserver.Runner
+	logView             viewport.Model
+	helpView            viewport.Model
+	searchInput         textinput.Model
+	pathInput           textinput.Model
+	logs                []logEntry
+	filterMode          string
+	serverFilter        string
+	autoScroll          bool
+	showHelp            bool
+	err                 error
+	pendingAction       string
+	confirmationMessage string
 }
 
 type logEntry struct {
-	timestamp	string
-	serverName	string
-	line		string
-	isError		bool
-	isWarning	bool
+	timestamp  string
+	serverName string
+	line       string
+	isError    bool
+	isWarning  bool
 }
 
 const (
-	StateDevServerPathInput	= iota
+	StateDevServerPathInput = iota
 	StateDevServerDetecting
 	StateDevServerReady
 	StateDevServerRunning
@@ -51,8 +51,8 @@ const (
 )
 
 type detectDoneMsg struct {
-	info	devserver.ProjectInfo
-	err	error
+	info devserver.ProjectInfo
+	err  error
 }
 
 type logReceivedMsg struct {
@@ -86,17 +86,17 @@ func NewDevServerDashboardModel(projectPath string) DevServerDashboardModel {
 	hv.SetContent(DevServerHelp)
 
 	return DevServerDashboardModel{
-		state:		StateDevServerPathInput,
-		projectPath:	projectPath,
-		logView:	vp,
-		helpView:	hv,
-		searchInput:	ti,
-		pathInput:	pi,
-		logs:		make([]logEntry, 0),
-		filterMode:	"all",
-		serverFilter:	"all",
-		autoScroll:	true,
-		showHelp:	false,
+		state:        StateDevServerPathInput,
+		projectPath:  projectPath,
+		logView:      vp,
+		helpView:     hv,
+		searchInput:  ti,
+		pathInput:    pi,
+		logs:         make([]logEntry, 0),
+		filterMode:   "all",
+		serverFilter: "all",
+		autoScroll:   true,
+		showHelp:     false,
 	}
 }
 
@@ -109,8 +109,8 @@ func detectProjectCmd(path string) tea.Cmd {
 		info := devserver.Detect(path)
 		if info.Type == devserver.TypeUnknown {
 			return detectDoneMsg{
-				info:	info,
-				err:	fmt.Errorf("unable to detect project type"),
+				info: info,
+				err:  fmt.Errorf("unable to detect project type"),
 			}
 		}
 		return detectDoneMsg{info: info, err: nil}
@@ -340,11 +340,11 @@ func (m DevServerDashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		isWarning := strings.Contains(strings.ToLower(msg.log.Line), "warn")
 
 		m.logs = append(m.logs, logEntry{
-			timestamp:	timestamp,
-			serverName:	msg.log.ServerName,
-			line:		msg.log.Line,
-			isError:	msg.log.IsError,
-			isWarning:	isWarning,
+			timestamp:  timestamp,
+			serverName: msg.log.ServerName,
+			line:       msg.log.Line,
+			isError:    msg.log.IsError,
+			isWarning:  isWarning,
 		})
 
 		m.updateLogView()

@@ -3,8 +3,8 @@ package ai
 import "github.com/phravins/devcli/internal/config"
 
 type Message struct {
-	Role	string
-	Content	string
+	Role    string
+	Content string
 }
 
 type Provider interface {
