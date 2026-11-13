@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevCLI Premium Compiler</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="dark-theme">
@@ -38,8 +34,8 @@
                 </div>
                 <div class="actions">
                     <div id="save-status" class="status-indicator">All changes saved</div>
-                    <button class="btn btn-secondary" onclick="saveCode()"><i data-lucide="save"></i> Save</button>
-                    <button class="btn btn-primary" onclick="runCode()"><i data-lucide="play"></i> Run</button>
+                    <button class="btn btn-secondary" id="save-btn"><i data-lucide="save"></i> Save</button>
+                    <button class="btn btn-primary" id="run-btn"><i data-lucide="play"></i> Run</button>
                 </div>
             </header>
 
@@ -67,7 +63,7 @@ if __name__ == "__main__":
                         <button class="tab-btn active" data-tab="output">Output</button>
                         <button class="tab-btn" data-tab="terminal">Terminal</button>
                         <div class="spacer"></div>
-                        <button class="icon-btn" title="Clear" onclick="clearOutput()"><i data-lucide="trash-2"></i></button>
+                        <button class="icon-btn" title="Clear" id="clear-output-btn"><i data-lucide="trash-2"></i></button>
                     </div>
                     <div id="output-view" class="tab-content active">
                         <pre id="output-log" class="monospaced">Ready...</pre>
@@ -146,9 +142,5 @@ if __name__ == "__main__":
     </div>
 
     <script src="app.js"></script>
-    <script>
-        // Initialize icons
-        lucide.createIcons();
-    </script>
 </body>
 </html>

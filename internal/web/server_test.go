@@ -2,21 +2,22 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestParseCommand(t *testing.T) {
 	tests := []struct {
-		name		string
-		command		string
-		expected	[]string
+		name     string
+		command  string
+		expected []string
 	}{
 		{"simple", "ls -la", []string{"ls", "-la"}},
 		{"single quotes", "echo 'hello world'", []string{"echo", "hello world"}},
@@ -36,26 +37,19 @@ func TestParseCommand(t *testing.T) {
 }
 
 func TestServerTimeouts(t *testing.T) {
-	mux := http.NewServeMux()
-	setupRoutes(mux)
+	server := newServer("0", "tok")
 
-	server := &http.Server{
-		Addr:              "127.0.0.1:0",
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
+	if server.Addr != "127.0.0.1:0" {
+		t.Errorf("server must bind to loopback only, got %q", server.Addr)
 	}
-
 	if server.ReadHeaderTimeout == 0 {
 		t.Error("expected non-zero ReadHeaderTimeout to prevent Slowloris attacks")
 	}
 	if server.ReadTimeout == 0 {
 		t.Error("expected non-zero ReadTimeout")
 	}
-	if server.WriteTimeout == 0 {
-		t.Error("expected non-zero WriteTimeout")
+	if server.WriteTimeout <= execTimeout {
+		t.Error("expected WriteTimeout to exceed execTimeout so results can be delivered")
 	}
 	if server.IdleTimeout == 0 {
 		t.Error("expected non-zero IdleTimeout")
@@ -66,9 +60,9 @@ func TestMaxBytesReaderLimit(t *testing.T) {
 	oversizedBody := bytes.Repeat([]byte("a"), (1<<20)+100) // Slightly over 1MB
 
 	endpoints := []struct {
-		name	string
-		handler	http.HandlerFunc
-		path	string
+		name    string
+		handler http.HandlerFunc
+		path    string
 	}{
 		{"logs endpoint", handleLogs, "/logs"},
 		{"save endpoint", handleSave, "/save"},
@@ -105,14 +99,13 @@ func TestHandleSaveErrorSanitization(t *testing.T) {
 	defer os.Chmod(readOnlyDir, 0755)
 
 	body, _ := json.Marshal(map[string]string{
-		"filename":	readOnlyDir + "/file.txt",
-		"content":	"test",
+		"filename": readOnlyDir + "/file.txt",
+		"content":  "test",
 	})
 	req, err := http.NewRequest("POST", "/save", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}
-
 
 	rr := httptest.NewRecorder()
 	handleSave(rr, req)
@@ -159,14 +152,14 @@ func TestHandleLogsSanitization(t *testing.T) {
 }
 
 func TestRunShellAllowed(t *testing.T) {
-	_, err := runShell("ls")
+	_, err := runShell(context.Background(), "ls")
 	if err != nil {
 		t.Errorf("expected ls to be allowed, got error: %v", err)
 	}
 }
 
 func TestRunShellDisallowed(t *testing.T) {
-	_, err := runShell("rm -rf /")
+	_, err := runShell(context.Background(), "rm -rf /")
 	if err == nil {
 		t.Errorf("expected rm to be disallowed, but it succeeded")
 	}
@@ -198,60 +191,155 @@ func TestHandleCancelMethodValidation(t *testing.T) {
 	}
 }
 
-func TestCSRFOriginValidation(t *testing.T) {
+const testPort = "8080"
+const testToken = "test-session-token"
+
+func newTestHandler() http.Handler {
 	mux := http.NewServeMux()
 	setupRoutes(mux)
+	return newSecureHandler(testPort, testToken, mux)
+}
 
-	secureHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("X-XSS-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:;")
-		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+func authedRequest(method, target string) *http.Request {
+	req := httptest.NewRequest(method, target, nil)
+	req.Host = "127.0.0.1:" + testPort
+	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: testToken})
+	return req
+}
 
-		if r.Method == http.MethodPost {
-			origin := r.Header.Get("Origin")
-			if origin != "" {
-				u, err := url.Parse(origin)
-				if err != nil || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost") {
-					http.Error(w, "Forbidden: Invalid Origin header", http.StatusForbidden)
-					return
-				}
-			}
-		}
-
-		mux.ServeHTTP(w, r)
-	})
+func TestCSRFOriginValidation(t *testing.T) {
+	h := newTestHandler()
 
 	tests := []struct {
-		name		string
-		origin		string
-		expectedCode	int
+		name         string
+		origin       string
+		expectedCode int
 	}{
-		{"Allowed 127.0.0.1", "http://127.0.0.1:8080", http.StatusOK},
-		{"Allowed localhost", "http://localhost:3000", http.StatusOK},
+		{"Allowed 127.0.0.1 same port", "http://127.0.0.1:8080", http.StatusOK},
+		{"Allowed localhost same port", "http://localhost:8080", http.StatusOK},
+		{"Blocked other localhost port", "http://localhost:3000", http.StatusForbidden},
 		{"Blocked malicious domain", "http://attacker.com", http.StatusForbidden},
 		{"Blocked spoofed localhost domain", "http://localhost.attacker.com", http.StatusForbidden},
+		{"Blocked null origin", "null", http.StatusForbidden},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest("POST", "/cancel", nil)
-			if err != nil {
-				t.Fatalf("Failed to create request: %v", err)
-			}
+			req := authedRequest("POST", "/cancel")
 			req.Header.Set("Origin", tt.origin)
 
 			rr := httptest.NewRecorder()
-			secureHandler.ServeHTTP(rr, req)
+			h.ServeHTTP(rr, req)
 
 			if rr.Code != tt.expectedCode {
-				t.Errorf("secureHandler returned wrong status code for origin %q: got %v want %v", tt.origin, rr.Code, tt.expectedCode)
+				t.Errorf("origin %q: got %v want %v", tt.origin, rr.Code, tt.expectedCode)
 			}
 		})
 	}
 }
 
+func TestHostHeaderValidation(t *testing.T) {
+	h := newTestHandler()
+	for _, host := range []string{"attacker.com:8080", "127.0.0.1:9999", "evil.localhost:8080"} {
+		req := authedRequest("POST", "/cancel")
+		req.Host = host
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusForbidden {
+			t.Errorf("host %q: got %v want %v (DNS rebinding must be rejected)", host, rr.Code, http.StatusForbidden)
+		}
+	}
+}
+
+func TestSessionRequired(t *testing.T) {
+	h := newTestHandler()
+	for _, path := range []string{"/run", "/terminal", "/save", "/cancel", "/logs"} {
+		req := httptest.NewRequest("POST", path, strings.NewReader("ls"))
+		req.Host = "127.0.0.1:" + testPort
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("%s without session: got %v want 401", path, rr.Code)
+		}
+
+		req = httptest.NewRequest("POST", path, strings.NewReader("ls"))
+		req.Host = "127.0.0.1:" + testPort
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "wrong"})
+		rr = httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Errorf("%s with bad session: got %v want 401", path, rr.Code)
+		}
+	}
+}
+
+func TestTokenExchangeSetsCookie(t *testing.T) {
+	h := newTestHandler()
+
+	bad := httptest.NewRequest("GET", "/?token=nope", nil)
+	bad.Host = "127.0.0.1:" + testPort
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, bad)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("bad token: got %v want 401", rr.Code)
+	}
+
+	good := httptest.NewRequest("GET", "/?token="+testToken, nil)
+	good.Host = "127.0.0.1:" + testPort
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, good)
+	if rr.Code != http.StatusSeeOther || rr.Header().Get("Location") != "/" {
+		t.Fatalf("good token: got %v location %q, want 303 to /", rr.Code, rr.Header().Get("Location"))
+	}
+	var c *http.Cookie
+	for _, ck := range rr.Result().Cookies() {
+		if ck.Name == sessionCookieName {
+			c = ck
+		}
+	}
+	if c == nil || c.Value != testToken || !c.HttpOnly || c.SameSite != http.SameSiteStrictMode {
+		t.Fatalf("expected HttpOnly SameSite=Strict session cookie, got %+v", c)
+	}
+}
+
+func TestEmbeddedIndexServed(t *testing.T) {
+	h := newTestHandler()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, authedRequest("GET", "/"))
+	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), "<html") {
+		t.Fatalf("index not served from embed: %v %q", rr.Code, rr.Body.String()[:min(80, rr.Body.Len())])
+	}
+	for _, p := range []string{"/app.js", "/style.css"} {
+		rr = httptest.NewRecorder()
+		h.ServeHTTP(rr, authedRequest("GET", p))
+		if rr.Code != http.StatusOK {
+			t.Errorf("%s: got %v want 200", p, rr.Code)
+		}
+	}
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, authedRequest("GET", "/style.scss"))
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("unlisted asset should 404, got %v", rr.Code)
+	}
+}
+
+func TestHandleLogsDoesNotBlock(t *testing.T) {
+	ch := make(chan string) // unbuffered and never read
+	logChan = ch
+	defer func() { logChan = nil }()
+
+	done := make(chan struct{})
+	go func() {
+		rr := httptest.NewRecorder()
+		handleLogs(rr, httptest.NewRequest("POST", "/logs", strings.NewReader("x")))
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("handleLogs blocked on an unread log channel")
+	}
+}
 
 func TestHandleSavePathTraversal(t *testing.T) {
 
@@ -260,66 +348,61 @@ func TestHandleSavePathTraversal(t *testing.T) {
 	os.Chdir(tempDir)
 	defer os.Chdir(origWd)
 
-
 	tests := []struct {
-		name		string
-		filename	string
-		content		string
-		unauthenticated	bool
-		expectedStatus	int
+		name           string
+		filename       string
+		content        string
+		expectedStatus int
 	}{
 		{
-			name:		"Valid local relative path",
-			filename:	"valid_file.txt",
-			content:	"hello world",
-			expectedStatus:	http.StatusOK,
+			name:           "Valid local relative path",
+			filename:       "valid_file.txt",
+			content:        "hello world",
+			expectedStatus: http.StatusOK,
 		},
 		{
-			name:		"Valid nested relative path",
-			filename:	"sub/valid_file.txt",
-			content:	"nested content",
-			expectedStatus:	http.StatusOK,
+			name:           "Valid nested relative path",
+			filename:       "sub/valid_file.txt",
+			content:        "nested content",
+			expectedStatus: http.StatusOK,
 		},
 		{
-			name:		"Path traversal attempt with parent dir",
-			filename:	"../outside.txt",
-			content:	"malicious",
-			expectedStatus:	http.StatusBadRequest,
+			name:           "Path traversal attempt with parent dir",
+			filename:       "../outside.txt",
+			content:        "malicious",
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:		"Path traversal attempt deep",
-			filename:	"../../outside.txt",
-			content:	"malicious",
-			expectedStatus:	http.StatusBadRequest,
+			name:           "Path traversal attempt deep",
+			filename:       "../../outside.txt",
+			content:        "malicious",
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:		"Absolute path attempt",
-			filename:	"/etc/passwd",
-			content:	"malicious",
-			expectedStatus:	http.StatusBadRequest,
+			name:           "Absolute path attempt",
+			filename:       "/etc/passwd",
+			content:        "malicious",
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:		"Empty filename",
-			filename:	"",
-			content:	"empty",
-			expectedStatus:	http.StatusBadRequest,
+			name:           "Empty filename",
+			filename:       "",
+			content:        "empty",
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body, _ := json.Marshal(map[string]string{
-				"filename":	tt.filename,
-				"content":	tt.content,
+				"filename": tt.filename,
+				"content":  tt.content,
 			})
 			req, err := http.NewRequest("POST", "/save", bytes.NewBuffer(body))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
 			req.Header.Set("Content-Type", "application/json")
-			if !tt.unauthenticated {
-				req.AddCookie(&http.Cookie{Name: "session_id", Value: "valid-test-session"})
-			}
 
 			rr := httptest.NewRecorder()
 			handleSave(rr, req)

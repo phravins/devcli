@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/phravins/devcli/internal/config"
 )
@@ -23,7 +21,5 @@ func main() {
 	} else {
 		fmt.Println("Successfully cleaned ~/.devcli.yaml configuration file!")
 	}
-	home, _ := os.UserHomeDir()
-	content, _ := os.ReadFile(filepath.Join(home, ".devcli.yaml"))
-	fmt.Printf("File content:\n%s\n", string(content))
+	// Do not print the file: it contains API keys and tokens.
 }

@@ -38,20 +38,24 @@ func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 	var bar, title, desc string
 
 	if isSelected {
-		barStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
-		titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
-		descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
-
-		bar = barStyle.Render("│ ")
-		title = titleStyle.Render(i.title)
-		desc = descStyle.Render(i.desc)
+		bar = dashSelectedStyle.Render("│ ")
+		title = dashSelectedStyle.Render(i.title)
+		desc = dashSelectedStyle.Render(i.desc)
 	} else {
-		titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#EFE9E0")).Bold(true)
-		descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
-
 		bar = "  "
-		title = titleStyle.Render(i.title)
-		desc = descStyle.Render(i.desc)
+		title = dashItemTitleStyle.Render(i.title)
+		desc = dashItemDescStyle.Render(i.desc)
+	}
+
+	// Clip to the list width so long descriptions don't wrap and break the
+	// fixed two-line item height on narrow terminals.
+	if maxW := m.Width() - 2; maxW > 0 {
+		if lipgloss.Width(title) > maxW {
+			title = lipgloss.NewStyle().MaxWidth(maxW).Render(title)
+		}
+		if lipgloss.Width(desc) > maxW {
+			desc = lipgloss.NewStyle().MaxWidth(maxW).Render(desc)
+		}
 	}
 
 	if i.desc == "" {
@@ -59,6 +63,54 @@ func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 	} else {
 		fmt.Fprintf(w, "%s%s\n  %s", bar, title, desc)
 	}
+}
+
+const dashLogo = `  ____  _______     __   ____ _     ___
+ |  _ \| ____\ \   / /  / ___| |   |_ _|
+ | | | |  _|  \ \ / /  | |   | |    | |
+ | |_| | |___  \ V /   | |___| |___ | |
+ |____/|_____|  \_/     \____|_____|___|`
+
+// Styles are built once: constructing lipgloss styles inside View() and the
+// item delegate allocated on every frame and every list row.
+var (
+	dashSelectedStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#BD93F9")).Bold(true)
+	dashItemTitleStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#EFE9E0")).Bold(true)
+	dashItemDescStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
+
+	dashLogoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#0F9E99")).Bold(true)
+	dashTitleStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#EFE9E0"))
+	dashVersionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true)
+	dashFooterStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
+
+	dashLogoWidth = lipgloss.Width(dashLogo)
+)
+
+// renderDashboardHeader renders the centred logo block. The ASCII logo is
+// rendered as one block (all lines padded to the same width) and then
+// centred as a unit, so its letters stay aligned; on terminals narrower than
+// the logo it falls back to a one-line wordmark instead of wrapping into
+// garbage. On short terminals only the wordmark is shown so the menu fits.
+func renderDashboardHeader(width, height int) string {
+	if height > 0 && height < 20 {
+		return lipgloss.PlaceHorizontal(max(width, 0), lipgloss.Center,
+			dashLogoStyle.Render("DEVCLI")+"  "+dashVersionStyle.Render(config.Version))
+	}
+	var logo string
+	if width >= dashLogoWidth+2 {
+		logo = dashLogoStyle.Render(dashLogo)
+	} else {
+		logo = dashLogoStyle.Render("DEVCLI")
+	}
+	block := lipgloss.JoinVertical(lipgloss.Center,
+		logo,
+		dashTitleStyle.Render("Developer's CLI"),
+		dashVersionStyle.Render(config.Version),
+	)
+	if width <= 0 {
+		return block
+	}
+	return lipgloss.PlaceHorizontal(width, lipgloss.Center, block)
 }
 
 type DashboardModel struct {
@@ -71,6 +123,7 @@ type DashboardModel struct {
 	width        int
 	height       int
 	commandView  viewport.Model
+	header       string // rendered on resize; the logo never changes per frame
 }
 
 func NewDashboard() DashboardModel {
@@ -89,7 +142,13 @@ func NewDashboard() DashboardModel {
 
 	delegate := customItemDelegate{}
 	l := list.New(items, delegate, 0, 0)
-	l.Title = "8 items"
+	count := 0
+	for _, it := range items {
+		if it.(item).title != ".." {
+			count++
+		}
+	}
+	l.Title = fmt.Sprintf("%d items", count)
 	l.SetShowTitle(true)
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(true)
@@ -226,7 +285,14 @@ func (m DashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v-8)
+		// header + blank spacer line + footer line
+		m.header = renderDashboardHeader(msg.Width, msg.Height)
+		chrome := lipgloss.Height(m.header) + 2
+		listHeight := msg.Height - v - chrome
+		if listHeight < 3 {
+			listHeight = 3
+		}
+		m.list.SetSize(msg.Width-h, listHeight)
 
 		if m.showSettings {
 			updatedSettings, _ := m.settings.Update(msg)
@@ -254,34 +320,7 @@ func (m DashboardModel) View() string {
 		return docStyle.Render(m.settings.View())
 	}
 
-	headerStyle := lipgloss.NewStyle().
-		Width(m.width).
-		Align(lipgloss.Center)
-
-	logo := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#0F9E99")).
-		Bold(true).
-		Render(`|---| /---| \   /   /---| |   |
-|   | |---|  \ /    |     |   |
-|---| \___|   V     \___| |___|`)
-
-	title := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#EFE9E0")).
-		Render("Developer's CLI")
-
-	footer := lipgloss.NewStyle().
-		Width(m.width).
-		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("#666666")).
-		Render("OPENDEV TOOLKIT")
-
-	version := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#666666")).
-		Italic(true).
-		Render(config.Version)
-
-	centeredHeader := headerStyle.Render(logo + "\n" + title + "\n" + version)
+	footer := lipgloss.PlaceHorizontal(m.width, lipgloss.Center, dashFooterStyle.Render("OPENDEV TOOLKIT"))
 
 	if m.showCommands {
 		commandsTitle := lipgloss.NewStyle().
@@ -301,27 +340,19 @@ func (m DashboardModel) View() string {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 	}
 
-	contentView := lipgloss.JoinVertical(lipgloss.Left,
-		centeredHeader,
-		"\n",
-		m.list.View(),
-	)
-	availableHeight := m.height - 2
-	contentHeight := lipgloss.Height(contentView)
-	footerHeight := lipgloss.Height(footer)
+	header := m.header
+	if header == "" {
+		header = renderDashboardHeader(m.width, m.height)
+	}
+	contentView := header + "\n\n" + m.list.View()
 
-	gapHeight := availableHeight - contentHeight - footerHeight
-	if gapHeight < 0 {
-		gapHeight = 0
+	// Pad so the footer sits on the last line without overflowing.
+	gap := m.height - lipgloss.Height(contentView) - lipgloss.Height(footer)
+	if gap < 0 {
+		gap = 0
 	}
 
-	spacer := strings.Repeat("\n", gapHeight)
-
-	return docStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
-		contentView,
-		spacer,
-		footer,
-	))
+	return docStyle.Render(contentView + strings.Repeat("\n", gap+1) + footer)
 }
 
 func RunDashboard() string {

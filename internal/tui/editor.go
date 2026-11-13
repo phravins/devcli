@@ -437,8 +437,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.status = "Web Server Running..."
 					m.webLogs = []string{"[TUI] Initializing web server..."}
 					m.logChan = make(chan string, 10)
-					go web.StartServer("8080", m.logChan)
-					utils.OpenBrowser("http://127.0.0.1:8080")
+					logCh := m.logChan
+					go func() {
+						if err := web.StartServer("8080", logCh); err != nil {
+							select {
+							case logCh <- "[TUI] Web server error: " + err.Error():
+							default:
+							}
+						}
+					}()
+					if launchURL, err := web.LaunchURL("8080"); err == nil {
+						utils.OpenBrowser(launchURL)
+					} else {
+						m.webLogs = append(m.webLogs, "[TUI] "+err.Error())
+					}
 					return m, m.listenLogs()
 				} else {
 					m.state = stateEditor

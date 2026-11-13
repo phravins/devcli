@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -91,25 +90,27 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	url := fmt.Sprintf("%s/%s:generateContent?key=%s", p.BaseURL, p.modelName, p.APIKey)
+	// The API key goes in a header, never the URL: Go's *url.Error embeds the
+	// full request URL, so a "?key=" query would leak the key into every
+	// network error shown in the TUI or written to logs.
+	endpoint := fmt.Sprintf("%s/%s:generateContent", p.BaseURL, p.modelName)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("gemini: invalid request: %w", redactErr(err, p.APIKey))
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-goog-api-key", p.APIKey)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := cloudHTTPClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("gemini API connection failed: %w", err)
+		return "", fmt.Errorf("gemini API connection failed: %w", redactErr(err, p.APIKey))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-
-		safeURL := fmt.Sprintf("%s/%s:generateContent", p.BaseURL, p.modelName)
+		body := readErrorBody(resp.Body, p.APIKey)
+		safeURL := endpoint
 		switch resp.StatusCode {
 		case http.StatusUnauthorized, http.StatusForbidden:
 			return "", fmt.Errorf("gemini: invalid API Key or access denied")
@@ -120,7 +121,7 @@ func (p *GeminiProvider) Send(messages []ai.Message) (string, error) {
 		case http.StatusInternalServerError:
 			return "", fmt.Errorf("gemini: server error")
 		default:
-			return "", fmt.Errorf("gemini API error (%d) at %s: %s", resp.StatusCode, safeURL, string(body))
+			return "", fmt.Errorf("gemini API error (%d) at %s: %s", resp.StatusCode, safeURL, body)
 		}
 	}
 	var parsedResp geminiResponse

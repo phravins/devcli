@@ -16,9 +16,10 @@ type Entry struct {
 func getHistoryPath() string {
 	home, _ := os.UserHomeDir()
 	dir := filepath.Join(home, ".devcli")
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return filepath.Join(home, "history.json")
 	}
+	_ = os.Chmod(dir, 0700)
 	return filepath.Join(dir, "history.json")
 }
 
@@ -45,7 +46,11 @@ func Save(entries []Entry) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		return err
+	}
+	// WriteFile keeps the mode of an existing file; tighten older 0644 files.
+	return os.Chmod(path, 0600)
 }
 
 func Add(name, path string) error {

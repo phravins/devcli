@@ -224,8 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.classList.add('hidden'), 3000);
     };
 
-    });
-
     document.getElementById('drive-sidebar-btn').addEventListener('click', () => {
         saveLocation = 'drive';
         saveModal.classList.remove('hidden');
@@ -235,4 +233,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('local-save-options').classList.add('hidden');
         document.getElementById('drive-save-options').classList.remove('hidden');
     });
+
+    // Bound here instead of inline onclick="" so the page can run under a
+    // strict Content-Security-Policy (script-src 'self').
+    document.getElementById('save-btn').addEventListener('click', () => window.saveCode());
+    document.getElementById('run-btn').addEventListener('click', () => window.runCode());
+    document.getElementById('clear-output-btn').addEventListener('click', () => window.clearOutput());
 });

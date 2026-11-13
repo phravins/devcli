@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/phravins/devcli/internal/ai"
@@ -91,16 +90,14 @@ func (p *HFProvider) Send(messages []ai.Message) (string, error) {
 		req.Header.Set("Authorization", "Bearer "+p.APIKey)
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := cloudHTTPClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("HF API connection failed: %w", err)
+		return "", fmt.Errorf("HF API connection failed: %w", redactErr(err, p.APIKey))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("HF API error (%d) for model '%s': %s", resp.StatusCode, p.modelName, string(body))
+		return "", fmt.Errorf("HF API error (%d) for model '%s': %s", resp.StatusCode, p.modelName, readErrorBody(resp.Body, p.APIKey))
 	}
 
 	var parsedResp []hfResponseItem

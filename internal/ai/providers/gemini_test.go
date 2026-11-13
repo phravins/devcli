@@ -147,8 +147,11 @@ func TestGeminiProvider_Send_Success(t *testing.T) {
 			t.Errorf("Expected path /gemini-1.5-flash-001:generateContent, got %s", r.URL.Path)
 		}
 
-		if r.URL.Query().Get("key") != "test-key" {
-			t.Errorf("Expected key 'test-key', got '%s'", r.URL.Query().Get("key"))
+		if r.URL.Query().Has("key") {
+			t.Errorf("API key must not be sent in the URL query, got %q", r.URL.RawQuery)
+		}
+		if r.Header.Get("x-goog-api-key") != "test-key" {
+			t.Errorf("Expected x-goog-api-key 'test-key', got '%s'", r.Header.Get("x-goog-api-key"))
 		}
 
 		var req geminiRequest
@@ -301,4 +304,20 @@ func TestGeminiProvider_Send_DecodeAndEmptyErrors(t *testing.T) {
 			t.Errorf("Expected empty response error, got '%v'", err)
 		}
 	})
+}
+
+func TestGeminiConnectionErrorDoesNotLeakKey(t *testing.T) {
+	// Closed server: client.Do fails and Go embeds the request URL in the error.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	server.Close()
+
+	p := &GeminiProvider{}
+	_ = p.Configure(&config.Config{GeminiAPIKey: "super-secret-key", AIBaseURL: server.URL})
+	_, err := p.Send([]ai.Message{{Role: "user", Content: "hi"}})
+	if err == nil {
+		t.Fatal("expected connection error")
+	}
+	if strings.Contains(err.Error(), "super-secret-key") {
+		t.Fatalf("API key leaked in error: %v", err)
+	}
 }

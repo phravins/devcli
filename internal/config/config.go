@@ -37,6 +37,13 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("editor_theme", "default")
 	viper.SetDefault("user_name", "Developer")
 
+	// The config holds API keys; make sure an existing file is not readable
+	// by other users (older versions created it with the default umask).
+	configPath := filepath.Join(home, ".devcli.yaml")
+	if fi, err := os.Stat(configPath); err == nil && fi.Mode().Perm()&0o077 != 0 {
+		_ = os.Chmod(configPath, 0o600)
+	}
+
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, err

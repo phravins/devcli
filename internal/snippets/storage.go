@@ -32,9 +32,10 @@ func NewStorage() (*Storage, error) {
 	}
 
 	devCLIDir := filepath.Join(homeDir, ".devcli")
-	if err := os.MkdirAll(devCLIDir, 0755); err != nil {
+	if err := os.MkdirAll(devCLIDir, 0700); err != nil {
 		return nil, err
 	}
+	_ = os.Chmod(devCLIDir, 0700)
 
 	return &Storage{
 		filePath: filepath.Join(devCLIDir, "snippets.json"),
@@ -65,7 +66,11 @@ func (s *Storage) SaveAll(snippets []Snippet) error {
 		return err
 	}
 
-	return os.WriteFile(s.filePath, data, 0644)
+	if err := os.WriteFile(s.filePath, data, 0600); err != nil {
+		return err
+	}
+	// WriteFile keeps the mode of an existing file; tighten older 0644 files.
+	return os.Chmod(s.filePath, 0600)
 }
 
 func (s *Storage) Add(snippet Snippet) error {

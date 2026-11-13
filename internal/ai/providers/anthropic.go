@@ -94,14 +94,16 @@ func (p *AnthropicProvider) Send(messages []ai.Message) (string, error) {
 	req.Header.Set("x-api-key", p.APIKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := cloudHTTPClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("claude API connection failed: %w", err)
+		return "", fmt.Errorf("claude API connection failed: %w", redactErr(err, p.APIKey))
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
+	if err != nil {
+		return "", fmt.Errorf("claude: failed to read response: %w", err)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
@@ -114,7 +116,7 @@ func (p *AnthropicProvider) Send(messages []ai.Message) (string, error) {
 		case http.StatusInternalServerError:
 			return "", fmt.Errorf("claude: server error")
 		default:
-			return "", fmt.Errorf("claude API error (%d): %s", resp.StatusCode, string(body))
+			return "", fmt.Errorf("claude API error (%d): %s", resp.StatusCode, truncateForError(redact(string(body), p.APIKey)))
 		}
 	}
 

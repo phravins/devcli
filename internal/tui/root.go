@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 
@@ -61,9 +62,18 @@ func NewRootModel() RootModel {
 	}
 }
 
+// statusTickMsg periodically repaints so the status bar picks up the values
+// refreshed in the background (git branch, RAM) even when the UI is idle.
+type statusTickMsg struct{}
+
+func statusTick() tea.Cmd {
+	return tea.Tick(statusRefreshInterval, func(time.Time) tea.Msg { return statusTickMsg{} })
+}
+
 func (m RootModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.dashboard.Init(),
+		statusTick(),
 	)
 }
 
@@ -71,17 +81,26 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
+	if _, ok := msg.(statusTickMsg); ok {
+		return m, statusTick()
+	}
+
+	// Reserve one line for the global status bar. This must rewrite the outer
+	// msg: changing the type-switch variable below would only alter a copy,
+	// and children would size themselves one line too tall.
+	if wsm, ok := msg.(tea.WindowSizeMsg); ok {
+		m.width = wsm.Width
+		m.height = wsm.Height
+		wsm.Height--
+		msg = wsm
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		str := msg.String()
 		if strings.Contains(str, "]11;") || strings.Contains(str, "]10;") || strings.Contains(str, "]4;") || strings.Contains(str, "rgb:") || strings.Contains(str, "\033") || strings.Contains(str, "\x1b") {
 			return m, nil
 		}
-
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		msg.Height -= 1 // Reserve 1 line for global status bar
 
 	case SwitchViewMsg:
 		m.state = msg.TargetState

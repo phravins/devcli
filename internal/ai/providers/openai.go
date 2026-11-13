@@ -120,12 +120,12 @@ func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("API connection failed: %w", err)
+		return "", fmt.Errorf("API connection failed: %w", redactErr(err, p.APIKey))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes+1))
 		var errResp openAIErrorResponse
 		if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error.Message != "" {
 			switch resp.StatusCode {
@@ -142,7 +142,7 @@ func (p *OpenAIProvider) Send(messages []ai.Message) (string, error) {
 			}
 		}
 
-		return "", fmt.Errorf("OpenAI API error (%d): %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("OpenAI API error (%d): %s", resp.StatusCode, truncateForError(redact(string(body), p.APIKey)))
 	}
 
 	var parsedResp openAIResponse

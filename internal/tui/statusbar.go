@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,48 +15,109 @@ import (
 	"github.com/phravins/devcli/internal/config"
 )
 
+const statusRefreshInterval = 5 * time.Second
+
+// statusInfo is everything shown in the global status bar.
+type statusInfo struct {
+	branch    string
+	venv      string
+	memory    string
+	aiBackend string
+}
+
 var (
-	statusCacheMu	sync.Mutex
-	lastStatusCheck	time.Time
-	cachedBranch	string	= "No Git"
-	cachedVenv	string	= "venv:none"
-	cachedAIBackend	string	= "Ollama"
+	statusMu         sync.Mutex
+	statusCached     = statusInfo{branch: "No Git", venv: "venv:none", memory: "-", aiBackend: "Ollama"}
+	statusLastUpdate time.Time
+	statusRefreshing bool
+	statusConfigRead bool
+
+	statusRenderWidth int
+	statusRenderInfo  statusInfo
+	statusRendered    string
 )
 
-func getCachedStatusInfo() (string, string, string) {
-	statusCacheMu.Lock()
-	defer statusCacheMu.Unlock()
+var (
+	statusBrandStyle  = statusSegment("#BD93F9")
+	statusBranchStyle = statusSegment("#FF79C6")
+	statusVenvStyle   = statusSegment("#50FA7B")
+	statusMemStyle    = statusSegment("#8BE9FD")
+	statusAIStyle     = statusSegment("#F1FA8C")
+	statusBgColor     = lipgloss.Color("#44475a")
+)
 
-	if time.Since(lastStatusCheck) > 5*time.Second || lastStatusCheck.IsZero() {
-		lastStatusCheck = time.Now()
+func statusSegment(bg string) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Bold(true).
+		Background(lipgloss.Color(bg)).
+		Foreground(lipgloss.Color("#282a36")).
+		Padding(0, 1)
+}
 
-		branch := "No Git"
-		if out, err := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output(); err == nil {
-			b := strings.TrimSpace(string(out))
-			if b != "" {
-				branch = "git:" + b
-			}
+// collectStatusInfo does the slow work (spawning git, stat, a
+// stop-the-world ReadMemStats). It must never run on the render path.
+func collectStatusInfo() statusInfo {
+	info := statusInfo{branch: "No Git", venv: "venv:none"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if out, err := exec.CommandContext(ctx, "git", "rev-parse", "--abbrev-ref", "HEAD").Output(); err == nil {
+		if b := strings.TrimSpace(string(out)); b != "" {
+			info.branch = "git:" + b
 		}
-		cachedBranch = branch
-
-		venvStr := "venv:none"
-		if v := os.Getenv("VIRTUAL_ENV"); v != "" {
-			venvStr = "venv:" + filepath.Base(v)
-		} else if _, err := os.Stat(".venv"); err == nil {
-			venvStr = "venv:.venv"
-		}
-		cachedVenv = venvStr
-
-		cfg, _ := config.LoadConfig()
-		aiBackend := "Ollama"
-		if cfg != nil && cfg.AIBackend != "" {
-			b := cfg.AIBackend
-			aiBackend = strings.ToUpper(b[:1]) + b[1:]
-		}
-		cachedAIBackend = aiBackend
 	}
 
-	return cachedBranch, cachedVenv, cachedAIBackend
+	if v := os.Getenv("VIRTUAL_ENV"); v != "" {
+		info.venv = "venv:" + filepath.Base(v)
+	} else if _, err := os.Stat(".venv"); err == nil {
+		info.venv = "venv:.venv"
+	}
+
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	info.memory = fmt.Sprintf("%.1fMB", float64(ms.Alloc)/1024/1024)
+
+	return info
+}
+
+func currentAIBackend() string {
+	// Read the config file from disk once; afterwards use viper's in-memory
+	// values, which Settings updates via config.Set, so a backend change is
+	// reflected immediately without re-reading the file every few seconds.
+	if !statusConfigRead {
+		statusConfigRead = true
+		_, _ = config.LoadConfig()
+	}
+	b := config.GetString("ai_backend")
+	if b == "" {
+		return "Ollama"
+	}
+	return strings.ToUpper(b[:1]) + b[1:]
+}
+
+// getStatusInfo returns the latest cached info immediately and, when it is
+// stale, refreshes it in the background so View() never blocks.
+func getStatusInfo() statusInfo {
+	statusMu.Lock()
+	defer statusMu.Unlock()
+
+	if !statusRefreshing && time.Since(statusLastUpdate) > statusRefreshInterval {
+		statusRefreshing = true
+		go func() {
+			info := collectStatusInfo()
+			statusMu.Lock()
+			statusCached.branch = info.branch
+			statusCached.venv = info.venv
+			statusCached.memory = info.memory
+			statusLastUpdate = time.Now()
+			statusRefreshing = false
+			statusMu.Unlock()
+		}()
+	}
+
+	info := statusCached
+	info.aiBackend = currentAIBackend()
+	return info
 }
 
 func RenderStatusBar(width int) string {
@@ -63,55 +125,31 @@ func RenderStatusBar(width int) string {
 		width = 80
 	}
 
-	branch, venvStr, aiBackend := getCachedStatusInfo()
+	info := getStatusInfo()
 
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	memUsed := float64(m.Alloc) / 1024 / 1024
-	memStr := fmt.Sprintf("%.1fMB", memUsed)
+	statusMu.Lock()
+	defer statusMu.Unlock()
+	if statusRendered != "" && width == statusRenderWidth && info == statusRenderInfo {
+		return statusRendered
+	}
 
-	brandStyle := lipgloss.NewStyle().
-		Bold(true).
-		Background(lipgloss.Color("#BD93F9")).
-		Foreground(lipgloss.Color("#282a36")).
-		Padding(0, 1)
-
-	branchStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#FF79C6")).
-		Foreground(lipgloss.Color("#282a36")).
-		Bold(true).
-		Padding(0, 1)
-
-	venvStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#50FA7B")).
-		Foreground(lipgloss.Color("#282a36")).
-		Bold(true).
-		Padding(0, 1)
-
-	memStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#8BE9FD")).
-		Foreground(lipgloss.Color("#282a36")).
-		Bold(true).
-		Padding(0, 1)
-
-	aiStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#F1FA8C")).
-		Foreground(lipgloss.Color("#282a36")).
-		Bold(true).
-		Padding(0, 1)
-
-	barContent := lipgloss.JoinHorizontal(
+	bar := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		brandStyle.Render("⚡ DevCLI v1.1"),
-		branchStyle.Render(" "+branch),
-		venvStyle.Render(" "+venvStr),
-		memStyle.Render(" RAM:"+memStr),
-		aiStyle.Render(" AI:"+aiBackend),
+		statusBrandStyle.Render("⚡ DevCLI "+config.Version),
+		statusBranchStyle.Render(" "+info.branch),
+		statusVenvStyle.Render(" "+info.venv),
+		statusMemStyle.Render(" RAM:"+info.memory),
+		statusAIStyle.Render(" AI:"+info.aiBackend),
 	)
 
-	backgroundStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#44475a")).
-		Width(width)
-
-	return backgroundStyle.Render(barContent)
+	// Truncate before padding: applying Width to an over-long bar would wrap
+	// it onto a second line and push every view down by one row.
+	bar = lipgloss.NewStyle().MaxWidth(width).Render(bar)
+	statusRendered = lipgloss.NewStyle().
+		Background(statusBgColor).
+		Width(width).
+		Render(bar)
+	statusRenderWidth = width
+	statusRenderInfo = info
+	return statusRendered
 }

@@ -1,8 +1,13 @@
 package web
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/subtle"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,25 +21,74 @@ import (
 	"unicode"
 )
 
+//go:embed static/index.html static/app.js static/style.css
 var staticAssets embed.FS
 
-var (
-	serverStarted	bool
-	serverPort	string
-	currentDir	string
-	activeCmd	*exec.Cmd
-	activeMu	sync.Mutex
-	logChan		chan string
+const (
+	sessionCookieName = "devcli_session"
+	// execTimeout bounds every compile/run/shell invocation so a runaway
+	// program cannot outlive the HTTP request that started it.
+	execTimeout = 25 * time.Second
 )
 
+var (
+	serverMu      sync.Mutex
+	serverStarted bool
+	serverPort    string
+
+	sessionMu    sync.Mutex
+	sessionToken string
+
+	logMu   sync.Mutex
+	logChan chan string
+
+	currentDir string
+	activeCmd  *exec.Cmd
+	activeMu   sync.Mutex
+)
+
+// ensureSessionToken lazily creates the per-process secret that authorizes
+// the browser tab DevCLI opens. Nothing is served without it.
+func ensureSessionToken() (string, error) {
+	sessionMu.Lock()
+	defer sessionMu.Unlock()
+	if sessionToken == "" {
+		b := make([]byte, 32)
+		if _, err := rand.Read(b); err != nil {
+			return "", fmt.Errorf("failed to generate session token: %w", err)
+		}
+		sessionToken = hex.EncodeToString(b)
+	}
+	return sessionToken, nil
+}
+
+// LaunchURL returns the URL the TUI should open in the browser. It carries a
+// one-time token that the server exchanges for an HttpOnly session cookie.
+func LaunchURL(port string) (string, error) {
+	token, err := ensureSessionToken()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("http://127.0.0.1:%s/?token=%s", port, token), nil
+}
+
+func sendLog(msg string) {
+	logMu.Lock()
+	ch := logChan
+	logMu.Unlock()
+	if ch == nil {
+		return
+	}
+	// Never block a request handler on the TUI: if nobody is listening (the
+	// user left the web-compiler screen) or the buffer is full, drop it.
+	select {
+	case ch <- msg:
+	default:
+	}
+}
+
 func setupRoutes(mux *http.ServeMux) {
-
-	fileServer := http.FileServer(http.FS(staticAssets))
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
-
 	mux.HandleFunc("/", handleRoot)
-
-
 	mux.HandleFunc("/logs", handleLogs)
 	mux.HandleFunc("/cancel", handleCancel)
 	mux.HandleFunc("/save", handleSave)
@@ -43,37 +97,38 @@ func setupRoutes(mux *http.ServeMux) {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/" {
-		data, err := staticAssets.ReadFile("static/index.html")
-		if err != nil {
-			http.Error(w, "Error loading page", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-		w.Write(data)
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	filePath := "static" + r.URL.Path
-	data, err := staticAssets.ReadFile(filePath)
-	if err == nil {
-		contentType := "text/plain"
-		switch {
-		case strings.HasSuffix(filePath, ".css"):
-			contentType = "text/css"
-		case strings.HasSuffix(filePath, ".js"):
-			contentType = "application/javascript"
-		case strings.HasSuffix(filePath, ".png"):
-			contentType = "image/png"
-		}
-		w.Header().Set("Content-Type", contentType)
-		w.Write(data)
+	name := strings.TrimPrefix(r.URL.Path, "/")
+	if name == "" {
+		name = "index.html"
+	}
+
+	contentType := ""
+	switch name {
+	case "index.html":
+		contentType = "text/html; charset=utf-8"
+	case "style.css":
+		contentType = "text/css; charset=utf-8"
+	case "app.js":
+		contentType = "application/javascript; charset=utf-8"
+	default:
+		http.NotFound(w, r)
 		return
 	}
 
-	http.NotFound(w, r)
+	data, err := staticAssets.ReadFile("static/" + name)
+	if err != nil {
+		http.Error(w, "Error loading page", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "no-store")
+	w.Write(data)
 }
-
 
 func handleLogs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -90,11 +145,9 @@ func handleLogs(w http.ResponseWriter, r *http.Request) {
 	sanitizedBody := strings.ReplaceAll(string(body), "\r", "\\r")
 	sanitizedBody = strings.ReplaceAll(sanitizedBody, "\n", "\\n")
 
-	msg := fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), sanitizedBody)
-	fmt.Printf("\n[WEB-COMPILER LOG] %s\n", msg)
-	if logChan != nil {
-		logChan <- msg
-	}
+	// Do not print to stdout: the TUI owns the terminal (alt screen) and raw
+	// writes corrupt it. The TUI shows these via the log channel.
+	sendLog(fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), sanitizedBody))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -120,8 +173,8 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 	var payload struct {
-		Filename	string	`json:"filename"`
-		Content		string	`json:"content"`
+		Filename string `json:"filename"`
+		Content  string `json:"content"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -138,30 +191,29 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 	dir := filepath.Dir(filename)
 	if dir != "." && dir != "/" {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			msg := "Failed to create directory: " + err.Error()
-			if logChan != nil {
-				logChan <- msg
-			}
+			sendLog("Failed to create directory: " + err.Error())
 			http.Error(w, "Failed to create directory", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	err := os.WriteFile(filename, []byte(payload.Content), 0644)
-	if err != nil {
-		msg := "Error saving file: " + err.Error()
-		if logChan != nil {
-			logChan <- msg
-		}
+	if err := writeFileNoFollow(filename, []byte(payload.Content)); err != nil {
+		sendLog("Error saving file: " + err.Error())
 		http.Error(w, "Failed to save file", http.StatusInternalServerError)
 		return
 	}
 
-	msg := "File saved successfully: " + filename
-	if logChan != nil {
-		logChan <- msg
-	}
+	sendLog("File saved successfully: " + filename)
 	w.WriteHeader(http.StatusOK)
+}
+
+// writeFileNoFollow refuses to write through a symlink, so a link planted in
+// the working directory cannot redirect a save outside of it.
+func writeFileNoFollow(name string, data []byte) error {
+	if fi, err := os.Lstat(name); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		return errors.New("refusing to write through symlink")
+	}
+	return os.WriteFile(name, data, 0644)
 }
 
 func handleRun(w http.ResponseWriter, r *http.Request) {
@@ -182,8 +234,8 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 	code := string(bodyBytes)
 
 	var reqPayload struct {
-		Language	string	`json:"language"`
-		Code		string	`json:"code"`
+		Language string `json:"language"`
+		Code     string `json:"code"`
 	}
 	if err := json.Unmarshal(bodyBytes, &reqPayload); err == nil && reqPayload.Code != "" {
 		code = reqPayload.Code
@@ -192,14 +244,12 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	output, err := runCode(language, code)
+	output, err := runCode(r.Context(), language, code)
 
-	if logChan != nil {
-		if err != nil {
-			logChan <- fmt.Sprintf("[%s Execution Error]: %v", titleCase(language), err)
-		} else {
-			logChan <- fmt.Sprintf("[%s Execution Success]", titleCase(language))
-		}
+	if err != nil {
+		sendLog(fmt.Sprintf("[%s Execution Error]: %v", titleCase(language), err))
+	} else {
+		sendLog(fmt.Sprintf("[%s Execution Success]", titleCase(language)))
 	}
 
 	response := map[string]string{
@@ -228,7 +278,7 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	command := string(body)
-	output, err := runShell(command)
+	output, err := runShell(r.Context(), command)
 
 	response := map[string]string{
 		"output": output,
@@ -241,61 +291,136 @@ func handleTerminal(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func StartServer(port string, logs chan string) error {
-	logChan = logs
-	if serverStarted {
-		if serverPort == port {
-			return nil
-		}
-		return fmt.Errorf("server already running on port %s", serverPort)
+func setSecurityHeaders(w http.ResponseWriter) {
+	h := w.Header()
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("X-Frame-Options", "DENY")
+	h.Set("Content-Security-Policy",
+		"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "+
+			"img-src 'self' data:; connect-src 'self'; font-src 'self'; "+
+			"object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
+	h.Set("Referrer-Policy", "no-referrer")
+	h.Set("Cross-Origin-Opener-Policy", "same-origin")
+	h.Set("Cross-Origin-Resource-Policy", "same-origin")
+}
+
+// newSecureHandler wraps the routes with the checks that keep the local code
+// execution endpoints from being reachable by anything but the browser tab
+// DevCLI itself opened:
+//   - Host must be 127.0.0.1/localhost on our port (blocks DNS rebinding)
+//   - Origin, when sent, must be exactly our origin, port included (blocks
+//     other localhost apps and cross-site pages)
+//   - every request must carry the session cookie, obtained only by visiting
+//     the one-time LaunchURL (blocks other local users/processes)
+func newSecureHandler(port, token string, next http.Handler) http.Handler {
+	allowed := map[string]bool{
+		"127.0.0.1:" + port: true,
+		"localhost:" + port: true,
 	}
 
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		setSecurityHeaders(w)
+
+		if !allowed[strings.ToLower(r.Host)] {
+			http.Error(w, "Forbidden: invalid Host header", http.StatusForbidden)
+			return
+		}
+
+		if origin := r.Header.Get("Origin"); origin != "" {
+			u, err := url.Parse(origin)
+			if err != nil || !allowed[strings.ToLower(u.Host)] {
+				http.Error(w, "Forbidden: Invalid Origin header", http.StatusForbidden)
+				return
+			}
+		} else if r.Method != http.MethodGet && r.Method != http.MethodHead &&
+			r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+			http.Error(w, "Forbidden: cross-site request", http.StatusForbidden)
+			return
+		}
+
+		if token == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if r.Method == http.MethodGet && r.URL.Path == "/" && r.URL.Query().Has("token") {
+			if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("token")), []byte(token)) != 1 {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     sessionCookieName,
+				Value:    token,
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteStrictMode,
+			})
+			// Drop the token from the address bar and history.
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		c, err := r.Cookie(sessionCookieName)
+		if err != nil || subtle.ConstantTimeCompare([]byte(c.Value), []byte(token)) != 1 {
+			http.Error(w, "Unauthorized: open the Web Compiler from DevCLI", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func newServer(port, token string) *http.Server {
 	mux := http.NewServeMux()
 	setupRoutes(mux)
-
-	serverStarted = true
-	serverPort = port
-	addr := "127.0.0.1:" + port
-	fmt.Printf("Starting local premium compiler server at http://%s\n", addr)
-
-	secureHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("X-XSS-Protection", "1; mode=block")
-		w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:;")
-		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-
-		if r.Method == http.MethodPost {
-			origin := r.Header.Get("Origin")
-			if origin != "" {
-				u, err := url.Parse(origin)
-				if err != nil || (u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost") {
-					http.Error(w, "Forbidden: Invalid Origin header", http.StatusForbidden)
-					return
-				}
-			}
-		}
-
-		mux.ServeHTTP(w, r)
-	})
-
-	server := &http.Server{
-		Addr:              addr,
-		Handler:           secureHandler,
+	return &http.Server{
+		Addr:              "127.0.0.1:" + port,
+		Handler:           newSecureHandler(port, token, mux),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		WriteTimeout:      execTimeout + 5*time.Second,
 		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 16,
+	}
+}
+
+func StartServer(port string, logs chan string) error {
+	logMu.Lock()
+	logChan = logs
+	logMu.Unlock()
+
+	serverMu.Lock()
+	if serverStarted {
+		running := serverPort
+		serverMu.Unlock()
+		if running == port {
+			return nil
+		}
+		return fmt.Errorf("server already running on port %s", running)
 	}
 
-	err := server.ListenAndServe()
+	token, err := ensureSessionToken()
 	if err != nil {
-		serverStarted = false
+		serverMu.Unlock()
+		return err
 	}
+	serverStarted = true
+	serverPort = port
+	serverMu.Unlock()
+
+	sendLog("[TUI] Web compiler listening on http://127.0.0.1:" + port)
+
+	err = newServer(port, token).ListenAndServe()
+	serverMu.Lock()
+	serverStarted = false
+	serverMu.Unlock()
 	return err
 }
 
-func runCode(lang, code string) (string, error) {
+func runCode(parent context.Context, lang, code string) (string, error) {
+	ctx, cancel := context.WithTimeout(parent, execTimeout)
+	defer cancel()
+
 	lang = strings.ToLower(strings.TrimSpace(lang))
 
 	var ext string
@@ -330,7 +455,7 @@ func runCode(lang, code string) (string, error) {
 		if _, err := exec.LookPath("node"); err != nil {
 			return "", fmt.Errorf("node.js is not installed or not in PATH")
 		}
-		cmd = exec.Command(cmdName, tmpfile.Name())
+		cmd = exec.CommandContext(ctx, cmdName, tmpfile.Name())
 
 	case "go", "golang":
 		cmdName := "go"
@@ -339,16 +464,16 @@ func runCode(lang, code string) (string, error) {
 		} else if _, err := os.Stat("/usr/local/go/bin/go"); err == nil {
 			cmdName = "/usr/local/go/bin/go"
 		}
-		cmd = exec.Command(cmdName, "run", tmpfile.Name())
+		cmd = exec.CommandContext(ctx, cmdName, "run", tmpfile.Name())
 
 	case "rust":
 		binPath := tmpfile.Name() + ".bin"
 		defer os.Remove(binPath)
-		compileCmd := exec.Command("rustc", tmpfile.Name(), "-o", binPath)
+		compileCmd := exec.CommandContext(ctx, "rustc", tmpfile.Name(), "-o", binPath)
 		if out, err := compileCmd.CombinedOutput(); err != nil {
 			return string(out), fmt.Errorf("rust compilation error: %w", err)
 		}
-		cmd = exec.Command(binPath)
+		cmd = exec.CommandContext(ctx, binPath)
 
 	case "cpp", "c++", "c":
 		binPath := tmpfile.Name() + ".bin"
@@ -357,18 +482,18 @@ func runCode(lang, code string) (string, error) {
 		if _, err := exec.LookPath("g++"); err != nil {
 			compiler = "gcc"
 		}
-		compileCmd := exec.Command(compiler, tmpfile.Name(), "-o", binPath)
+		compileCmd := exec.CommandContext(ctx, compiler, tmpfile.Name(), "-o", binPath)
 		if out, err := compileCmd.CombinedOutput(); err != nil {
 			return string(out), fmt.Errorf("C/C++ compilation error: %w", err)
 		}
-		cmd = exec.Command(binPath)
+		cmd = exec.CommandContext(ctx, binPath)
 
 	default:
 		cmdName := "python"
 		if _, err := exec.LookPath("python"); err != nil {
 			cmdName = "python3"
 		}
-		cmd = exec.Command(cmdName, "-u", tmpfile.Name())
+		cmd = exec.CommandContext(ctx, cmdName, "-u", tmpfile.Name())
 	}
 
 	cmd.Env = os.Environ()
@@ -382,6 +507,10 @@ func runCode(lang, code string) (string, error) {
 	activeMu.Lock()
 	activeCmd = nil
 	activeMu.Unlock()
+
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		err = fmt.Errorf("execution timed out after %s", execTimeout)
+	}
 
 	outStr := string(output)
 	if outStr == "" && err == nil {
@@ -439,22 +568,22 @@ func parseCommand(command string) []string {
 }
 
 var allowedCommands = map[string]bool{
-	"ls":		true,
-	"pwd":		true,
-	"cat":		true,
-	"echo":		true,
-	"go":		true,
-	"python":	true,
-	"python3":	true,
-	"node":		true,
-	"git":		true,
-	"grep":		true,
-	"head":		true,
-	"tail":		true,
-	"npm":		true,
+	"ls":      true,
+	"pwd":     true,
+	"cat":     true,
+	"echo":    true,
+	"go":      true,
+	"python":  true,
+	"python3": true,
+	"node":    true,
+	"git":     true,
+	"grep":    true,
+	"head":    true,
+	"tail":    true,
+	"npm":     true,
 }
 
-func runShell(command string) (string, error) {
+func runShell(parent context.Context, command string) (string, error) {
 	if currentDir == "" {
 		currentDir, _ = os.Getwd()
 	}
@@ -505,12 +634,9 @@ func runShell(command string) (string, error) {
 		return "", fmt.Errorf("command not allowed for security reasons: %s. Allowed commands are: ls, pwd, cat, echo, go, python, node, git, grep, head, tail, npm", baseCmd)
 	}
 
-	var cmd *exec.Cmd
-	if len(args) > 1 {
-		cmd = exec.Command(baseCmd, args[1:]...)
-	} else {
-		cmd = exec.Command(baseCmd)
-	}
+	ctx, cancel := context.WithTimeout(parent, execTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, baseCmd, args[1:]...)
 
 	cmd.Dir = currentDir
 	cmd.Env = os.Environ()
